@@ -1,0 +1,558 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List } from 'lucide-react'
+import { ColumnEditorModal } from './ColumnEditorModal'
+
+interface Column {
+  id: string
+  name: string
+  label: string
+  column_type: string
+  width: number
+  is_visible: boolean
+  position: number
+}
+
+interface Row {
+  id: string
+  data: Record<string, any>
+  position: number
+}
+
+interface TableGridViewProps {
+  tableId: string
+  workspaceId: string
+}
+
+const VIEW_OPTIONS = [
+  { value: 'grid', label: 'Grid', icon: Grid3x3, description: 'Spreadsheet-like table view' },
+  { value: 'kanban', label: 'Kanban', icon: Kanban, description: 'Card-based workflow' },
+  { value: 'calendar', label: 'Calendar', icon: CalendarIcon, description: 'Date-based timeline' },
+  { value: 'gallery', label: 'Gallery', icon: ImageIcon, description: 'Visual card layout' },
+  { value: 'list', label: 'List', icon: List, description: 'Compact list view' },
+]
+
+export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
+  const [columns, setColumns] = useState<Column[]>([])
+  const [rows, setRows] = useState<Row[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedCell, setSelectedCell] = useState<{ rowId: string; columnId: string } | null>(null)
+  const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null)
+  const [activeColumnMenu, setActiveColumnMenu] = useState<string | null>(null)
+  const [tableName, setTableName] = useState('')
+  const [isColumnEditorOpen, setIsColumnEditorOpen] = useState(false)
+  const [editingColumn, setEditingColumn] = useState<Column | null>(null)
+  const [currentView, setCurrentView] = useState<'grid' | 'kanban' | 'calendar' | 'gallery' | 'list'>('grid')
+  const [showViewMenu, setShowViewMenu] = useState(false)
+  
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    loadTableData()
+  }, [tableId])
+
+  const loadTableData = async () => {
+    try {
+      setLoading(true)
+      
+      const tableResponse = await fetch(`http://localhost:8000/api/tables/${tableId}/`)
+      if (!tableResponse.ok) throw new Error('Failed to load table')
+      const tableData = await tableResponse.json()
+      
+      setTableName(tableData.name)
+      setColumns(tableData.columns || [])
+      
+      const rowsResponse = await fetch(`http://localhost:8000/api/tables/${tableId}/rows`)
+      if (!rowsResponse.ok) throw new Error('Failed to load rows')
+      const rowsData = await rowsResponse.json()
+      
+      setRows(rowsData)
+    } catch (error) {
+      console.error('Error loading table data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAddRow = async () => {
+    try {
+      // Get current user ID
+      const { getCurrentUser } = await import('@/lib/supabase')
+      const user = await getCurrentUser()
+      
+      if (!user) {
+        console.error('No user found')
+        alert('You must be logged in to add rows')
+        return
+      }
+
+      console.log('Adding row with user:', user.id)
+      const rowData = { 
+        data: {}, 
+        metadata: {},
+        position: rows.length,
+        created_by: user.id
+      }
+      console.log('Sending row data:', JSON.stringify(rowData))
+      
+      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/rows/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rowData),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+        console.error('Failed to add row:', response.status, errorData)
+        alert(`Failed to add row: ${JSON.stringify(errorData)}`)
+        return
+      }
+      
+      const newRow = await response.json()
+      console.log('Row added successfully:', newRow)
+      setRows([...rows, newRow])
+    } catch (error) {
+      console.error('Error adding row:', error)
+      alert(`Error adding row: ${error}`)
+    }
+  }
+
+  const handleCellEdit = async (rowId: string, columnName: string, value: any) => {
+    try {
+      const row = rows.find(r => r.id === rowId)
+      if (!row) return
+
+      // Get current user ID
+      const { getCurrentUser } = await import('@/lib/supabase')
+      const user = await getCurrentUser()
+      
+      if (!user) {
+        console.error('No user found')
+        alert('You must be logged in to edit cells')
+        return
+      }
+
+      const updatedData = { ...row.data, [columnName]: value }
+      console.log('Updating cell:', { rowId, columnName, value, userId: user.id })
+      
+      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/rows/${rowId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          data: updatedData,
+          updated_by: user.id
+        }),
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+        console.error('Failed to update cell:', response.status, errorData)
+        alert(`Failed to update cell: ${JSON.stringify(errorData)}`)
+        return
+      }
+      
+      console.log('Cell updated successfully')
+      setRows(rows.map(r => r.id === rowId ? { ...r, data: updatedData } : r))
+    } catch (error) {
+      console.error('Error updating cell:', error)
+      alert(`Error updating cell: ${error}`)
+    }
+  }
+
+  const handleDeleteRow = async (rowId: string) => {
+    if (!confirm('Are you sure you want to delete this row?')) return
+    try {
+      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/rows/${rowId}/`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete row')
+      setRows(rows.filter(r => r.id !== rowId))
+    } catch (error) {
+      console.error('Error deleting row:', error)
+    }
+  }
+
+  const handleDuplicateRow = async (rowId: string) => {
+    try {
+      const row = rows.find(r => r.id === rowId)
+      if (!row) return
+      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/rows/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: row.data, position: rows.length }),
+      })
+      if (!response.ok) throw new Error('Failed to duplicate row')
+      const newRow = await response.json()
+      setRows([...rows, newRow])
+    } catch (error) {
+      console.error('Error duplicating row:', error)
+    }
+  }
+
+  const handleAddColumn = () => {
+    setEditingColumn(null)
+    setIsColumnEditorOpen(true)
+    setActiveColumnMenu(null)
+  }
+
+  const handleEditColumn = (column: Column) => {
+    setEditingColumn(column)
+    setIsColumnEditorOpen(true)
+    setActiveColumnMenu(null)
+  }
+
+  const handleDeleteColumn = async (columnId: string) => {
+    if (!confirm('Delete this field? All data will be lost.')) return
+    try {
+      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/columns/${columnId}/`, {
+        method: 'DELETE',
+      })
+      if (!response.ok) throw new Error('Failed to delete column')
+      await loadTableData()
+    } catch (error) {
+      console.error('Error deleting column:', error)
+    }
+    setActiveColumnMenu(null)
+  }
+
+  const handleSaveColumn = async (columnData: any) => {
+    try {
+      let response
+      if (editingColumn) {
+        response = await fetch(`http://localhost:8000/api/tables/${tableId}/columns/${editingColumn.id}/`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(columnData),
+        })
+      } else {
+        console.log('Creating new column:', { ...columnData, table_id: tableId, position: columns.length })
+        response = await fetch(`http://localhost:8000/api/tables/${tableId}/columns/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...columnData, table_id: tableId, position: columns.length }),
+        })
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
+        console.error('Column save failed:', response.status, errorData)
+        alert(`Failed to save column: ${JSON.stringify(errorData)}`)
+        return
+      }
+      
+      const savedColumn = await response.json()
+      console.log('Column saved successfully:', savedColumn)
+      
+      // Update columns locally without reloading entire table
+      if (editingColumn) {
+        setColumns(columns.map(col => col.id === editingColumn.id ? savedColumn : col))
+      } else {
+        setColumns([...columns, savedColumn])
+      }
+      
+      setIsColumnEditorOpen(false)
+      setEditingColumn(null)
+    } catch (error) {
+      console.error('Error saving column:', error)
+      alert(`Error saving column: ${error}`)
+    }
+  }
+
+  const renderCell = (row: Row, column: Column) => {
+    const value = row.data[column.name] || ''
+    const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === column.id
+    const isSelected = selectedCell?.rowId === row.id && selectedCell?.columnId === column.id
+
+    if (isEditing) {
+      return (
+        <input
+          type="text"
+          defaultValue={value}
+          autoFocus
+          onBlur={(e) => {
+            handleCellEdit(row.id, column.name, e.target.value)
+            setEditingCell(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleCellEdit(row.id, column.name, e.currentTarget.value)
+              setEditingCell(null)
+            } else if (e.key === 'Escape') {
+              setEditingCell(null)
+            }
+          }}
+          className="w-full h-full px-2 py-1 border-2 border-blue-500 rounded focus:outline-none"
+        />
+      )
+    }
+
+    return (
+      <div
+        className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+        onClick={() => setSelectedCell({ rowId: row.id, columnId: column.id })}
+        onDoubleClick={() => setEditingCell({ rowId: row.id, columnId: column.id })}
+      >
+        {value || <span className="text-gray-400">Empty</span>}
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading table...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentView !== 'grid') {
+    const CurrentViewIcon = VIEW_OPTIONS.find(v => v.value === currentView)?.icon || Grid3x3
+    return (
+      <div className="h-full flex flex-col bg-white">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-semibold text-gray-900">{tableName}</h2>
+            <div className="relative">
+              <button 
+                onClick={() => setShowViewMenu(!showViewMenu)}
+                className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+              >
+                <CurrentViewIcon className="w-4 h-4" />
+                {VIEW_OPTIONS.find(v => v.value === currentView)?.label}
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {showViewMenu && (
+                <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                  {VIEW_OPTIONS.map((view) => {
+                    const Icon = view.icon
+                    return (
+                      <button
+                        key={view.value}
+                        onClick={() => {
+                          setCurrentView(view.value as any)
+                          setShowViewMenu(false)
+                        }}
+                        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-start gap-3 ${
+                          currentView === view.value ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 text-gray-600 mt-0.5" />
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{view.label}</div>
+                          <div className="text-xs text-gray-500">{view.description}</div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Placeholder */}
+        <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="text-center max-w-md">
+            <CurrentViewIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {VIEW_OPTIONS.find(v => v.value === currentView)?.label} View
+            </h3>
+            <p className="text-gray-600 mb-4">
+              {VIEW_OPTIONS.find(v => v.value === currentView)?.description}
+            </p>
+            <p className="text-sm text-gray-500">Coming soon</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-white">
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+        <div className="flex items-center gap-4">
+          <h2 className="text-lg font-semibold text-gray-900">{tableName}</h2>
+          <div className="relative">
+            <button 
+              onClick={() => setShowViewMenu(!showViewMenu)}
+              className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"
+            >
+              <Grid3x3 className="w-4 h-4" />
+              Grid view
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            {showViewMenu && (
+              <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
+                {VIEW_OPTIONS.map((view) => {
+                  const Icon = view.icon
+                  return (
+                    <button
+                      key={view.value}
+                      onClick={() => {
+                        setCurrentView(view.value as any)
+                        setShowViewMenu(false)
+                      }}
+                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-start gap-3 ${
+                        currentView === view.value ? 'bg-blue-50' : ''
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 text-gray-600 mt-0.5" />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{view.label}</div>
+                        <div className="text-xs text-gray-500">{view.description}</div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={handleAddRow}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <Plus className="w-4 h-4" />
+          Add Row
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div className="flex-1 overflow-auto" ref={gridRef}>
+        <table className="w-full border-collapse">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-gray-50">
+              <th className="w-12 border-r border-b border-gray-300 bg-gray-100"></th>
+              {columns.filter(c => c.is_visible).map((column) => (
+                <th
+                  key={column.id}
+                  className="border-r border-b border-gray-300 bg-gray-50 p-0 relative group"
+                  style={{ minWidth: column.width }}
+                >
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="text-sm font-medium text-gray-700 truncate">{column.label}</span>
+                    <button
+                      onClick={() => setActiveColumnMenu(activeColumnMenu === column.id ? null : column.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded"
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {activeColumnMenu === column.id && (
+                    <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border py-1 z-20">
+                      <button 
+                        onClick={() => handleEditColumn(column)}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Edit field
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteColumn(column.id)}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete field
+                      </button>
+                    </div>
+                  )}
+                </th>
+              ))}
+              <th className="border-b border-gray-300 bg-gray-50 p-2 w-12">
+                <button 
+                  onClick={handleAddColumn}
+                  className="w-full h-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={row.id} className="group hover:bg-gray-50">
+                <td className="border-r border-b border-gray-200 bg-gray-50 text-center text-xs text-gray-500">
+                  <div className="flex items-center justify-center h-full">
+                    <span className="group-hover:hidden">{rowIndex + 1}</span>
+                    <div className="hidden group-hover:flex items-center gap-1">
+                      <button
+                        onClick={() => handleDuplicateRow(row.id)}
+                        className="p-1 hover:bg-gray-200 rounded"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRow(row.id)}
+                        className="p-1 hover:bg-red-100 rounded text-red-600"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                {columns.filter(c => c.is_visible).map((column) => (
+                  <td
+                    key={column.id}
+                    className="border-r border-b border-gray-200"
+                    style={{ minWidth: column.width }}
+                  >
+                    {renderCell(row, column)}
+                  </td>
+                ))}
+                <td className="border-b border-gray-200"></td>
+              </tr>
+            ))}
+            <tr>
+              <td colSpan={columns.filter(c => c.is_visible).length + 2} className="border-b border-gray-200">
+                <button
+                  onClick={handleAddRow}
+                  className="w-full py-2 text-left px-3 text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add row
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {rows.length === 0 && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Plus className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No rows yet</h3>
+            <p className="text-gray-600 mb-4">Add your first row to get started</p>
+            <button
+              onClick={handleAddRow}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Add Row
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ColumnEditorModal
+        isOpen={isColumnEditorOpen}
+        onClose={() => {
+          setIsColumnEditorOpen(false)
+          setEditingColumn(null)
+        }}
+        onSubmit={handleSaveColumn}
+        column={editingColumn}
+        mode={editingColumn ? 'edit' : 'create'}
+      />
+    </div>
+  )
+}
