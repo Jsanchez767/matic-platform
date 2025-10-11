@@ -25,7 +25,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 export const workspacesAPI = {
   // List workspaces for a user
   list: async (userId: string): Promise<Workspace[]> => {
-    return fetchAPI<Workspace[]>(`/workspaces?user_id=${userId}`)
+    return fetchAPI<Workspace[]>(`/workspaces/?user_id=${userId}`)
   },
 
   // Get workspace details
