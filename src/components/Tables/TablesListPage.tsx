@@ -4,19 +4,8 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, Table2, MoreVertical, Edit, Trash2, Copy, Archive } from 'lucide-react'
 import { useTabContext } from '../WorkspaceTabProvider'
 import { CreateTableModal, TableFormData } from './CreateTableModal'
-
-interface DataTable {
-  id: string
-  name: string
-  label: string
-  description?: string
-  workspace_id: string
-  row_count: number
-  created_at: string
-  updated_at: string
-  is_archived: boolean
-  columns?: any[]
-}
+import { tablesAPI } from '@/lib/api/data-tables-client'
+import type { DataTable } from '@/types/data-tables'
 
 interface TablesListPageProps {
   workspaceId: string
@@ -37,13 +26,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const loadTables = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`http://localhost:8000/api/tables?workspace_id=${workspaceId}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to load tables')
-      }
-      
-      const data = await response.json()
+      const data = await tablesAPI.list(workspaceId)
       setTables(data)
     } catch (error) {
       console.error('Error loading tables:', error)
@@ -60,23 +43,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     try {
       console.log('Creating table with data:', data)
       
-      const response = await fetch('http://localhost:8000/api/tables/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      console.log('Response status:', response.status)
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        console.error('Server error:', errorData)
-        throw new Error(errorData.detail || 'Failed to create table')
-      }
-
-      const newTable = await response.json()
+      const newTable = await tablesAPI.create(data as any)
       console.log('Table created:', newTable)
       
       // Reload tables list
@@ -102,7 +69,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
 
   const handleOpenTable = (table: DataTable) => {
     tabManager?.addTab({
-      title: table.label || table.name,
+      title: table.name,
       type: 'table',
       url: `/w/${workspaceId}/tables/${table.id}`,
       workspaceId,
@@ -112,15 +79,9 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
 
   const handleDuplicateTable = async (table: DataTable) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/tables/${table.id}/duplicate`, {
-        method: 'POST',
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to duplicate table')
-      }
-      
-      await loadTables()
+      // TODO: Add duplicate endpoint to API client
+      console.log('Duplicate functionality not yet implemented')
+      alert('Duplicate functionality coming soon!')
     } catch (error) {
       console.error('Error duplicating table:', error)
     }
@@ -133,14 +94,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     }
     
     try {
-      const response = await fetch(`http://localhost:8000/api/tables/${tableId}/`, {
-        method: 'DELETE',
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete table')
-      }
-      
+      await tablesAPI.delete(tableId)
       await loadTables()
     } catch (error) {
       console.error('Error deleting table:', error)
@@ -149,7 +103,6 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   }
 
   const filteredTables = tables.filter(table =>
-    table.label?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     table.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     table.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -291,7 +244,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
                   </div>
                   
                   <h3 className="font-semibold text-gray-900 mb-1 truncate">
-                    {table.label || table.name}
+                    {table.name}
                   </h3>
                   
                   {table.description && (
