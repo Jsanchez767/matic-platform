@@ -30,11 +30,11 @@ export const workspacesAPI = {
 
   // Get workspace details
   get: async (workspaceId: string): Promise<Workspace> => {
-    return fetchAPI<Workspace>(`/workspaces/${workspaceId}`)
+    return fetchAPI<Workspace>(`/workspaces/${workspaceId}/`)
   },
 
   // Get workspace by slug
   getBySlug: async (organizationId: string, slug: string): Promise<Workspace> => {
-    return fetchAPI<Workspace>(`/workspaces/by-slug/${slug}?organization_id=${organizationId}`)
+    return fetchAPI<Workspace>(`/workspaces/by-slug/${slug}/?organization_id=${organizationId}`)
   },
 }
