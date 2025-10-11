@@ -58,12 +58,11 @@ export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
             icon: Plus,
             onClick: () => {
               if (tabManager) {
-                tabManager.openTab({
+                tabManager.addTab({
                   title: 'New Form',
                   type: 'form',
                   url: `/w/${workspaceId}/forms/new`,
                   workspaceId,
-                  isActive: true,
                   metadata: { formId: `new-${Date.now()}` }
                 })
               }
@@ -102,35 +101,6 @@ export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
           }
         ]
 
-      case 'document':
-        return [
-          {
-            label: 'New Document',
-            icon: Plus,
-            onClick: () => {
-              if (tabManager) {
-                tabManager.openTab({
-                  title: 'New Document',
-                  type: 'document',
-                  url: `/w/${workspaceId}/documents/new`,
-                  workspaceId,
-                  isActive: true,
-                  metadata: { documentName: `doc-${Date.now()}` }
-                })
-              }
-            },
-            className: 'bg-purple-600 hover:bg-purple-700 text-white'
-          },
-          {
-            label: 'Share',
-            icon: Users,
-            onClick: () => {
-              console.log('Share document')
-            },
-            variant: 'outline' as const
-          }
-        ]
-
       case 'project':
         return [
           {
@@ -138,12 +108,11 @@ export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
             icon: Plus,
             onClick: () => {
               if (tabManager) {
-                tabManager.openTab({
+                tabManager.addTab({
                   title: 'New Project',
                   type: 'project',
                   url: `/w/${workspaceId}/projects/new`,
                   workspaceId,
-                  isActive: true,
                   metadata: { projectId: `project-${Date.now()}` }
                 })
               }
@@ -155,18 +124,6 @@ export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
             icon: BarChart3,
             onClick: () => {
               console.log('Open project analytics')
-            },
-            variant: 'outline' as const
-          }
-        ]
-
-      case 'search':
-        return [
-          {
-            label: 'Advanced Search',
-            icon: Search,
-            onClick: () => {
-              console.log('Open advanced search')
             },
             variant: 'outline' as const
           }
