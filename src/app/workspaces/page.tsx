@@ -31,9 +31,12 @@ export default function WorkspacesPage() {
       }
 
       console.log('Fetching workspaces for user:', user.id)
-      const data = await workspacesAPI.list(user.id)
-      console.log('Workspaces loaded:', data)
-      setWorkspaces(data)
+      
+      // Fetch workspaces from backend API
+      const fetchedWorkspaces = await workspacesAPI.list(user.id)
+      
+      console.log('Workspaces loaded:', fetchedWorkspaces)
+      setWorkspaces(fetchedWorkspaces)
     } catch (err) {
       console.error('Error loading workspaces:', err)
       setError(err instanceof Error ? err.message : 'Failed to load workspaces')
