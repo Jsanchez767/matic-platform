@@ -62,7 +62,7 @@ export const TabBar: React.FC<TabBarProps> = ({
           className="h-8 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
         >
           <Plus className="h-4 w-4" />
-          {NAV_CONFIG.TEXT.TABS.CREATE_DASHBOARD}
+          Create Dashboard
         </Button>
       </div>
     )
