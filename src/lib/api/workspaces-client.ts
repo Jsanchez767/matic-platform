@@ -35,6 +35,6 @@ export const workspacesAPI = {
 
   // Get workspace by slug
   getBySlug: async (organizationId: string, slug: string): Promise<Workspace> => {
-    return fetchAPI<Workspace>(`/workspaces/by-slug/${slug}/?organization_id=${organizationId}`)
+    return fetchAPI<Workspace>(`/workspaces/by-slug/${slug}?organization_id=${organizationId}`)
   },
 }
