@@ -2,10 +2,10 @@
 
 import React from 'react'
 import { Plus } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { NAV_CONFIG, getModulesByCategory } from '@/config/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui-components/card"
+import { Button } from "@/ui-components/button"
+import { Dialog, DialogContent } from "@/ui-components/dialog"
+import { NAV_CONFIG, getModulesByCategory } from '@/lib/navigation'
 
 interface ModulePaletteProps {
   isOpen: boolean

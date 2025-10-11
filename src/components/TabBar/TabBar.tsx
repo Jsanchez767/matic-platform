@@ -4,8 +4,8 @@ import React, { useRef, useEffect } from 'react'
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Tab } from './Tab'
 import { useTabManager } from './TabManager'
-import { Button } from "@/components/ui/button"
-import { NAV_CONFIG } from '@/config/navigation'
+import { Button } from "@/ui-components/button"
+import { NAV_CONFIG } from '@/lib/navigation'
 
 interface TabBarProps {
   onCreateNewDashboard: () => void;

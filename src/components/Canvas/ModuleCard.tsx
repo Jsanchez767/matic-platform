@@ -2,8 +2,8 @@
 
 import React from 'react'
 import { ModuleInstance } from '../types'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui-components/card"
+import { Button } from "@/ui-components/button"
 import { 
   FileText, 
   Mail, 

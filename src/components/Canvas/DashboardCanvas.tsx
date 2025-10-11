@@ -4,9 +4,9 @@ import React, { useState } from 'react'
 import { Plus, Grid3x3 } from 'lucide-react'
 import { Dashboard, ModuleInstance } from '../types'
 import { ModuleCard } from './ModuleCard'
-import { Button } from "@/components/ui/button"
+import { Button } from "@/ui-components/button"
 import { useTabManager } from '../TabBar/TabManager'
-import { NAV_CONFIG } from '@/config/navigation'
+import { NAV_CONFIG } from '@/lib/navigation'
 
 interface DashboardCanvasProps {
   dashboard: Dashboard;

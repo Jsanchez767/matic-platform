@@ -3,7 +3,7 @@
 import React from 'react'
 import { X, MoreHorizontal } from 'lucide-react'
 import { Dashboard } from '../types'
-import { Button } from "@/components/ui/button"
+import { Button } from "@/ui-components/button"
 import { cn } from "@/lib/utils"
 
 interface TabProps {

@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronLeft, ChevronRight, Plus, Calendar, Search, FileText, Users, BarChart3, Settings } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@/ui-components/button'
 import { useRouter } from 'next/navigation'
 import { useTabContext } from './WorkspaceTabProvider'
 import { useMemo } from 'react'
