@@ -1,7 +1,8 @@
 import type { Workspace, WorkspaceSummary } from '@/types/workspaces'
 
-// Use the environment variable or fallback to localhost
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+// Environment variables are injected at build time by Next.js
+// @ts-ignore - Next.js injects this at build time
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const url = `${API_BASE}${endpoint}`
