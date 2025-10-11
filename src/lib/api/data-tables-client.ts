@@ -15,7 +15,7 @@ import type {
   TableViewUpdate,
   TableComment,
   TableCommentCreate,
-} from '../types/data-tables';
+} from '@/types/data-tables';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
