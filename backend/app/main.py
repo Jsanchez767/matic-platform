@@ -15,13 +15,7 @@ app = FastAPI(title="Matic Platform API", debug=settings.debug)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "https://maticsapp.com",
-        "https://*.vercel.app",  # Allow Vercel preview deployments
-    ],
+    allow_origin_regex=r"https://.*\.vercel\.app|https://maticsapp\.com|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
