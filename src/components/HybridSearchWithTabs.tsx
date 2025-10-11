@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, FileText, Calendar, Users, Zap, Clock, Settings, MessageSquare, Folder, User, Database } from 'lucide-react'
 import { HybridSearchEngine } from '@/lib/search/hybrid-search-engine'
-import { YjsTabManager } from '@/lib/yjs/tab-manager'
+import { TabManager } from '@/lib/tab-manager'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 
 interface HybridSearchProps {
   workspaceId: string
-  tabManager: YjsTabManager
+  tabManager: TabManager | null
   className?: string
 }
 
@@ -159,12 +159,11 @@ export function HybridSearchWithTabs({ workspaceId, tabManager, className }: Hyb
   // Handle result selection
   const handleSelectResult = (result: any) => {
     if (tabManager) {
-      tabManager.openTab({
+      tabManager.addTab({
         title: result.title,
         type: result.type as any,
         url: result.url,
         workspaceId: result.workspaceId,
-        isActive: false,
         metadata: result.metadata
       })
     }
@@ -183,45 +182,41 @@ export function HybridSearchWithTabs({ workspaceId, tabManager, className }: Hyb
     switch (action) {
       case 'new-form':
         if (tabManager) {
-          tabManager.openTab({
+          tabManager.addTab({
             title: 'New Form',
             type: 'form',
             url: `/w/${workspaceId}/forms/new`,
             workspaceId,
-            isActive: true
           })
         }
         break
       case 'new-document':
         if (tabManager) {
-          tabManager.openTab({
+          tabManager.addTab({
             title: 'New Document',
-            type: 'document',
+            type: 'custom',
             url: `/w/${workspaceId}/documents/new`,
             workspaceId,
-            isActive: true
           })
         }
         break
       case 'calendar':
         if (tabManager) {
-          tabManager.openTab({
+          tabManager.addTab({
             title: 'Calendar',
             type: 'calendar',
             url: `/w/${workspaceId}/calendar`,
             workspaceId,
-            isActive: true
           })
         }
         break
       case 'team':
         if (tabManager) {
-          tabManager.openTab({
+          tabManager.addTab({
             title: 'Team',
             type: 'custom',
             url: `/w/${workspaceId}/team`,
             workspaceId,
-            isActive: true
           })
         }
         break
@@ -242,12 +237,11 @@ export function HybridSearchWithTabs({ workspaceId, tabManager, className }: Hyb
       
       const routeInfo = routes[route as keyof typeof routes]
       if (routeInfo) {
-        tabManager.openTab({
+        tabManager.addTab({
           title: routeInfo.title,
           type: routeInfo.type,
           url: routeInfo.url,
           workspaceId,
-          isActive: true
         })
       }
     }
@@ -267,12 +261,11 @@ export function HybridSearchWithTabs({ workspaceId, tabManager, className }: Hyb
       
       const item = items[itemId as keyof typeof items]
       if (item) {
-        tabManager.openTab({
+        tabManager.addTab({
           title: item.title,
           type: item.type,
           url: item.url,
           workspaceId,
-          isActive: true
         })
       }
     }
