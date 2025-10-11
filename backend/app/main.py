@@ -10,7 +10,11 @@ from app.routers import api_router
 
 settings = get_settings()
 
-app = FastAPI(title="Matic Platform API", debug=settings.debug)
+app = FastAPI(
+    title="Matic Platform API", 
+    debug=settings.debug,
+    redirect_slashes=False  # Disable automatic slash redirects
+)
 
 # Configure CORS
 app.add_middleware(
@@ -19,6 +23,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 
