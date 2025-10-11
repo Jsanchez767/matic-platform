@@ -16,11 +16,11 @@ app = FastAPI(
     redirect_slashes=False  # Disable automatic slash redirects
 )
 
-# Configure CORS
+# Configure CORS - Allow all origins for now to test
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.vercel\.app|https://maticsapp\.com|http://localhost:\d+",
-    allow_credentials=True,
+    allow_origins=["*"],  # Temporarily allow all origins
+    allow_credentials=False,  # Must be False when using allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
