@@ -10,6 +10,12 @@ engine = create_async_engine(
     _settings.database_url,
     echo=_settings.debug,
     future=True,
+    connect_args={
+        "ssl": "require",
+        "server_settings": {
+            "application_name": "matic-platform"
+        }
+    }
 )
 
 AsyncSessionLocal = async_sessionmaker(
