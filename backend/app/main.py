@@ -42,4 +42,14 @@ async def on_startup() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring."""
+    return {
+        "status": "healthy",
+        "service": "Matic Platform API",
+        "version": "1.0.0"
+    }
+
+
 app.include_router(api_router, prefix="/api")
