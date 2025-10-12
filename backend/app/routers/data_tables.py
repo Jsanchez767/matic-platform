@@ -1,5 +1,6 @@
 """API endpoints for data tables/sheets."""
 
+import re
 from typing import List, Optional
 from uuid import UUID
 
@@ -30,6 +31,18 @@ from ..schemas import (
 )
 
 router = APIRouter()
+
+
+def generate_slug(name: str) -> str:
+    """Generate a URL-friendly slug from a name."""
+    # Convert to lowercase
+    slug = name.lower()
+    # Replace spaces and special characters with hyphens
+    slug = re.sub(r'[^\w\s-]', '', slug)
+    slug = re.sub(r'[-\s]+', '-', slug)
+    # Remove leading/trailing hyphens
+    slug = slug.strip('-')
+    return slug
 
 
 @router.get("/", response_model=List[DataTableRead])
@@ -151,6 +164,11 @@ async def update_table(
     # Update fields
     if table_data.name is not None:
         table.name = table_data.name
+        # Auto-generate slug from name if not provided
+        if table_data.slug is None:
+            table.slug = generate_slug(table_data.name)
+    if table_data.slug is not None:
+        table.slug = table_data.slug
     if table_data.description is not None:
         table.description = table_data.description
     if table_data.icon is not None:

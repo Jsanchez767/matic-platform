@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { X, Plus, Trash2, GripVertical, Type, Hash, Mail, Phone, Calendar, CheckSquare, Link as LinkIcon, List, Image } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, Plus, Trash2, GripVertical, Type, Hash, Mail, Phone, Calendar, CheckSquare, Link as LinkIcon, List, Image, Link2 } from 'lucide-react'
 
 interface Column {
   id?: string
@@ -13,6 +13,7 @@ interface Column {
   is_visible?: boolean
   position?: number
   settings?: Record<string, any>
+  linked_table_id?: string
 }
 
 interface ColumnEditorModalProps {
@@ -21,6 +22,8 @@ interface ColumnEditorModalProps {
   onSubmit: (column: Column) => void
   column?: Column | null
   mode: 'create' | 'edit'
+  workspaceId: string
+  currentTableId: string
 }
 
 const COLUMN_TYPES = [
@@ -35,13 +38,14 @@ const COLUMN_TYPES = [
   { value: 'checkbox', label: 'Checkbox', icon: CheckSquare, description: 'True/false value' },
   { value: 'select', label: 'Single select', icon: List, description: 'Pick one option from a list' },
   { value: 'multiselect', label: 'Multiple select', icon: List, description: 'Pick multiple options' },
+  { value: 'link', label: 'Link to another table', icon: Link2, description: 'Reference records from another table' },
   { value: 'attachment', label: 'Attachment', icon: Image, description: 'File uploads' },
   { value: 'rating', label: 'Rating', icon: Type, description: 'Star rating (1-5)' },
   { value: 'currency', label: 'Currency', icon: Hash, description: 'Monetary values' },
   { value: 'percent', label: 'Percent', icon: Hash, description: 'Percentage values' },
 ]
 
-export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode }: ColumnEditorModalProps) {
+export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode, workspaceId, currentTableId }: ColumnEditorModalProps) {
   const [label, setLabel] = useState(column?.label || '')
   const [description, setDescription] = useState(column?.description || '')
   const [columnType, setColumnType] = useState(column?.column_type || 'text')
@@ -53,6 +57,30 @@ export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode }: C
   const [selectOptions, setSelectOptions] = useState<string[]>(
     column?.settings?.options || ['Option 1']
   )
+  const [linkedTableId, setLinkedTableId] = useState<string>(column?.linked_table_id || '')
+  const [availableTables, setAvailableTables] = useState<Array<{ id: string; name: string }>>([])
+  const [loadingTables, setLoadingTables] = useState(false)
+
+  // Load available tables when link type is selected
+  useEffect(() => {
+    if (columnType === 'link' && workspaceId) {
+      loadAvailableTables()
+    }
+  }, [columnType, workspaceId])
+
+  const loadAvailableTables = async () => {
+    try {
+      setLoadingTables(true)
+      const { tablesAPI } = await import('@/lib/api/data-tables-client')
+      const tables = await tablesAPI.list(workspaceId)
+      // Filter out the current table
+      setAvailableTables(tables.filter(t => t.id !== currentTableId))
+    } catch (error) {
+      console.error('Error loading tables:', error)
+    } finally {
+      setLoadingTables(false)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +101,15 @@ export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode }: C
       columnData.settings = {
         options: selectOptions.filter(o => o.trim())
       }
+    }
+
+    // Add linked table for link type
+    if (columnType === 'link') {
+      if (!linkedTableId) {
+        alert('Please select a table to link to')
+        return
+      }
+      columnData.linked_table_id = linkedTableId
     }
 
     onSubmit(columnData)
@@ -221,6 +258,37 @@ export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode }: C
                     </button>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Link to table settings */}
+            {columnType === 'link' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select table to link
+                </label>
+                {loadingTables ? (
+                  <div className="text-sm text-gray-500 py-2">Loading tables...</div>
+                ) : (
+                  <select
+                    value={linkedTableId}
+                    onChange={(e) => setLinkedTableId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  >
+                    <option value="">Choose a table...</option>
+                    {availableTables.map((table) => (
+                      <option key={table.id} value={table.id}>
+                        {table.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {linkedTableId && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    This field will allow you to link records from the selected table
+                  </p>
+                )}
               </div>
             )}
 

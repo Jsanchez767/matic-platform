@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List } from 'lucide-react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
 
@@ -16,6 +16,7 @@ interface Column {
   width: number
   is_visible: boolean
   position: number
+  linked_table_id?: string
   settings?: {
     options?: string[] | { value: string; color?: string }[]
     [key: string]: any
@@ -53,8 +54,13 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [editingColumn, setEditingColumn] = useState<Column | null>(null)
   const [currentView, setCurrentView] = useState<'grid' | 'kanban' | 'calendar' | 'gallery' | 'list'>('grid')
   const [showViewMenu, setShowViewMenu] = useState(false)
+  const [multiselectSearch, setMultiselectSearch] = useState<string>('')
+  const [isEditingTableName, setIsEditingTableName] = useState(false)
+  const [tempTableName, setTempTableName] = useState('')
   
   const gridRef = useRef<HTMLDivElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const tableNameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadTableData()
@@ -74,6 +80,41 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       console.error('Error loading table data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleStartEditingTableName = () => {
+    setTempTableName(tableName)
+    setIsEditingTableName(true)
+    // Focus the input after state update
+    setTimeout(() => {
+      tableNameInputRef.current?.focus()
+      tableNameInputRef.current?.select()
+    }, 0)
+  }
+
+  const handleSaveTableName = async () => {
+    if (!tempTableName.trim() || tempTableName === tableName) {
+      setIsEditingTableName(false)
+      return
+    }
+
+    try {
+      await tablesAPI.update(tableId, { name: tempTableName })
+      setTableName(tempTableName)
+      setIsEditingTableName(false)
+    } catch (error) {
+      console.error('Error updating table name:', error)
+      alert('Failed to update table name')
+      setIsEditingTableName(false)
+    }
+  }
+
+  const handleTableNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveTableName()
+    } else if (e.key === 'Escape') {
+      setIsEditingTableName(false)
     }
   }
 
@@ -220,26 +261,32 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
   const handleSaveColumn = async (columnData: any) => {
     try {
+      console.log('Saving column data:', columnData)
       let response
       if (editingColumn) {
-        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}`, {
+        const url = `${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}`
+        console.log('PATCH URL:', url)
+        response = await fetch(url, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(columnData),
         })
       } else {
-        console.log('Creating new column:', { ...columnData, table_id: tableId, position: columns.length })
-        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns`, {
+        const url = `${API_BASE_URL}/tables/${tableId}/columns`
+        const payload = { ...columnData, table_id: tableId, position: columns.length }
+        console.log('POST URL:', url)
+        console.log('POST payload:', payload)
+        response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...columnData, table_id: tableId, position: columns.length }),
+          body: JSON.stringify(payload),
         })
       }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
         console.error('Column save failed:', response.status, errorData)
-        alert(`Failed to save column: ${JSON.stringify(errorData)}`)
+        alert(`Failed to save column (${response.status}): ${JSON.stringify(errorData)}`)
         return
       }
       
@@ -257,7 +304,19 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       setEditingColumn(null)
     } catch (error) {
       console.error('Error saving column:', error)
-      alert(`Error saving column: ${error}`)
+      // Better error message for network failures
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert(`Network error: Cannot reach backend at ${API_BASE_URL}. 
+        
+Possible causes:
+- Backend is sleeping (Render free tier) - wait 30-60s and try again
+- Backend is down
+- CORS issue
+
+Check browser console for details.`)
+      } else {
+        alert(`Error saving column: ${error}`)
+      }
     }
   }
 
@@ -266,62 +325,70 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === column.id
     const isSelected = selectedCell?.rowId === row.id && selectedCell?.columnId === column.id
 
-    // Multi-select column type
-    if (column.column_type === 'multiselect') {
-      const selectedOptions = Array.isArray(value) ? value : []
-      const options = column.settings?.options || []
+    // Link column type - display linked records
+    if (column.column_type === 'link') {
+      const linkedRecordIds = Array.isArray(value) ? value : []
       
       if (isEditing) {
         return (
-          <div className="relative w-full h-full min-h-[40px]" ref={(el) => {
-            if (el) {
-              const handleClickOutside = (e: MouseEvent) => {
-                if (!el.contains(e.target as Node)) {
-                  setEditingCell(null)
-                }
-              }
-              document.addEventListener('mousedown', handleClickOutside)
-              return () => document.removeEventListener('mousedown', handleClickOutside)
-            }
-          }}>
-            <div className="p-2 border-2 border-blue-500 rounded bg-white max-h-48 overflow-y-auto">
-              <div className="flex flex-wrap gap-1 mb-2">
-                {selectedOptions.map((opt: string) => (
-                  <span key={opt} className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                    {opt}
-                    <button
-                      onClick={() => {
-                        const newValue = selectedOptions.filter((o: string) => o !== opt)
-                        handleCellEdit(row.id, column.name, newValue)
-                      }}
-                      className="hover:text-blue-900"
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="space-y-1">
-                {options.map((option: any) => {
-                  const optionValue = typeof option === 'string' ? option : option.value
-                  const isSelected = selectedOptions.includes(optionValue)
-                  return (
-                    <label key={optionValue} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          const newValue = e.target.checked
-                            ? [...selectedOptions, optionValue]
-                            : selectedOptions.filter((o: string) => o !== optionValue)
+          <div className="relative" style={{ position: 'relative' }}>
+            {/* Invisible overlay to close dropdown */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => {
+                setEditingCell(null)
+                setMultiselectSearch('')
+              }}
+            />
+            
+            {/* Dropdown for selecting linked records */}
+            <div
+              ref={dropdownRef}
+              className="absolute left-0 top-0 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-xl"
+            >
+              {/* Selected linked records */}
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {linkedRecordIds.map((recordId: string) => (
+                    <span key={recordId} className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
+                      Record {recordId.substring(0, 8)}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const newValue = linkedRecordIds.filter((id: string) => id !== recordId)
                           handleCellEdit(row.id, column.name, newValue)
                         }}
-                        className="rounded"
-                      />
-                      <span className="text-sm">{optionValue}</span>
-                    </label>
-                  )
-                })}
+                        className="hover:text-purple-900 ml-1"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Search for records to link */}
+              <div className="p-3 border-b border-gray-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search records to link..."
+                    value={multiselectSearch}
+                    onChange={(e) => setMultiselectSearch(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+              
+              {/* Available records from linked table */}
+              <div className="max-h-64 overflow-y-auto">
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  Loading linked records...
+                  <p className="mt-2 text-xs">Feature coming soon: browse and select records from linked table</p>
+                </div>
               </div>
             </div>
           </div>
@@ -330,22 +397,161 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
       return (
         <div
-          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+          className={`px-3 py-2 cursor-pointer hover:bg-purple-50 ${isSelected ? 'ring-2 ring-inset ring-purple-500' : ''}`}
           onClick={() => {
             setSelectedCell({ rowId: row.id, columnId: column.id })
             setEditingCell({ rowId: row.id, columnId: column.id })
+            setMultiselectSearch('')
+          }}
+        >
+          {linkedRecordIds.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {linkedRecordIds.map((recordId: string) => (
+                <span key={recordId} className="inline-flex items-center px-2.5 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
+                  🔗 {recordId.substring(0, 8)}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-400 text-sm">No links</span>
+          )}
+        </div>
+      )
+    }
+
+    // Multi-select column type
+    if (column.column_type === 'multiselect') {
+      const selectedOptions = Array.isArray(value) ? value : []
+      const options = column.settings?.options || []
+      const filteredOptions = multiselectSearch 
+        ? options.filter((opt: any) => {
+            const optValue = typeof opt === 'string' ? opt : opt.value
+            return optValue.toLowerCase().includes(multiselectSearch.toLowerCase())
+          })
+        : options
+      
+      if (isEditing) {
+        return (
+          <div className="relative" style={{ position: 'relative' }}>
+            {/* Invisible overlay to close dropdown */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => {
+                setEditingCell(null)
+                setMultiselectSearch('')
+              }}
+            />
+            
+            {/* Dropdown */}
+            <div
+              ref={dropdownRef}
+              className="absolute left-0 top-0 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-xl"
+            >
+              {/* Selected chips */}
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {selectedOptions.map((opt: string) => (
+                    <span key={opt} className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-md">
+                      {opt}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const newValue = selectedOptions.filter((o: string) => o !== opt)
+                          handleCellEdit(row.id, column.name, newValue)
+                        }}
+                        className="hover:text-blue-900 ml-1"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    className="inline-flex items-center justify-center w-8 h-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      // Could add "create new option" functionality here
+                    }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              
+              {/* Search input */}
+              <div className="p-3 border-b border-gray-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search records..."
+                    value={multiselectSearch}
+                    onChange={(e) => setMultiselectSearch(e.target.value)}
+                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+              
+              {/* Options list */}
+              <div className="max-h-64 overflow-y-auto">
+                {filteredOptions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    {multiselectSearch ? 'No matching options' : 'No options available'}
+                  </div>
+                ) : (
+                  <div className="py-2">
+                    {filteredOptions.map((option: any) => {
+                      const optionValue = typeof option === 'string' ? option : option.value
+                      const isOptionSelected = selectedOptions.includes(optionValue)
+                      return (
+                        <label 
+                          key={optionValue} 
+                          className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isOptionSelected}
+                            onChange={(e) => {
+                              const newValue = e.target.checked
+                                ? [...selectedOptions, optionValue]
+                                : selectedOptions.filter((o: string) => o !== optionValue)
+                              handleCellEdit(row.id, column.name, newValue)
+                            }}
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{optionValue}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      return (
+        <div
+          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? 'ring-2 ring-inset ring-blue-500' : ''}`}
+          onClick={() => {
+            setSelectedCell({ rowId: row.id, columnId: column.id })
+            setEditingCell({ rowId: row.id, columnId: column.id })
+            setMultiselectSearch('')
           }}
         >
           {selectedOptions.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedOptions.map((opt: string) => (
-                <span key={opt} className="inline-flex items-center px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                <span key={opt} className="inline-flex items-center px-2.5 py-1 text-sm bg-blue-100 text-blue-700 rounded-md">
                   {opt}
                 </span>
               ))}
             </div>
           ) : (
-            <span className="text-gray-400">Empty</span>
+            <span className="text-gray-400 text-sm">Empty</span>
           )}
         </div>
       )
@@ -452,7 +658,24 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg font-semibold text-gray-900">{tableName}</h2>
+            {isEditingTableName ? (
+              <input
+                ref={tableNameInputRef}
+                type="text"
+                value={tempTableName}
+                onChange={(e) => setTempTableName(e.target.value)}
+                onBlur={handleSaveTableName}
+                onKeyDown={handleTableNameKeyDown}
+                className="text-lg font-semibold text-gray-900 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ) : (
+              <h2 
+                className="text-lg font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                onClick={handleStartEditingTableName}
+              >
+                {tableName}
+              </h2>
+            )}
             <div className="relative">
               <button 
                 onClick={() => setShowViewMenu(!showViewMenu)}
@@ -513,7 +736,24 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
         <div className="flex items-center gap-4">
-          <h2 className="text-lg font-semibold text-gray-900">{tableName}</h2>
+          {isEditingTableName ? (
+            <input
+              ref={tableNameInputRef}
+              type="text"
+              value={tempTableName}
+              onChange={(e) => setTempTableName(e.target.value)}
+              onBlur={handleSaveTableName}
+              onKeyDown={handleTableNameKeyDown}
+              className="text-lg font-semibold text-gray-900 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          ) : (
+            <h2 
+              className="text-lg font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+              onClick={handleStartEditingTableName}
+            >
+              {tableName}
+            </h2>
+          )}
           <div className="relative">
             <button 
               onClick={() => setShowViewMenu(!showViewMenu)}
@@ -688,6 +928,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         onSubmit={handleSaveColumn}
         column={editingColumn}
         mode={editingColumn ? 'edit' : 'create'}
+        workspaceId={workspaceId}
+        currentTableId={tableId}
       />
     </div>
   )

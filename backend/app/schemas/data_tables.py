@@ -120,6 +120,7 @@ class DataTableCreate(DataTableBase):
 
 class DataTableUpdate(BaseModel):
     name: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = None
     color: Optional[str] = None
