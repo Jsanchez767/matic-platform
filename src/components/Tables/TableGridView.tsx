@@ -16,6 +16,10 @@ interface Column {
   width: number
   is_visible: boolean
   position: number
+  settings?: {
+    options?: string[] | { value: string; color?: string }[]
+    [key: string]: any
+  }
 }
 
 interface Row {
@@ -258,15 +262,149 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   }
 
   const renderCell = (row: Row, column: Column) => {
-    const value = row.data[column.name] || ''
+    const value = row.data[column.name]
     const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === column.id
     const isSelected = selectedCell?.rowId === row.id && selectedCell?.columnId === column.id
 
+    // Multi-select column type
+    if (column.column_type === 'multiselect') {
+      const selectedOptions = Array.isArray(value) ? value : []
+      const options = column.settings?.options || []
+      
+      if (isEditing) {
+        return (
+          <div className="relative w-full h-full min-h-[40px]" ref={(el) => {
+            if (el) {
+              const handleClickOutside = (e: MouseEvent) => {
+                if (!el.contains(e.target as Node)) {
+                  setEditingCell(null)
+                }
+              }
+              document.addEventListener('mousedown', handleClickOutside)
+              return () => document.removeEventListener('mousedown', handleClickOutside)
+            }
+          }}>
+            <div className="p-2 border-2 border-blue-500 rounded bg-white max-h-48 overflow-y-auto">
+              <div className="flex flex-wrap gap-1 mb-2">
+                {selectedOptions.map((opt: string) => (
+                  <span key={opt} className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
+                    {opt}
+                    <button
+                      onClick={() => {
+                        const newValue = selectedOptions.filter((o: string) => o !== opt)
+                        handleCellEdit(row.id, column.name, newValue)
+                      }}
+                      className="hover:text-blue-900"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="space-y-1">
+                {options.map((option: any) => {
+                  const optionValue = typeof option === 'string' ? option : option.value
+                  const isSelected = selectedOptions.includes(optionValue)
+                  return (
+                    <label key={optionValue} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const newValue = e.target.checked
+                            ? [...selectedOptions, optionValue]
+                            : selectedOptions.filter((o: string) => o !== optionValue)
+                          handleCellEdit(row.id, column.name, newValue)
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-sm">{optionValue}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      return (
+        <div
+          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+          onClick={() => {
+            setSelectedCell({ rowId: row.id, columnId: column.id })
+            setEditingCell({ rowId: row.id, columnId: column.id })
+          }}
+        >
+          {selectedOptions.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {selectedOptions.map((opt: string) => (
+                <span key={opt} className="inline-flex items-center px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded">
+                  {opt}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-400">Empty</span>
+          )}
+        </div>
+      )
+    }
+
+    // Single select column type
+    if (column.column_type === 'select') {
+      const options = column.settings?.options || []
+      
+      if (isEditing) {
+        return (
+          <select
+            value={value || ''}
+            autoFocus
+            onChange={(e) => {
+              handleCellEdit(row.id, column.name, e.target.value)
+              setEditingCell(null)
+            }}
+            onBlur={() => setEditingCell(null)}
+            className="w-full h-full px-2 py-1 border-2 border-blue-500 rounded focus:outline-none"
+          >
+            <option value="">Select...</option>
+            {options.map((option: any) => {
+              const optionValue = typeof option === 'string' ? option : option.value
+              return (
+                <option key={optionValue} value={optionValue}>
+                  {optionValue}
+                </option>
+              )
+            })}
+          </select>
+        )
+      }
+
+      return (
+        <div
+          className={`px-3 py-2 cursor-pointer hover:bg-blue-50 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+          onClick={() => {
+            setSelectedCell({ rowId: row.id, columnId: column.id })
+            setEditingCell({ rowId: row.id, columnId: column.id })
+          }}
+        >
+          {value ? (
+            <span className="inline-flex items-center px-2 py-0.5 text-xs bg-gray-100 text-gray-800 rounded">
+              {value}
+            </span>
+          ) : (
+            <span className="text-gray-400">Empty</span>
+          )}
+        </div>
+      )
+    }
+
+    // Default text input for other types
     if (isEditing) {
       return (
         <input
           type="text"
-          defaultValue={value}
+          defaultValue={value || ''}
           autoFocus
           onBlur={(e) => {
             handleCellEdit(row.id, column.name, e.target.value)
