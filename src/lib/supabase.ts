@@ -1,10 +1,10 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-// Create a Supabase client for client-side usage
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Create a browser client for client-side usage
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Helper to get the current user
 export async function getCurrentUser() {

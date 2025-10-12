@@ -6,7 +6,7 @@ import { ColumnEditorModal } from './ColumnEditorModal'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
 
 // @ts-ignore - Next.js injects env vars at build time
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '${API_BASE_URL}'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 interface Column {
   id: string
@@ -94,7 +94,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       }
       console.log('Sending row data:', JSON.stringify(rowData))
       
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/`, {
+      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rowData),
@@ -161,7 +161,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const handleDeleteRow = async (rowId: string) => {
     if (!confirm('Are you sure you want to delete this row?')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}/`, {
+      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
         method: 'DELETE',
       })
       if (!response.ok) throw new Error('Failed to delete row')
@@ -175,7 +175,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       const row = rows.find(r => r.id === rowId)
       if (!row) return
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/`, {
+      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ data: row.data, position: rows.length }),
@@ -203,7 +203,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const handleDeleteColumn = async (columnId: string) => {
     if (!confirm('Delete this field? All data will be lost.')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${columnId}/`, {
+      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${columnId}`, {
         method: 'DELETE',
       })
       if (!response.ok) throw new Error('Failed to delete column')
@@ -218,14 +218,14 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       let response
       if (editingColumn) {
-        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}/`, {
+        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(columnData),
         })
       } else {
         console.log('Creating new column:', { ...columnData, table_id: tableId, position: columns.length })
-        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/`, {
+        response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...columnData, table_id: tableId, position: columns.length }),

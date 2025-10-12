@@ -195,7 +195,7 @@ async def delete_table(
 
 
 # Column endpoints
-@router.post("/{table_id}/columns/", response_model=TableColumnSchema)
+@router.post("/{table_id}/columns", response_model=TableColumnSchema)
 async def create_column(
     table_id: UUID,
     column_data: TableColumnCreate,
@@ -237,7 +237,7 @@ async def create_column(
     return column
 
 
-@router.patch("/{table_id}/columns/{column_id}/", response_model=TableColumnSchema)
+@router.patch("/{table_id}/columns/{column_id}", response_model=TableColumnSchema)
 async def update_column(
     table_id: UUID,
     column_id: UUID,
@@ -293,7 +293,7 @@ async def update_column(
     return column
 
 
-@router.delete("/{table_id}/columns/{column_id}/")
+@router.delete("/{table_id}/columns/{column_id}")
 async def delete_column(
     table_id: UUID,
     column_id: UUID,
@@ -358,7 +358,7 @@ async def get_row(
     return row
 
 
-@router.post("/{table_id}/rows/", response_model=TableRowSchema)
+@router.post("/{table_id}/rows", response_model=TableRowSchema)
 async def create_row(
     table_id: UUID,
     row_data: TableRowCreate,

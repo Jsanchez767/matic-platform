@@ -15,9 +15,8 @@ import type {
   TableViewUpdate,
   TableComment,
   TableCommentCreate,
-} from '@/types/data-tables';
+} from '../types/data-tables';
 
-// @ts-ignore - Next.js injects env vars at build time
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 // Helper function for API calls
