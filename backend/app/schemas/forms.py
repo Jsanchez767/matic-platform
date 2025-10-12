@@ -22,7 +22,7 @@ class FormFieldSchema(BaseModel):
     is_visible: bool = True
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class FormBase(BaseModel):
@@ -57,4 +57,4 @@ class FormRead(FormBase):
     fields: List[FormFieldSchema] = Field(default_factory=list)
 
     class Config:
-        orm_mode = True
+        from_attributes = True

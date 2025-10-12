@@ -25,7 +25,7 @@ class WorkspaceSummary(BaseModel):
     color: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class WorkspaceRead(WorkspaceSummary):
@@ -37,4 +37,4 @@ class WorkspaceRead(WorkspaceSummary):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

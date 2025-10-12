@@ -37,9 +37,11 @@ app.add_middleware(
 @app.on_event("startup")
 async def on_startup() -> None:
     """Ensure database schema exists on startup."""
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Disabled: Supabase schema is managed externally
+    # Creating tables on startup can cause connection pool exhaustion
+    # async with engine.begin() as conn:
+    #     await conn.run_sync(Base.metadata.create_all)
+    pass
 
 
 @app.get("/health")

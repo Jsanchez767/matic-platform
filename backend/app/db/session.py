@@ -10,6 +10,10 @@ engine = create_async_engine(
     _settings.database_url,
     echo=_settings.debug,
     future=True,
+    pool_size=3,  # Limit connections for Supabase Session mode
+    max_overflow=2,  # Allow 2 extra connections if needed
+    pool_pre_ping=True,  # Verify connections before use
+    pool_recycle=3600,  # Recycle connections after 1 hour
     connect_args={
         "ssl": "require",
         "server_settings": {

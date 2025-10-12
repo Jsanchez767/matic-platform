@@ -26,7 +26,7 @@ class TableColumnSchema(BaseModel):
     is_primary: bool = False
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TableColumnCreate(BaseModel):
@@ -80,7 +80,7 @@ class TableRowSchema(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TableViewSchema(BaseModel):
@@ -97,7 +97,7 @@ class TableViewSchema(BaseModel):
     created_by: Optional[UUID] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class DataTableBase(BaseModel):
@@ -138,7 +138,7 @@ class DataTableRead(DataTableBase):
     columns: List[TableColumnSchema] = Field(default_factory=list)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class DataTableWithRows(DataTableRead):
@@ -204,7 +204,7 @@ class FormTableConnectionSchema(BaseModel):
     settings: Dict[str, Any] = Field(default_factory=dict)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TableCommentCreate(BaseModel):
@@ -226,4 +226,4 @@ class TableCommentRead(BaseModel):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
