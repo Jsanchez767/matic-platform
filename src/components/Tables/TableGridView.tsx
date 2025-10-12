@@ -58,6 +58,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [multiselectSearch, setMultiselectSearch] = useState<string>('')
   const [isEditingTableName, setIsEditingTableName] = useState(false)
   const [tempTableName, setTempTableName] = useState('')
+  const [linkedRecords, setLinkedRecords] = useState<{ [tableId: string]: Row[] }>({})
+  const [loadingLinkedRecords, setLoadingLinkedRecords] = useState<{ [tableId: string]: boolean }>({})
   
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -83,6 +85,15 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   useEffect(() => {
     loadTableData()
   }, [tableId])
+
+  // Preload linked records when columns change
+  useEffect(() => {
+    columns.forEach(column => {
+      if (column.column_type === 'link' && column.linked_table_id) {
+        loadLinkedRecords(column.linked_table_id)
+      }
+    })
+  }, [columns])
 
   const loadTableData = async () => {
     try {
@@ -125,6 +136,29 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       console.error('Error updating table name:', error)
       alert('Failed to update table name')
       setIsEditingTableName(false)
+    }
+  }
+
+  const loadLinkedRecords = async (linkedTableId: string) => {
+    if (linkedRecords[linkedTableId] || loadingLinkedRecords[linkedTableId]) {
+      return // Already loaded or loading
+    }
+
+    setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: true }))
+    
+    try {
+      const records = await rowsAPI.list(linkedTableId)
+      // Convert TableRow[] to Row[] format
+      const convertedRecords: Row[] = records.map(record => ({
+        id: record.id || '',
+        data: record.data || {},
+        position: record.position || 0
+      }))
+      setLinkedRecords(prev => ({ ...prev, [linkedTableId]: convertedRecords }))
+    } catch (error) {
+      console.error('Error loading linked records:', error)
+    } finally {
+      setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: false }))
     }
   }
 
@@ -431,10 +465,83 @@ Check browser console for details.`)
               
               {/* Available records from linked table */}
               <div className="max-h-64 overflow-y-auto">
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  Loading linked records...
-                  <p className="mt-2 text-xs">Feature coming soon: browse and select records from linked table</p>
-                </div>
+                {(() => {
+                  if (!column.linked_table_id) {
+                    return (
+                      <div className="text-center py-8 text-gray-400 text-sm">
+                        No linked table configured
+                      </div>
+                    )
+                  }
+
+                  const linkedTableId = column.linked_table_id
+                  const isLoading = loadingLinkedRecords[linkedTableId]
+                  const records = linkedRecords[linkedTableId] || []
+                  
+                  // Load records if not already loaded
+                  if (!linkedRecords[linkedTableId] && !isLoading) {
+                    loadLinkedRecords(linkedTableId)
+                  }
+
+                  if (isLoading) {
+                    return (
+                      <div className="text-center py-8 text-gray-400 text-sm">
+                        Loading records...
+                      </div>
+                    )
+                  }
+
+                  if (records.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-400 text-sm">
+                        No records found in linked table
+                      </div>
+                    )
+                  }
+
+                  // Filter records based on search
+                  const filteredRecords = records.filter(record => {
+                    if (!multiselectSearch) return true
+                    const searchTerm = multiselectSearch.toLowerCase()
+                    // Search in all string fields of the record
+                    return Object.values(record.data).some(val => 
+                      typeof val === 'string' && val.toLowerCase().includes(searchTerm)
+                    )
+                  })
+
+                  return (
+                    <div className="py-2">
+                      {filteredRecords.map(record => {
+                        const isRecordLinked = linkedRecordIds.includes(record.id)
+                        // Get the display name for the record (first text field or ID)
+                        const displayName = Object.values(record.data).find(val => 
+                          typeof val === 'string' && val.trim()
+                        ) as string || `Record ${record.id.substring(0, 8)}`
+
+                        return (
+                          <label 
+                            key={record.id} 
+                            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isRecordLinked}
+                              onChange={(e) => {
+                                const newValue = e.target.checked
+                                  ? [...linkedRecordIds, record.id]
+                                  : linkedRecordIds.filter((id: string) => id !== record.id)
+                                handleCellEdit(row.id, column.name, newValue)
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                            />
+                            <span className="text-sm text-gray-700">{displayName}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
               </div>
             </div>
           </div>
@@ -452,11 +559,22 @@ Check browser console for details.`)
         >
           {linkedRecordIds.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
-              {linkedRecordIds.map((recordId: string) => (
-                <span key={recordId} className="inline-flex items-center px-2.5 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
-                  🔗 {recordId.substring(0, 8)}
-                </span>
-              ))}
+              {linkedRecordIds.map((recordId: string) => {
+                // Get display name from loaded linked records
+                const linkedTableRecords = column.linked_table_id ? linkedRecords[column.linked_table_id] : []
+                const linkedRecord = linkedTableRecords?.find(r => r.id === recordId)
+                const displayName = linkedRecord 
+                  ? (Object.values(linkedRecord.data).find(val => 
+                      typeof val === 'string' && val.trim()
+                    ) as string || `Record ${recordId.substring(0, 8)}`)
+                  : `Record ${recordId.substring(0, 8)}`
+
+                return (
+                  <span key={recordId} className="inline-flex items-center px-2.5 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
+                    🔗 {displayName}
+                  </span>
+                )
+              })}
             </div>
           ) : (
             <span className="text-gray-400 text-sm">No links</span>
@@ -848,7 +966,12 @@ Check browser console for details.`)
             />
             {connectionStatus === 'connected' ? 'Live' : 
              connectionStatus === 'connecting' ? 'Connecting...' :
-             connectionStatus === 'error' ? 'Error' : 'Offline'}
+             connectionStatus === 'error' ? 'Offline' : 'Offline'}
+            {connectionStatus === 'error' && (
+              <span className="text-xs text-gray-400" title="Real-time updates may be limited on free hosting">
+                (Limited)
+              </span>
+            )}
           </div>
           
           <button

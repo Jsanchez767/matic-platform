@@ -39,42 +39,51 @@ export function useTableRealtime(
     console.log('Original API URL:', apiUrl)
     
     setConnectionStatus('connecting')
-    const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
 
-    ws.onopen = () => {
-      console.log(`Connected to table ${tableId} WebSocket`)
-      setConnectionStatus('connected')
-    }
+    try {
+      const ws = new WebSocket(wsUrl)
+      wsRef.current = ws
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        console.log('Received update:', data)
-        onUpdate(data)
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
-        onUpdate(event.data)
+      ws.onopen = () => {
+        console.log(`Connected to table ${tableId} WebSocket`)
+        setConnectionStatus('connected')
       }
-    }
 
-    ws.onclose = (event) => {
-      console.log(`WebSocket closed for table ${tableId}:`, event.code, event.reason)
-      wsRef.current = null
-      setConnectionStatus('disconnected')
-      
-      // Reconnect after 3 seconds if not intentionally closed
-      if (event.code !== 1000) {
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          console.log('Received update:', data)
+          onUpdate(data)
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
+          onUpdate(event.data)
+        }
+      }
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket closed for table ${tableId}:`, event.code, event.reason)
+        wsRef.current = null
+        setConnectionStatus('disconnected')
+        
+        // Only attempt reconnection for unexpected closures (not 403 Forbidden)
+        if (event.code !== 1000 && event.code !== 403) {
+          setConnectionStatus('error')
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('Attempting to reconnect...')
+            connect()
+          }, 5000) // Increased to 5 seconds for production stability
+        } else if (event.code === 403) {
+          console.warn('WebSocket connection forbidden (403). This may be due to hosting limitations. Real-time updates disabled.')
+          setConnectionStatus('error')
+        }
+      }
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error)
         setConnectionStatus('error')
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('Attempting to reconnect...')
-          connect()
-        }, 3000)
       }
-    }
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error)
+    } catch (error) {
+      console.error('Failed to create WebSocket connection:', error)
       setConnectionStatus('error')
     }
   }, [tableId, onUpdate])
