@@ -16,26 +16,38 @@ import type {
   TableComment,
   TableCommentCreate,
 } from '@/types/data-tables';
+import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils';
 
 // @ts-ignore - Next.js injects env vars at build time
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-// Helper function for API calls
+// Helper function for API calls with retry logic
 async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
+  try {
+    const response = await fetchWithRetry(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    }, {
+      onRetry: (attempt) => {
+        console.log(`API retry attempt ${attempt} for ${endpoint}`)
+      }
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-    throw new Error(error.detail || `API Error: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      throw new Error(error.detail || `API Error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (isBackendSleeping(error)) {
+      showBackendSleepingMessage();
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // Table CRUD operations

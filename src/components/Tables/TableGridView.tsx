@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
+import { RealTimeLinkField } from './RealTimeLinkField'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
+import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
 
 // @ts-ignore - Next.js injects env vars at build time
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -346,20 +348,24 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       if (editingColumn) {
         const url = `${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}`
         console.log('PATCH URL:', url)
-        response = await fetch(url, {
+        response = await fetchWithRetry(url, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(columnData),
+        }, {
+          onRetry: (attempt) => console.log(`Retrying column update, attempt ${attempt}...`)
         })
       } else {
         const url = `${API_BASE_URL}/tables/${tableId}/columns`
         const payload = { ...columnData, table_id: tableId, position: columns.length }
         console.log('POST URL:', url)
         console.log('POST payload:', payload)
-        response = await fetch(url, {
+        response = await fetchWithRetry(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
+        }, {
+          onRetry: (attempt) => console.log(`Retrying column creation, attempt ${attempt}...`)
         })
       }
       
@@ -384,16 +390,9 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       setEditingColumn(null)
     } catch (error) {
       console.error('Error saving column:', error)
-      // Better error message for network failures
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert(`Network error: Cannot reach backend at ${API_BASE_URL}. 
-        
-Possible causes:
-- Backend is sleeping (Render free tier) - wait 30-60s and try again
-- Backend is down
-- CORS issue
-
-Check browser console for details.`)
+      
+      if (isBackendSleeping(error)) {
+        showBackendSleepingMessage()
       } else {
         alert(`Error saving column: ${error}`)
       }
@@ -405,181 +404,29 @@ Check browser console for details.`)
     const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === column.id
     const isSelected = selectedCell?.rowId === row.id && selectedCell?.columnId === column.id
 
-    // Link column type - display linked records
+    // Link column type - use real-time link field component
     if (column.column_type === 'link') {
       const linkedRecordIds = Array.isArray(value) ? value : []
       
-      if (isEditing) {
-        return (
-          <div className="relative" style={{ position: 'relative' }}>
-            {/* Invisible overlay to close dropdown */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => {
-                setEditingCell(null)
-                setMultiselectSearch('')
-              }}
-            />
-            
-            {/* Dropdown for selecting linked records */}
-            <div
-              ref={dropdownRef}
-              className="absolute left-0 top-0 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-xl"
-            >
-              {/* Selected linked records */}
-              <div className="p-3 border-b border-gray-200">
-                <div className="flex flex-wrap gap-2">
-                  {linkedRecordIds.map((recordId: string) => (
-                    <span key={recordId} className="inline-flex items-center gap-1 px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
-                      Record {recordId.substring(0, 8)}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const newValue = linkedRecordIds.filter((id: string) => id !== recordId)
-                          handleCellEdit(row.id, column.name, newValue)
-                        }}
-                        className="hover:text-purple-900 ml-1"
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Search for records to link */}
-              <div className="p-3 border-b border-gray-100">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search records to link..."
-                    value={multiselectSearch}
-                    onChange={(e) => setMultiselectSearch(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                    autoFocus
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </div>
-              
-              {/* Available records from linked table */}
-              <div className="max-h-64 overflow-y-auto">
-                {(() => {
-                  if (!column.linked_table_id) {
-                    return (
-                      <div className="text-center py-8 text-gray-400 text-sm">
-                        No linked table configured
-                      </div>
-                    )
-                  }
-
-                  const linkedTableId = column.linked_table_id
-                  const isLoading = loadingLinkedRecords[linkedTableId]
-                  const records = linkedRecords[linkedTableId] || []
-                  
-                  // Load records if not already loaded
-                  if (!linkedRecords[linkedTableId] && !isLoading) {
-                    loadLinkedRecords(linkedTableId)
-                  }
-
-                  if (isLoading) {
-                    return (
-                      <div className="text-center py-8 text-gray-400 text-sm">
-                        Loading records...
-                      </div>
-                    )
-                  }
-
-                  if (records.length === 0) {
-                    return (
-                      <div className="text-center py-8 text-gray-400 text-sm">
-                        No records found in linked table
-                      </div>
-                    )
-                  }
-
-                  // Filter records based on search
-                  const filteredRecords = records.filter(record => {
-                    if (!multiselectSearch) return true
-                    const searchTerm = multiselectSearch.toLowerCase()
-                    // Search in all string fields of the record
-                    return Object.values(record.data).some(val => 
-                      typeof val === 'string' && val.toLowerCase().includes(searchTerm)
-                    )
-                  })
-
-                  return (
-                    <div className="py-2">
-                      {filteredRecords.map(record => {
-                        const isRecordLinked = linkedRecordIds.includes(record.id)
-                        // Get the display name for the record (first text field or ID)
-                        const displayName = Object.values(record.data).find(val => 
-                          typeof val === 'string' && val.trim()
-                        ) as string || `Record ${record.id.substring(0, 8)}`
-
-                        return (
-                          <label 
-                            key={record.id} 
-                            className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isRecordLinked}
-                              onChange={(e) => {
-                                const newValue = e.target.checked
-                                  ? [...linkedRecordIds, record.id]
-                                  : linkedRecordIds.filter((id: string) => id !== record.id)
-                                handleCellEdit(row.id, column.name, newValue)
-                              }}
-                              className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                            />
-                            <span className="text-sm text-gray-700">{displayName}</span>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  )
-                })()}
-              </div>
-            </div>
-          </div>
-        )
-      }
-
       return (
-        <div
-          className={`px-3 py-2 cursor-pointer hover:bg-purple-50 ${isSelected ? 'ring-2 ring-inset ring-purple-500' : ''}`}
-          onClick={() => {
-            setSelectedCell({ rowId: row.id, columnId: column.id })
-            setEditingCell({ rowId: row.id, columnId: column.id })
-            setMultiselectSearch('')
+        <RealTimeLinkField
+          tableId={tableId}
+          rowId={row.id}
+          columnId={column.id}
+          columnName={column.name}
+          linkedTableId={column.linked_table_id || ''}
+          value={linkedRecordIds}
+          onChange={(newValue) => {
+            // Update the local state immediately
+            const updatedRows = rows.map(r => 
+              r.id === row.id 
+                ? { ...r, data: { ...r.data, [column.name]: newValue } }
+                : r
+            )
+            setRows(updatedRows)
           }}
-        >
-          {linkedRecordIds.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {linkedRecordIds.map((recordId: string) => {
-                // Get display name from loaded linked records
-                const linkedTableRecords = column.linked_table_id ? linkedRecords[column.linked_table_id] : []
-                const linkedRecord = linkedTableRecords?.find(r => r.id === recordId)
-                const displayName = linkedRecord 
-                  ? (Object.values(linkedRecord.data).find(val => 
-                      typeof val === 'string' && val.trim()
-                    ) as string || `Record ${recordId.substring(0, 8)}`)
-                  : `Record ${recordId.substring(0, 8)}`
-
-                return (
-                  <span key={recordId} className="inline-flex items-center px-2.5 py-1 text-sm bg-purple-100 text-purple-700 rounded-md">
-                    🔗 {displayName}
-                  </span>
-                )
-              })}
-            </div>
-          ) : (
-            <span className="text-gray-400 text-sm">No links</span>
-          )}
-        </div>
+          onCellEdit={handleCellEdit}
+        />
       )
     }
 
