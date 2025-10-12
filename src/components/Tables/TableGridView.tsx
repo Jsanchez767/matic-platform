@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
+import { useTableRealtime } from '@/hooks/useTableRealtime'
 
 // @ts-ignore - Next.js injects env vars at build time
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -61,6 +62,23 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const tableNameInputRef = useRef<HTMLInputElement>(null)
+
+  // WebSocket for real-time updates
+  const handleRealtimeUpdate = useCallback((update: any) => {
+    console.log('Received real-time update:', update)
+    
+    if (update.type === 'row_updated') {
+      setRows(prevRows => 
+        prevRows.map(row => 
+          row.id === update.row_id 
+            ? { ...row, data: update.data }
+            : row
+        )
+      )
+    }
+  }, [])
+
+  const { send: broadcastUpdate, isConnected, connectionStatus } = useTableRealtime(tableId, handleRealtimeUpdate)
 
   useEffect(() => {
     loadTableData()
@@ -166,17 +184,38 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       const row = rows.find(r => r.id === rowId)
       if (!row) return
 
+      // Optimistic update - update UI immediately
+      const updatedData = { ...row.data, [columnName]: value }
+      setRows(prevRows => 
+        prevRows.map(r => 
+          r.id === rowId ? { ...r, data: updatedData } : r
+        )
+      )
+
+      // Broadcast to other clients immediately
+      broadcastUpdate({
+        type: 'row_updated',
+        table_id: tableId,
+        row_id: rowId,
+        data: updatedData,
+        updated_by: null, // Will be filled by backend
+        optimistic: true // Mark as optimistic update
+      })
+
       // Get current user ID
       const { getCurrentUser } = await import('@/lib/supabase')
       const user = await getCurrentUser()
       
       if (!user) {
         console.error('No user found')
+        // Revert optimistic update
+        setRows(prevRows => 
+          prevRows.map(r => r.id === rowId ? row : r)
+        )
         alert('You must be logged in to edit cells')
         return
       }
 
-      const updatedData = { ...row.data, [columnName]: value }
       console.log('Updating cell:', { rowId, columnName, value, userId: user.id })
       
       const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
@@ -191,12 +230,19 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
         console.error('Failed to update cell:', response.status, errorData)
+        
+        // Revert optimistic update on error
+        setRows(prevRows => 
+          prevRows.map(r => r.id === rowId ? row : r)
+        )
+        
         alert(`Failed to update cell: ${JSON.stringify(errorData)}`)
         return
       }
       
       console.log('Cell updated successfully')
-      setRows(rows.map(r => r.id === rowId ? { ...r, data: updatedData } : r))
+      // Note: We don't update local state here since optimistic update already did it
+      // The WebSocket will broadcast the authoritative update from the server
     } catch (error) {
       console.error('Error updating cell:', error)
       alert(`Error updating cell: ${error}`)
@@ -790,13 +836,29 @@ Check browser console for details.`)
             )}
           </div>
         </div>
-        <button
-          onClick={handleAddRow}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          Add Row
-        </button>
+        <div className="flex items-center gap-4">
+          {/* Connection status */}
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div 
+              className={`w-2 h-2 rounded-full ${
+                connectionStatus === 'connected' ? 'bg-green-500' : 
+                connectionStatus === 'connecting' ? 'bg-yellow-500' :
+                connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
+              }`}
+            />
+            {connectionStatus === 'connected' ? 'Live' : 
+             connectionStatus === 'connecting' ? 'Connecting...' :
+             connectionStatus === 'error' ? 'Error' : 'Offline'}
+          </div>
+          
+          <button
+            onClick={handleAddRow}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            Add Row
+          </button>
+        </div>
       </div>
 
       {/* Grid */}

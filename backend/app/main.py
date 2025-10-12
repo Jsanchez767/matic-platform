@@ -25,6 +25,7 @@ app.add_middleware(
         "https://matic-platform-git-main-jesus-sanchezs-projects-9cb2de52.vercel.app",
         "https://matic-platform-19oudptn8-jesus-sanchezs-projects-9cb2de52.vercel.app",
         "http://localhost:3000",
+        "http://localhost:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],

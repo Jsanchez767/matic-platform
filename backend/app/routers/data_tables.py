@@ -29,6 +29,7 @@ from ..schemas import (
     TableViewSchema,
     TableViewUpdate,
 )
+from .realtime import broadcast_table_update
 
 router = APIRouter()
 
@@ -457,6 +458,16 @@ async def update_row(
     
     await session.commit()
     await session.refresh(row)
+    
+    # Broadcast the update to all connected clients
+    await broadcast_table_update(str(table_id), {
+        "type": "row_updated",
+        "table_id": str(table_id),
+        "row_id": str(row_id),
+        "data": row.data,
+        "updated_by": str(row.updated_by) if row.updated_by else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None
+    })
     
     return row
 
