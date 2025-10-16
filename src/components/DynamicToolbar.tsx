@@ -1,13 +1,14 @@
 'use client'
 
-import { ChevronLeft, ChevronRight, Plus, Calendar, Search, FileText, Users, BarChart3, Settings } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Calendar, Search, FileText, Users, BarChart3, Settings, ScanLine } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { useRouter } from 'next/navigation'
 import { useTabContext } from './WorkspaceTabProvider'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 interface DynamicToolbarProps {
   workspaceId: string
+  onScanLookup?: () => void // Callback to trigger scan modal
 }
 
 interface ToolAction {
@@ -18,7 +19,7 @@ interface ToolAction {
   className?: string
 }
 
-export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
+export function DynamicToolbar({ workspaceId, onScanLookup }: DynamicToolbarProps) {
   const router = useRouter()
   const { activeTab, tabs, tabManager } = useTabContext()
 
@@ -51,6 +52,39 @@ export function DynamicToolbar({ workspaceId }: DynamicToolbarProps) {
     if (!activeTab) return []
 
     switch (activeTab.type) {
+      case 'table':
+        return [
+          {
+            label: 'Scan & Lookup',
+            icon: ScanLine,
+            onClick: () => {
+              if (onScanLookup) {
+                onScanLookup()
+              } else {
+                console.log('Scan & Lookup: No handler provided')
+              }
+            },
+            className: 'bg-purple-600 hover:bg-purple-700 text-white'
+          },
+          {
+            label: 'Add Record',
+            icon: Plus,
+            onClick: () => {
+              // Handle add new record
+              console.log('Add new record to table')
+            },
+            variant: 'outline' as const
+          },
+          {
+            label: 'Table Settings',
+            icon: Settings,
+            onClick: () => {
+              console.log('Open table settings')
+            },
+            variant: 'outline' as const
+          }
+        ]
+
       case 'form':
         return [
           {

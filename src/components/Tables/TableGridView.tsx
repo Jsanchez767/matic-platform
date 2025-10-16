@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search } from 'lucide-react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
+import { BarcodeScanModal } from './BarcodeScanModal'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
 import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
@@ -62,6 +63,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [tempTableName, setTempTableName] = useState('')
   const [linkedRecords, setLinkedRecords] = useState<{ [tableId: string]: Row[] }>({})
   const [loadingLinkedRecords, setLoadingLinkedRecords] = useState<{ [tableId: string]: boolean }>({})
+  const [isBarcodeScanModalOpen, setIsBarcodeScanModalOpen] = useState(false)
   
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -402,6 +404,23 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         alert(`Error saving column: ${error}`)
       }
     }
+  }
+
+  // Barcode scanning handlers
+  const handleBarcodeRowFound = (rowId: string, rowData: any) => {
+    console.log('Barcode scan found row:', { rowId, rowData })
+    
+    // Highlight the found row (you can implement visual highlighting)
+    setSelectedCell({ rowId, columnId: columns[0]?.id || '' })
+    
+    // Scroll to the row if needed
+    // You can implement row scrolling here
+    
+    // Close the modal
+    setIsBarcodeScanModalOpen(false)
+    
+    // Optional: Show success message
+    alert(`Found row: ${JSON.stringify(rowData.data)}`)
   }
 
   const renderCell = (row: Row, column: Column) => {
@@ -829,6 +848,14 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           </div>
           
           <button
+            onClick={() => setIsBarcodeScanModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            <ScanLine className="w-4 h-4" />
+            Scan & Lookup
+          </button>
+          
+          <button
             onClick={handleAddRow}
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
@@ -969,6 +996,26 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         mode={editingColumn ? 'edit' : 'create'}
         workspaceId={workspaceId}
         currentTableId={tableId}
+      />
+
+      <BarcodeScanModal
+        isOpen={isBarcodeScanModalOpen}
+        onClose={() => setIsBarcodeScanModalOpen(false)}
+        tableId={tableId}
+        workspaceId={workspaceId}
+        columns={columns.map(col => ({
+          id: col.id,
+          name: col.name,
+          label: col.label,
+          column_type: col.column_type as any, // Cast to satisfy type
+          is_visible: col.is_visible,
+          position: col.position,
+          width: col.width,
+          is_primary: false, // Add missing required field
+          linked_table_id: col.linked_table_id,
+          settings: col.settings
+        }))}
+        onRowFound={handleBarcodeRowFound}
       />
     </div>
   )
