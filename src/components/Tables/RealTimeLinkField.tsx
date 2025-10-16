@@ -34,33 +34,37 @@ export function RealTimeLinkField({
   const [availableRecords, setAvailableRecords] = useState<LinkedRecord[]>([])
   const [linkedRecords, setLinkedRecords] = useState<LinkedRecord[]>([])
   const [loading, setLoading] = useState(false)
+  const [allRecordsCache, setAllRecordsCache] = useState<LinkedRecord[]>([])
 
-  // Load linked records when value changes
+  // Load ALL records from linked table once when editing starts
   useEffect(() => {
-    if (value.length > 0 && linkedTableId) {
-      loadLinkedRecords()
-    } else {
+    if (isEditing && linkedTableId && allRecordsCache.length === 0) {
+      loadAllRecords()
+    }
+  }, [isEditing, linkedTableId])
+
+  // Update linked records based on current value and cached data
+  useEffect(() => {
+    if (allRecordsCache.length > 0) {
+      const linked = allRecordsCache.filter(record => value.includes(record.id))
+      setLinkedRecords(linked)
+    } else if (value.length > 0 && linkedTableId && !isEditing) {
+      // Load linked records for display mode when cache is empty
+      loadLinkedRecordsForDisplay()
+    } else if (value.length === 0) {
       setLinkedRecords([])
     }
-  }, [value, linkedTableId])
+  }, [value, allRecordsCache, linkedTableId, isEditing])
 
-  // Load available records when editing starts or search changes
-  useEffect(() => {
-    if (isEditing && linkedTableId) {
-      loadAvailableRecords()
-    }
-  }, [isEditing, search, linkedTableId])
-
-  const loadLinkedRecords = async () => {
+  // Separate function for loading just the linked records for display
+  const loadLinkedRecordsForDisplay = async () => {
     if (!linkedTableId || value.length === 0) return
     
     try {
-      setLoading(true)
-      // Fetch the actual records from the linked table
+      console.log('🎯 Loading linked records for display mode')
       const allRecords = await rowsAPI.list(linkedTableId)
       const linkedRecordsData = allRecords.filter(record => value.includes(record.id!))
       
-      // Convert to LinkedRecord format with display names
       const formattedRecords: LinkedRecord[] = linkedRecordsData.map(record => ({
         id: record.id!,
         display_name: getRecordDisplayName(record),
@@ -69,42 +73,49 @@ export function RealTimeLinkField({
       
       setLinkedRecords(formattedRecords)
     } catch (error) {
-      console.error('Error loading linked records:', error)
+      console.error('Error loading linked records for display:', error)
       setLinkedRecords([])
-    } finally {
-      setLoading(false)
     }
   }
 
-  const loadAvailableRecords = async () => {
+  // Filter available records based on search and current selection
+  useEffect(() => {
+    if (allRecordsCache.length > 0) {
+      let filtered = allRecordsCache
+      
+      if (search) {
+        const searchLower = search.toLowerCase()
+        filtered = allRecordsCache.filter(record => 
+          record.display_name.toLowerCase().includes(searchLower)
+        )
+      }
+      
+      setAvailableRecords(filtered)
+    }
+  }, [search, allRecordsCache])
+
+  const loadAllRecords = async () => {
     if (!linkedTableId) return
     
     try {
       setLoading(true)
-      // Fetch all records from the linked table
+      console.log('🔄 Loading all records from linked table (one time only)')
+      
+      // Fetch all records from the linked table ONCE
       const allRecords = await rowsAPI.list(linkedTableId)
       
-      // Filter by search if provided
-      let filteredRecords = allRecords
-      if (search) {
-        const searchLower = search.toLowerCase()
-        filteredRecords = allRecords.filter(record => {
-          const displayName = getRecordDisplayName(record).toLowerCase()
-          return displayName.includes(searchLower)
-        })
-      }
-      
-      // Convert to LinkedRecord format
-      const formattedRecords: LinkedRecord[] = filteredRecords.map(record => ({
+      // Convert to LinkedRecord format with display names
+      const formattedRecords: LinkedRecord[] = allRecords.map(record => ({
         id: record.id!,
         display_name: getRecordDisplayName(record),
         data: record.data
       }))
       
-      setAvailableRecords(formattedRecords)
+      setAllRecordsCache(formattedRecords)
+      console.log(`✅ Loaded ${formattedRecords.length} records to cache`)
     } catch (error) {
-      console.error('Error loading available records:', error)
-      setAvailableRecords([])
+      console.error('Error loading records:', error)
+      setAllRecordsCache([])
     } finally {
       setLoading(false)
     }
@@ -136,46 +147,43 @@ export function RealTimeLinkField({
     return `Record ${record.id?.substring(0, 8) || 'Unknown'}`
   }
 
-  const handleLinkRecord = async (targetRecordId: string) => {
-    try {
-      // Optimistic update - immediately update the UI
-      const newValue = [...value, targetRecordId]
-      onChange(newValue)
-      onCellEdit(rowId, columnName, newValue)
-
-      // The linked records will be updated via the useEffect that watches 'value'
-      // No need to reload the popup - it will update automatically
-    } catch (error) {
-      console.error('Error linking record:', error)
-      // Revert optimistic update on error
-      onChange(value)
-    }
+  const handleLinkRecord = (targetRecordId: string) => {
+    // Prevent duplicate links
+    if (value.includes(targetRecordId)) return
+    
+    console.log('🔗 Linking record:', targetRecordId)
+    
+    // Optimistic update - immediately update the UI
+    const newValue = [...value, targetRecordId]
+    onChange(newValue)
+    onCellEdit(rowId, columnName, newValue)
+    
+    // No need to reload data - useEffect will update linkedRecords from cache
   }
 
-  const handleUnlinkRecord = async (targetRecordId: string) => {
-    try {
-      // Optimistic update - immediately update the UI
-      const newValue = value.filter(id => id !== targetRecordId)
-      onChange(newValue)
-      onCellEdit(rowId, columnName, newValue)
-
-      // The linked records will be updated via the useEffect that watches 'value'
-      // No need to reload the popup - it will update automatically
-    } catch (error) {
-      console.error('Error unlinking record:', error)
-      // Revert optimistic update on error
-      onChange(value)
-    }
+  const handleUnlinkRecord = (targetRecordId: string) => {
+    console.log('❌ Unlinking record:', targetRecordId)
+    
+    // Optimistic update - immediately update the UI  
+    const newValue = value.filter(id => id !== targetRecordId)
+    onChange(newValue)
+    onCellEdit(rowId, columnName, newValue)
+    
+    // No need to reload data - useEffect will update linkedRecords from cache
   }
 
   const handleStartEditing = () => {
+    console.log('📝 Starting link field editing')
     setIsEditing(true)
     setSearch('')
   }
 
   const handleStopEditing = () => {
+    console.log('✅ Stopping link field editing')  
     setIsEditing(false)
     setSearch('')
+    // Keep the cache for faster subsequent edits
+    // Cache will be cleared on component unmount
   }
 
   if (isEditing) {
