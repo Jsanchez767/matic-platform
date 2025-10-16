@@ -44,6 +44,10 @@ function ScanPageContent() {
       console.log('📱 Connecting to channel:', channelName)
       console.log('📱 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
       console.log('📱 Current origin:', window.location.origin)
+      console.log('📱 Table ID:', tableId)
+      console.log('📱 Pairing Code:', pairingCode)
+      console.log('📱 Column:', columnName)
+      
       const channel = supabase.channel(channelName)
       
       channel.on('presence', { event: 'sync' }, () => {
@@ -85,6 +89,7 @@ function ScanPageContent() {
       })
 
       channel.subscribe(async (status) => {
+        console.log('📱 Channel subscription status:', status)
         if (status === 'SUBSCRIBED') {
           // Track mobile device presence
           await channel.track({
@@ -94,6 +99,18 @@ function ScanPageContent() {
             timestamp: new Date().toISOString()
           })
           console.log('📱 Mobile device connected to channel')
+          
+          // Set timeout to start scanning even if no desktop found (for testing)
+          setTimeout(() => {
+            if (connectionStatus === 'connecting') {
+              console.log('⏰ Connection timeout - allowing standalone scanning')
+              setConnectionStatus('connected')
+              setIsScanning(true)
+            }
+          }, 10000) // 10 second timeout
+        } else if (status === 'CLOSED') {
+          console.log('❌ Channel connection closed')
+          setConnectionStatus('disconnected')
         }
       })
 
@@ -471,7 +488,21 @@ function ScanPageContent() {
         {connectionStatus === 'connecting' && (
           <Card className="p-4 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-            <p className="text-gray-600">Connecting to desktop scanner...</p>
+            <p className="text-gray-600 mb-4">Connecting to desktop scanner...</p>
+            <p className="text-sm text-gray-500 mb-4">
+              Waiting for desktop to be ready. This may take a moment.
+            </p>
+            <Button 
+              onClick={() => {
+                console.log('👆 Manual start scanning triggered')
+                setConnectionStatus('connected')
+                setIsScanning(true)
+              }}
+              variant="outline"
+              className="w-full"
+            >
+              Start Scanning Anyway
+            </Button>
           </Card>
         )}
       </div>
