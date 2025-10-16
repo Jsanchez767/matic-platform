@@ -629,7 +629,13 @@ function ScanPageContent() {
 
       {/* Scan History Drawer */}
       <Drawer open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DrawerContent className="max-h-[85vh]">
+        <DrawerContent className="max-h-[85vh] bg-white"
+          style={{
+            background: 'white',
+            position: 'fixed',
+            zIndex: 9999
+          }}
+        >
           <DrawerHeader>
             <div className="flex items-center justify-between">
               <DrawerTitle>All Scans</DrawerTitle>
