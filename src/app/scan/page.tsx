@@ -3,9 +3,15 @@
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
-import { ArrowLeft, ScanLine, Wifi, WifiOff, CheckCircle, AlertCircle, Camera, ExternalLink, X } from 'lucide-react'
+import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
+import { Badge } from '@/ui-components/badge'
+import { ScrollArea } from '@/ui-components/scroll-area'
+import { Separator } from '@/ui-components/separator'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/ui-components/drawer'
+import { Toaster } from '@/ui-components/sonner'
+import { toast } from 'sonner'
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase client for real-time communication
@@ -14,15 +20,24 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+interface ScannedItem {
+  id: string
+  barcode: string
+  timestamp: Date
+  foundRows: any[]
+  success: boolean
+}
+
 function ScanPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [isScanning, setIsScanning] = useState(false)
-  const [scanHistory, setScanHistory] = useState<any[]>([])
+  const [scanHistory, setScanHistory] = useState<ScannedItem[]>([])
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null)
-  const [showResults, setShowResults] = useState(false)
+  const [selectedCamera, setSelectedCamera] = useState('back')
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const scannerElementRef = useRef<HTMLDivElement>(null)
@@ -43,11 +58,6 @@ function ScanPageContent() {
     const connectToDesktop = async () => {
       const channelName = `barcode_scanner_${tableId}_${pairingCode}`
       console.log('📱 Connecting to channel:', channelName)
-      console.log('📱 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
-      console.log('📱 Current origin:', window.location.origin)
-      console.log('📱 Table ID:', tableId)
-      console.log('📱 Pairing Code:', pairingCode)
-      console.log('📱 Column:', columnName)
       
       const channel = supabase.channel(channelName)
       
@@ -220,55 +230,65 @@ function ScanPageContent() {
         }
       }
       
-      // Save scan result to localStorage for the results page
-      const scanResult = {
+      // Save scan result
+      const scanResult: ScannedItem = {
         id: Date.now().toString(),
         barcode: decodedText,
-        timestamp: new Date().toISOString(),
-        success: true,
-        foundRows: foundRows, // Now populated with actual lookup results
-        column: columnName,
-        tableId
+        timestamp: new Date(),
+        success: foundRows.length > 0,
+        foundRows: foundRows
       }
       
       // Add to local scan history for real-time display
       setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
       
-      const existingResults = JSON.parse(localStorage.getItem(`scan_results_${tableId}_${columnName}`) || '[]')
-      existingResults.unshift(scanResult)
-      localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(existingResults.slice(0, 100))) // Keep last 100 results
+      // Save to localStorage for results page
+      const storageKey = `scan_results_${tableId}_${columnName}`
+      const existingResults = JSON.parse(localStorage.getItem(storageKey) || '[]')
+      const storageResult = {
+        ...scanResult,
+        timestamp: scanResult.timestamp.toISOString(),
+        column: columnName,
+        tableId
+      }
+      existingResults.unshift(storageResult)
+      localStorage.setItem(storageKey, JSON.stringify(existingResults.slice(0, 100)))
       
-      // Send scan result to desktop via Supabase - broadcast to multiple channels
-      if (channelRef.current) {
-        const broadcastPayload = {
-          barcode: decodedText,
-          column: columnName,
-          tableId,
-          pairingCode,
-          timestamp: new Date().toISOString(),
-          deviceType: 'mobile',
-          // Include complete scan result data for real-time updates
-          scanResult: scanResult,
-          foundRows: foundRows
-        }
+      // Show toast notification
+      if (foundRows.length > 0) {
+        toast.success('Scan successful!', {
+          description: `Found ${foundRows.length} matching record${foundRows.length > 1 ? 's' : ''}`,
+        })
+      } else {
+        toast.error('No matches found', {
+          description: 'Barcode not found in database',
+        })
+      }
 
-        // Broadcast to the pairing channel (for desktop modal)
-        channelRef.current.send({
+      // Broadcast to desktop via Supabase real-time
+      if (channelRef.current) {
+        console.log('📡 Broadcasting scan result to desktop...')
+        await channelRef.current.send({
           type: 'broadcast',
           event: 'barcode_scanned',
-          payload: broadcastPayload
+          payload: {
+            barcode: decodedText,
+            foundRows: foundRows,
+            timestamp: new Date().toISOString(),
+            deviceType: 'mobile'
+          }
         })
-        console.log('📡 Sent scan result to pairing channel:', decodedText)
-
-        // Also broadcast to the scan-results channel (for scan-results page)
+        
+        // Also send to results page channel if someone is viewing it
         const resultsChannelName = `scan_results_${tableId}_${columnName}`
         const resultsChannel = supabase.channel(resultsChannelName)
+        
         resultsChannel.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
-            resultsChannel.send({
+            await resultsChannel.send({
               type: 'broadcast',
-              event: 'barcode_scanned',
-              payload: broadcastPayload
+              event: 'new_scan_result',
+              payload: storageResult
             })
             console.log('📡 Sent scan result to results channel:', decodedText)
             
@@ -320,121 +340,119 @@ function ScanPageContent() {
     }
   }
 
-  const handleStartScanning = () => {
-    setIsScanning(true)
-    setError(null)
-  }
-
-  const handleStopScanning = () => {
-    setIsScanning(false)
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(console.error)
-      scannerRef.current = null
+  const handleToggleScanning = () => {
+    setIsScanning(!isScanning)
+    if (!isScanning) {
+      toast.info('Camera started')
+    } else {
+      toast.info('Camera stopped')
+      if (scannerRef.current) {
+        scannerRef.current.clear().catch(console.error)
+        scannerRef.current = null
+      }
     }
   }
 
-  const handleScanAnother = () => {
-    setError(null)
+  const handleTestScan = () => {
+    // Simulate a scan for testing
+    const mockBarcodes = [
+      'PROD001',
+      'USER123',
+      'ITEM456',
+      'INVALID',
+    ]
+    const randomBarcode = mockBarcodes[Math.floor(Math.random() * mockBarcodes.length)]
+    const isValid = randomBarcode !== 'INVALID'
     
-    // Properly clear the existing scanner
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(console.error)
-      scannerRef.current = null
+    const newItem: ScannedItem = {
+      id: Date.now().toString(),
+      barcode: randomBarcode,
+      timestamp: new Date(),
+      success: isValid,
+      foundRows: isValid ? [{ id: '1', data: { name: 'Sample Item', category: 'Test' } }] : []
     }
     
-    // Reset scanning state and reinitialize
-    setIsScanning(false)
+    setScanHistory(prev => [newItem, ...prev])
     
-    // Use setTimeout to ensure state has been updated before reinitializing
-    setTimeout(() => {
-      setIsScanning(true)
-    }, 100)
+    if (isValid) {
+      toast.success('Scan successful!', {
+        description: randomBarcode,
+      })
+    } else {
+      toast.error('Invalid format', {
+        description: 'Please scan a valid barcode',
+      })
+    }
+  }
+
+  const handleClearHistory = () => {
+    setScanHistory([])
+    toast.success('History cleared')
+  }
+
+  const successCount = scanHistory.filter(item => item.success).length
+  const failureCount = scanHistory.filter(item => !item.success).length
+
+  const formatTimestamp = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    return date.toLocaleDateString()
   }
 
   const getConnectionIcon = () => {
     switch (connectionStatus) {
       case 'connecting':
-        return <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500" />
+        return <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-500" />
       case 'connected':
-        return <Wifi className="w-4 h-4 text-green-500" />
+        return <Wifi className="w-3 h-3 text-green-500" />
       case 'disconnected':
-        return <WifiOff className="w-4 h-4 text-red-500" />
+        return <WifiOff className="w-3 h-3 text-red-500" />
     }
   }
 
   const getConnectionText = () => {
     switch (connectionStatus) {
       case 'connecting':
-        return 'Connecting...'
+        return 'Connecting'
       case 'connected':
-        return 'Connected to desktop'
+        return 'Connected'
       case 'disconnected':
-        return 'Connection lost'
+        return 'Disconnected'
     }
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <Card className="max-w-sm w-full p-6 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Connection Error</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Button onClick={() => router.back()} className="w-full">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Go Back
-          </Button>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <div className="p-6 text-center">
+            <XCircle className="w-16 h-16 mx-auto text-red-500 mb-4" />
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Connection Error</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={() => router.back()}>
+              Go Back
+            </Button>
+          </div>
         </Card>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Custom styles to override html5-qrcode white text */}
-      <style jsx global>{`
-        #mobile-scanner-element {
-          color: #374151 !important;
-        }
-        #mobile-scanner-element * {
-          color: #374151 !important;
-        }
-        #mobile-scanner-element button {
-          background-color: #7C3AED !important;
-          border-color: #7C3AED !important;
-          color: white !important;
-          border-radius: 0.5rem !important;
-          padding: 0.75rem 1.5rem !important;
-          font-weight: 500 !important;
-          margin: 0.5rem !important;
-        }
-        #mobile-scanner-element button:hover {
-          background-color: #6D28D9 !important;
-        }
-        #mobile-scanner-element select {
-          background-color: white !important;
-          border: 1px solid #D1D5DB !important;
-          border-radius: 0.375rem !important;
-          padding: 0.5rem !important;
-          color: #374151 !important;
-          margin: 0.5rem !important;
-        }
-        #mobile-scanner-element .qr-code-text,
-        #mobile-scanner-element div,
-        #mobile-scanner-element span,
-        #mobile-scanner-element p {
-          color: #374151 !important;
-        }
-        .html5-qrcode-element {
-          color: #374151 !important;
-        }
-      `}</style>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+      <Toaster />
       
-      {/* Fixed Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <Button 
+            variant="ghost" 
             size="sm"
             onClick={() => router.back()}
           >
@@ -442,179 +460,235 @@ function ScanPageContent() {
             Back
           </Button>
           
-          <div className="flex items-center space-x-2 text-sm">
-            {getConnectionIcon()}
-            <span className={`font-medium ${
-              connectionStatus === 'connected' ? 'text-green-700' :
-              connectionStatus === 'connecting' ? 'text-orange-700' :
-              'text-red-700'
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={`${
+              connectionStatus === 'connected' 
+                ? 'bg-green-50 text-green-700 border-green-200' 
+                : connectionStatus === 'connecting'
+                ? 'bg-orange-50 text-orange-700 border-orange-200'
+                : 'bg-red-50 text-red-700 border-red-200'
             }`}>
-              {getConnectionText()}
-            </span>
+              {getConnectionIcon()}
+              <span className="ml-1">{getConnectionText()}</span>
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              {pairingCode}
+            </Badge>
           </div>
-          
-          {scanHistory.length > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowResults(!showResults)}
-            >
-              {showResults ? 'Hide' : 'Results'} ({scanHistory.length})
-            </Button>
-          )}
+        </div>
+        
+        {/* Stats */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-green-50 rounded-lg px-3 py-2 border border-green-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-green-600">Success</span>
+              <span className="font-semibold text-green-700">{successCount}</span>
+            </div>
+          </div>
+          <div className="flex-1 bg-red-50 rounded-lg px-3 py-2 border border-red-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-red-600">Failed</span>
+              <span className="font-semibold text-red-700">{failureCount}</span>
+            </div>
+          </div>
+          <div className="flex-1 bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-purple-600">Total</span>
+              <span className="font-semibold text-purple-700">{scanHistory.length}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 max-w-sm mx-auto w-full">
-        {/* Scanner Info */}
-        <Card className="p-4 mb-4">
-          <div className="text-center">
-            <ScanLine className="w-8 h-8 mx-auto text-purple-600 mb-2" />
-            <h1 className="text-lg font-semibold text-gray-900 mb-2">
-              Mobile Scanner
-            </h1>
-            <div className="text-sm text-gray-600">
-              <p>Column: <span className="font-medium text-gray-900">{columnName}</span></p>
-              <p className="text-xs text-gray-500 mt-1">Code: {pairingCode}</p>
+      <div className="flex-1 p-4 max-w-2xl mx-auto w-full">
+        {/* Scanner Card */}
+        <Card className="mb-4">
+          <div className="p-4">
+            {/* Camera Preview Area */}
+            <div className="relative mb-4 rounded-lg overflow-hidden bg-gray-900 aspect-square">
+              {/* Scanner Element */}
+              <div 
+                id="mobile-scanner-element" 
+                ref={scannerElementRef}
+                className="absolute inset-0"
+                style={{ display: isScanning ? 'block' : 'none' }}
+              />
+              
+              {/* Placeholder when not scanning */}
+              {!isScanning && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <Camera className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm opacity-75">Camera View</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Scanning overlay */}
+              {isScanning && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* Corner brackets */}
+                  <div className="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
+                  <div className="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
+                  <div className="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
+                  <div className="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+                  
+                  {/* Scanning line animation */}
+                  <div className="absolute inset-x-8 top-1/2 h-0.5 bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
+                </div>
+              )}
+              
+              {/* Status badge */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                {isScanning ? (
+                  <Badge className="bg-green-500 text-white border-0 shadow-lg">
+                    <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                    Scanning...
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="shadow-lg">
+                    Camera Paused
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Camera Controls */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedCamera}
+                  onChange={(e) => setSelectedCamera(e.target.value)}
+                  className="flex-1 h-9 rounded-md border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="front">Front Camera</option>
+                  <option value="back">Back Camera</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleTestScan}
+                  disabled={!isScanning}
+                  className="shrink-0"
+                >
+                  Test Scan
+                </Button>
+              </div>
+              
+              <Button
+                onClick={handleToggleScanning}
+                className="w-full"
+                variant={isScanning ? "destructive" : "default"}
+                size="lg"
+              >
+                <Camera className="w-4 h-4 mr-2" />
+                {isScanning ? 'Stop Camera' : 'Start Camera'}
+              </Button>
             </div>
           </div>
         </Card>
 
-        {/* Scanner Interface */}
-        {connectionStatus === 'connected' && (
-          <Card className="p-4 mb-4">
-            {isScanning ? (
-              <div>
-                <div 
-                  id="mobile-scanner-element" 
-                  ref={scannerElementRef}
-                  className="w-full rounded-lg overflow-hidden mb-4"
-                />
-                <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-3">
-                    Camera is scanning automatically
-                  </p>
-                  <Button 
-                    onClick={handleStopScanning}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    Stop Camera
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Camera className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-600 mb-4">Ready to scan barcodes</p>
-                <Button 
-                  onClick={handleStartScanning}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+        {/* Most Recent Scan */}
+        {scanHistory.length > 0 && (
+          <Card className="mb-4">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm text-gray-600">Most Recent Scan</h2>
+                <Button
+                  onClick={() => setIsHistoryOpen(true)}
+                  variant="ghost"
+                  size="sm"
                 >
-                  <Camera className="w-4 h-4 mr-2" />
-                  Start Camera
+                  <ChevronUp className="w-4 h-4 mr-1" />
+                  View All ({scanHistory.length})
                 </Button>
               </div>
-            )}
-          </Card>
-        )}
-
-        {/* Connection Status */}
-        {connectionStatus === 'connecting' && (
-          <Card className="p-4 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-3" />
-            <p className="text-gray-600 mb-3">Connecting to desktop...</p>
-            <Button 
-              onClick={() => {
-                setConnectionStatus('connected')
-                setIsScanning(true)
-              }}
-              variant="outline"
-              size="sm"
-              className="w-full"
-            >
-              Start Anyway
-            </Button>
+              
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="shrink-0 mt-0.5">
+                  {scanHistory[0].success ? (
+                    <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm break-all ${scanHistory[0].success ? 'text-gray-900' : 'text-red-600'}`}>
+                    {scanHistory[0].barcode}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {formatTimestamp(scanHistory[0].timestamp)}
+                  </p>
+                </div>
+              </div>
+            </div>
           </Card>
         )}
       </div>
 
-      {/* Slide-up Results Panel */}
-      {showResults && scanHistory.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={() => setShowResults(false)}>
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-xl max-h-[70vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Results Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="font-semibold text-gray-900">Recent Scans ({scanHistory.length})</h3>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const resultsUrl = `/scan-results?table=${tableId}&column=${columnName}`
-                    window.open(resultsUrl, '_blank')
-                  }}
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  View All
-                </Button>
-                <Button 
+      {/* Scan History Drawer */}
+      <Drawer open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerHeader>
+            <div className="flex items-center justify-between">
+              <DrawerTitle>All Scans</DrawerTitle>
+              {scanHistory.length > 0 && (
+                <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowResults(false)}
+                  onClick={handleClearHistory}
                 >
-                  <X className="w-4 h-4" />
+                  <Trash2 className="w-3 h-3 mr-1" />
+                  Clear All
                 </Button>
+              )}
+            </div>
+            <DrawerDescription>
+              {scanHistory.length === 0 
+                ? 'No scans yet' 
+                : `${successCount} successful, ${failureCount} failed`}
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          <div className="px-4 pb-4 overflow-hidden">
+            {scanHistory.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <ScanLine className="w-16 h-16 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No scans yet</p>
+                <p className="text-xs mt-1">Scanned items will appear here automatically</p>
               </div>
-            </div>
-            
-            {/* Results List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {scanHistory.map((scan, index) => (
-                <div 
-                  key={scan.id} 
-                  className={`p-3 rounded-lg border ${
-                    index === 0 
-                      ? 'border-green-200 bg-green-50' 
-                      : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <code className="text-sm font-mono text-gray-900 break-all font-medium">
-                      {scan.barcode}
-                    </code>
-                    <span className={`text-xs px-2 py-1 rounded font-medium ${
-                      scan.foundRows.length > 0 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}>
-                      {scan.foundRows.length > 0 
-                        ? `${scan.foundRows.length} found`
-                        : 'No matches'
-                      }
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {new Date(scan.timestamp).toLocaleTimeString()}
-                    {scan.foundRows.length > 0 && scan.foundRows[0] && (
-                      <div className="mt-1 text-green-600">
-                        {Object.entries(scan.foundRows[0].data).slice(0, 2).map(([key, value]: [string, any]) => 
-                          `${key}: ${value}`
-                        ).join(' • ')}
+            ) : (
+              <ScrollArea className="h-[calc(85vh-180px)]">
+                <div className="space-y-1 pr-4">
+                  {scanHistory.map((item, index) => (
+                    <div key={item.id}>
+                      <div className="flex items-start gap-3 py-3">
+                        <div className="shrink-0 mt-0.5">
+                          {item.success ? (
+                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm break-all ${item.success ? 'text-gray-900' : 'text-red-600'}`}>
+                            {item.barcode}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {formatTimestamp(item.timestamp)}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      {index < scanHistory.length - 1 && <Separator />}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </ScrollArea>
+            )}
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
     </div>
   )
 }
@@ -622,7 +696,7 @@ function ScanPageContent() {
 export default function ScanPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading scanner...</p>
