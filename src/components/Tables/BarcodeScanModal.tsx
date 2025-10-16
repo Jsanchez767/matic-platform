@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, ChevronRight, ScanLine } from 'lucide-react'
+import { X, ChevronRight, ScanLine, ExternalLink } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Dialog, DialogContent } from '@/ui-components/dialog'
 import { BarcodeScanner } from './BarcodeScanner'
@@ -144,6 +144,13 @@ export function BarcodeScanModal({
     setScanResults([])
   }
 
+  const handleViewFullResults = () => {
+    if (selectedColumn) {
+      const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
+      window.open(resultsUrl, '_blank')
+    }
+  }
+
   const getStepIndicator = () => {
     const steps = [
       { key: 'column-selection', label: 'Select Column', active: currentStep === 'column-selection' },
@@ -239,16 +246,31 @@ export function BarcodeScanModal({
 
       case 'results':
         return selectedColumn ? (
-          <ScanResults
-            tableId={tableId}
-            selectedColumn={selectedColumn}
-            results={scanResults}
-            isLoading={isLoading}
-            onBack={handleBackToScanning}
-            onScanAnother={handleScanAnother}
-            onClearHistory={handleClearHistory}
-            onRowSelect={onRowSelect}
-          />
+          <div className="space-y-4">
+            <ScanResults
+              tableId={tableId}
+              selectedColumn={selectedColumn}
+              results={scanResults}
+              isLoading={isLoading}
+              onBack={handleBackToScanning}
+              onScanAnother={handleScanAnother}
+              onClearHistory={handleClearHistory}
+              onRowSelect={onRowSelect}
+            />
+            
+            {scanResults.length > 0 && (
+              <div className="pt-4 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  onClick={handleViewFullResults}
+                  className="w-full"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Full Results Table
+                </Button>
+              </div>
+            )}
+          </div>
         ) : null
 
       default:

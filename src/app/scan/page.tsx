@@ -131,6 +131,21 @@ function ScanPageContent() {
       setScanResult(decodedText)
       setIsScanning(false)
       
+      // Save scan result to localStorage for the results page
+      const scanResult = {
+        id: Date.now().toString(),
+        barcode: decodedText,
+        timestamp: new Date().toISOString(),
+        success: true,
+        foundRows: [], // Will be populated by the lookup
+        column: columnName,
+        tableId
+      }
+      
+      const existingResults = JSON.parse(localStorage.getItem(`scan_results_${tableId}_${columnName}`) || '[]')
+      existingResults.unshift(scanResult)
+      localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(existingResults.slice(0, 100))) // Keep last 100 results
+      
       // Send scan result to desktop via Supabase
       if (channelRef.current) {
         channelRef.current.send({
@@ -284,9 +299,9 @@ function ScanPageContent() {
             <h1 className="text-lg font-semibold text-gray-900 mb-2">
               Mobile Barcode Scanner
             </h1>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p>Scanning for column: <span className="font-medium">{columnName}</span></p>
-              <p>Pairing code: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{pairingCode}</span></p>
+            <div className="text-sm text-gray-700 space-y-1">
+              <p>Scanning for column: <span className="font-medium text-gray-900">{columnName}</span></p>
+              <p>Pairing code: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-purple-600 font-bold">{pairingCode}</span></p>
             </div>
           </div>
         </Card>
@@ -301,14 +316,26 @@ function ScanPageContent() {
                 <code className="text-sm font-mono break-all">{scanResult}</code>
               </div>
               <p className="text-sm text-green-700 mb-4">
-                Result sent to desktop. You can continue scanning or close this page.
+                Result sent to desktop. You can continue scanning or view all results.
               </p>
-              <Button 
-                onClick={handleScanAnother}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-              >
-                Scan Another Code
-              </Button>
+              <div className="space-y-3">
+                <Button 
+                  onClick={handleScanAnother}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  Scan Another Code
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const resultsUrl = `/scan-results?table=${tableId}&column=${columnName}`
+                    window.open(resultsUrl, '_blank')
+                  }}
+                  className="w-full"
+                >
+                  View All Results
+                </Button>
+              </div>
             </div>
           </Card>
         )}
