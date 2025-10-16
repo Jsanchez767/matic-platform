@@ -20,6 +20,7 @@ export type ColumnType =
   | 'formula'
   | 'rollup'
   | 'lookup'
+  | 'link'
   | 'rating'
   | 'currency'
   | 'percent'
