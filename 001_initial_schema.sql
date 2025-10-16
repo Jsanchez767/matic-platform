@@ -586,7 +586,7 @@ CREATE TABLE table_columns (
         'select', 'multiselect', 'checkbox',
         'date', 'datetime',
         'attachment', 'image',
-        'user', 'formula', 'rollup', 'lookup',
+        'user', 'formula', 'rollup', 'lookup', 'link',
         'rating', 'currency', 'percent',
         'duration', 'barcode', 'button'
     )),
