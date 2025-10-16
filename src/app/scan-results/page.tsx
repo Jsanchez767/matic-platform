@@ -67,23 +67,45 @@ function ScanResultsContent() {
       console.log('📱 Received new scan via real-time:', payload)
       
       if (payload.tableId === tableId && payload.column === columnName) {
-        // Add the new scan to the results
+        // Use the complete scan result data from mobile
         const newScanResult: ScanResult = {
-          id: Date.now().toString(),
+          id: payload.scanResult?.id || Date.now().toString(),
           barcode: payload.barcode,
           timestamp: new Date(payload.timestamp),
-          success: true,
-          foundRows: [], // Will be populated by lookup
+          success: payload.foundRows && payload.foundRows.length > 0,
+          foundRows: payload.foundRows || [],
           column: columnName,
           tableId: tableId
         }
         
-        setScanResults(prev => [newScanResult, ...prev])
+        console.log('✅ Adding real-time scan result:', newScanResult)
+        setScanResults(prev => {
+          // Check if this scan already exists to avoid duplicates
+          const exists = prev.some(existing => 
+            existing.barcode === newScanResult.barcode && 
+            Math.abs(new Date(existing.timestamp).getTime() - new Date(newScanResult.timestamp).getTime()) < 5000
+          )
+          
+          if (exists) {
+            console.log('⚠️ Duplicate scan detected, skipping')
+            return prev
+          }
+          
+          return [newScanResult, ...prev]
+        })
         
-        // Trigger a refresh to get updated localStorage data with lookup results
-        setTimeout(() => {
-          loadScanResults()
-        }, 1000)
+        // Also update localStorage for persistence
+        const existingResults = JSON.parse(localStorage.getItem(`scan_results_${tableId}_${columnName}`) || '[]')
+        const isDuplicate = existingResults.some((existing: any) => 
+          existing.barcode === newScanResult.barcode && 
+          Math.abs(new Date(existing.timestamp).getTime() - new Date(newScanResult.timestamp).getTime()) < 5000
+        )
+        
+        if (!isDuplicate) {
+          existingResults.unshift(newScanResult)
+          localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(existingResults.slice(0, 100)))
+          console.log('💾 Saved scan result to localStorage')
+        }
       }
     })
 

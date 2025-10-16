@@ -97,7 +97,7 @@ export function useBarcodeScanning(
     channel.on('broadcast', { event: 'barcode_scanned' }, (payload) => {
       console.log('📱 Received barcode scan from mobile:', payload)
       if (payload.payload?.barcode) {
-        handleRemoteScan(payload.payload.barcode, payload.payload.deviceType || 'mobile')
+        handleRemoteScan(payload.payload)
       }
     })
 
@@ -110,7 +110,8 @@ export function useBarcodeScanning(
           payload: { 
             barcode: payload.payload.barcode,
             received: true,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            foundRows: payload.payload.foundRows?.length || 0
           }
         })
       }
@@ -167,13 +168,30 @@ export function useBarcodeScanning(
   }, [tableId, sessionId, pairingCode])
 
   // Handle remote scan from mobile device
-  const handleRemoteScan = async (barcode: string, deviceType: string = 'mobile') => {
-    console.log(`🔍 Processing ${deviceType} barcode scan:`, barcode)
-    const result = await lookupBarcode(barcode)
-    setScanResults(prev => [result, ...prev])
+  const handleRemoteScan = async (scanPayload: any) => {
+    console.log('🔍 Processing mobile scan payload:', scanPayload)
     
-    // If we found results, this should trigger the results view
-    return result
+    // If mobile provided complete scan result, use it
+    if (scanPayload.scanResult && scanPayload.foundRows) {
+      const result: ScanResult = {
+        id: scanPayload.scanResult.id,
+        barcode: scanPayload.barcode,
+        timestamp: new Date(scanPayload.timestamp),
+        found: scanPayload.foundRows.length > 0,
+        rowData: scanPayload.foundRows.length > 0 ? scanPayload.foundRows[0] : null,
+        error: scanPayload.foundRows.length === 0 ? 'No matching records found' : undefined
+      }
+      
+      console.log('✅ Using mobile scan result data:', result)
+      setScanResults(prev => [result, ...prev])
+      return result
+    } else {
+      // Fallback: perform lookup on desktop (legacy behavior)
+      console.log('⚠️ No scan result data from mobile, performing desktop lookup')
+      const result = await lookupBarcode(scanPayload.barcode)
+      setScanResults(prev => [result, ...prev])
+      return result
+    }
   }
 
   // Update connected devices from presence state
