@@ -42,6 +42,8 @@ function ScanPageContent() {
     const connectToDesktop = async () => {
       const channelName = `barcode_scanner_${tableId}_${pairingCode}`
       console.log('📱 Connecting to channel:', channelName)
+      console.log('📱 Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+      console.log('📱 Current origin:', window.location.origin)
       const channel = supabase.channel(channelName)
       
       channel.on('presence', { event: 'sync' }, () => {
@@ -364,6 +366,24 @@ function ScanPageContent() {
               <p>Scanning for column: <span className="font-medium text-gray-900">{columnName}</span></p>
               <p>Pairing code: <span className="font-mono bg-gray-100 px-2 py-1 rounded text-purple-600 font-bold">{pairingCode}</span></p>
             </div>
+            
+            {/* Connection Status Debug Info */}
+            <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
+              <p><strong>Channel:</strong> barcode_scanner_{tableId}_{pairingCode}</p>
+              <p><strong>Status:</strong> {connectionStatus}</p>
+              <p><strong>Environment:</strong> {process.env.NODE_ENV || 'production'}</p>
+            </div>
+            
+            {connectionStatus === 'connecting' && (
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+                className="mt-3"
+              >
+                Retry Connection
+              </Button>
+            )}
           </div>
         </Card>
 

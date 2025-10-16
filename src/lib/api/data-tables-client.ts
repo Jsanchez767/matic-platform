@@ -127,6 +127,21 @@ export const rowsAPI = {
   },
 
   /**
+   * Search for rows by column value (for barcode lookup)
+   */
+  search: async (
+    tableId: string, 
+    columnId: string, 
+    value: string
+  ): Promise<TableRow[]> => {
+    const params = new URLSearchParams({
+      column_id: columnId,
+      value: value
+    });
+    return fetchAPI<TableRow[]>(`/tables/${tableId}/rows/search?${params}`);
+  },
+
+  /**
    * Create a new row
    */
   create: async (tableId: string, data: TableRowCreate): Promise<TableRow> => {

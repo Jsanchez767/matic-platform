@@ -377,10 +377,53 @@ async def get_row(
     return row
 
 
+@router.get("/{table_id}/rows/search", response_model=List[TableRowSchema])
+async def search_rows(
+    table_id: UUID,
+    column_id: UUID = Query(..., description="Column ID to search in"),
+    value: str = Query(..., description="Value to search for"),
+    session: AsyncSession = Depends(get_session),
+):
+    """Search for rows where a specific column contains the given value."""
+    # First verify the table exists and get column info
+    table_stmt = select(DataTable).options(selectinload(DataTable.columns)).where(DataTable.id == table_id)
+    table_result = await session.execute(table_stmt)
+    table = table_result.scalar_one_or_none()
+    
+    if not table:
+        raise HTTPException(status_code=404, detail="Table not found")
+    
+    # Find the column to search in
+    target_column = None
+    for column in table.columns:
+        if column.id == column_id:
+            target_column = column
+            break
+    
+    if not target_column:
+        raise HTTPException(status_code=404, detail="Column not found")
+    
+    # Search for rows where the column data matches the value
+    stmt = select(TableRow).where(TableRow.table_id == table_id)
+    result = await session.execute(stmt)
+    all_rows = result.scalars().all()
+    
+    # Filter rows where the column value matches (case-insensitive)
+    matching_rows = []
+    for row in all_rows:
+        if row.data and target_column.name in row.data:
+            row_value = str(row.data[target_column.name]).strip().lower()
+            search_value = value.strip().lower()
+            if row_value == search_value:
+                matching_rows.append(row)
+    
+    return matching_rows
+
+
 @router.post("/{table_id}/rows", response_model=TableRowSchema)
 async def create_row(
     table_id: UUID,
-    row_data: TableRowCreate,
+    row: TableRowCreate,
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new row."""

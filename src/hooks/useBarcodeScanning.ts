@@ -48,7 +48,8 @@ interface UseBarcodeScanning {
 
 export function useBarcodeScanning(
   tableId: string,
-  columnName?: string
+  columnName?: string,
+  selectedColumnId?: string
 ): UseBarcodeScanning {
   // Core state
   const [isScanning, setIsScanning] = useState(false)
@@ -85,6 +86,10 @@ export function useBarcodeScanning(
     const channelName = pairingCode 
       ? `barcode_scanner_${tableId}_${pairingCode}`
       : `barcode_scanning_${tableId}`
+    
+    console.log('🖥️ Desktop connecting to channel:', channelName)
+    console.log('🖥️ Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('🖥️ Current origin:', window.location.origin)
     
     const channel = supabase.channel(channelName)
 
@@ -208,7 +213,7 @@ export function useBarcodeScanning(
 
   // Lookup barcode in the table
   const lookupBarcode = useCallback(async (barcode: string): Promise<ScanResult> => {
-    if (!columnName) {
+    if (!columnName || !selectedColumnId) {
       return {
         id: uuidv4(),
         barcode,
@@ -219,17 +224,27 @@ export function useBarcodeScanning(
     }
 
     try {
-      console.log(`🔍 Looking up barcode "${barcode}" in column "${columnName}"`)
+      console.log(`🔍 Looking up barcode "${barcode}" in column "${columnName}" (${selectedColumnId})`)
       
-      // Fetch all rows from the table
-      const rows = await rowsAPI.list(tableId)
+      let matchingRow = null
       
-      // Search for matching barcode value
-      const matchingRow = rows.find(row => {
-        const value = row.data[columnName]
-        return value && value.toString().toLowerCase() === barcode.toLowerCase()
-      })
-
+      try {
+        // Try to use backend search endpoint for efficient lookup
+        const matchingRows = await rowsAPI.search(tableId, selectedColumnId, barcode)
+        matchingRow = matchingRows.length > 0 ? matchingRows[0] : null
+        console.log(`✅ Backend search found ${matchingRows.length} matches`)
+      } catch (backendError) {
+        console.warn('⚠️ Backend search not available, falling back to client-side search:', backendError)
+        
+        // Fallback to client-side search if backend endpoint doesn't exist
+        const allRows = await rowsAPI.list(tableId)
+        matchingRow = allRows.find(row => {
+          const value = row.data[columnName]
+          return value && value.toString().toLowerCase() === barcode.toLowerCase()
+        })
+        console.log(`🔍 Client-side search found ${matchingRow ? 1 : 0} matches`)
+      }
+      
       const result: ScanResult = {
         id: uuidv4(),
         barcode,

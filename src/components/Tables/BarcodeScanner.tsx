@@ -94,10 +94,14 @@ export function BarcodeScanner({
       // Use current location origin, but ensure it's correct for development
       let baseUrl = window.location.origin
       
-      // If we're in development and the origin doesn't start with localhost, 
-      // fallback to localhost with current port
-      if (process.env.NODE_ENV === 'development' && !baseUrl.includes('localhost')) {
+      // Check for development environment or manual override
+      const isLocalDev = process.env.NODE_ENV === 'development' || 
+                        window.location.search.includes('dev=true') ||
+                        localStorage.getItem('force_localhost') === 'true'
+      
+      if (isLocalDev && !baseUrl.includes('localhost')) {
         baseUrl = `http://localhost:${window.location.port || '3003'}`
+        console.log('🔧 Development override: using localhost URL')
       }
       
       const pairingData = {
@@ -283,7 +287,7 @@ export function BarcodeScanner({
         <div className="flex justify-between">
           <Button variant="outline" onClick={onBack}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            Change Column
           </Button>
         </div>
       </div>
@@ -381,7 +385,7 @@ export function BarcodeScanner({
       <div className="flex justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
+          Change Column
         </Button>
       </div>
     </div>

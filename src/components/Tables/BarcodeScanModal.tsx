@@ -15,6 +15,7 @@ interface BarcodeScanModalProps {
   tableId: string
   columns: TableColumn[]
   onRowSelect?: (row: TableRow) => void
+  onScanSuccess?: (result: { row: TableRow; barcode: string; columnName: string }) => void
 }
 
 type Step = 'column-selection' | 'scanning' | 'results'
@@ -28,12 +29,13 @@ interface ScanResult {
   errorMessage?: string
 }
 
-export function BarcodeScanModal({
-  isOpen,
-  onClose,
-  tableId,
+export function BarcodeScanModal({ 
+  isOpen, 
+  onClose, 
+  tableId, 
   columns,
-  onRowSelect
+  onRowSelect,
+  onScanSuccess
 }: BarcodeScanModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('column-selection')
   const [selectedColumn, setSelectedColumn] = useState<TableColumn | null>(null)
@@ -48,7 +50,7 @@ export function BarcodeScanModal({
     startScanning,
     stopScanning,
     lookupBarcode
-  } = useBarcodeScanning(tableId, selectedColumn?.name)
+  } = useBarcodeScanning(tableId, selectedColumn?.name, selectedColumn?.id)
 
   // Filter columns that are suitable for barcode lookup
   const suitableColumns = columns.filter(column => {
@@ -90,18 +92,27 @@ export function BarcodeScanModal({
     setIsLoading(true)
     
     try {
-      const foundRows = await lookupBarcode(barcode)
+      const scanResult = await lookupBarcode(barcode)
       
       const result: ScanResult = {
         id: crypto.randomUUID(),
         barcode,
         timestamp: new Date(),
-        success: true,
-        foundRows: Array.isArray(foundRows) ? foundRows : []
+        success: scanResult.found,
+        foundRows: scanResult.rowData ? [scanResult.rowData] : []
       }
       
       setScanResults(prev => [result, ...prev])
       setCurrentStep('results')
+      
+      // Call onScanSuccess callback if row was found
+      if (scanResult.found && scanResult.rowData && onScanSuccess && selectedColumn) {
+        onScanSuccess({
+          row: scanResult.rowData,
+          barcode,
+          columnName: selectedColumn.name
+        })
+      }
     } catch (error) {
       const result: ScanResult = {
         id: crypto.randomUUID(),

@@ -65,6 +65,12 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [linkedRecords, setLinkedRecords] = useState<{ [tableId: string]: Row[] }>({})
   const [loadingLinkedRecords, setLoadingLinkedRecords] = useState<{ [tableId: string]: boolean }>({})
   const [isBarcodeScanModalOpen, setIsBarcodeScanModalOpen] = useState(false)
+  const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set())
+  const [scanResultPopover, setScanResultPopover] = useState<{
+    rowId: string
+    barcode: string
+    position: { x: number; y: number }
+  } | null>(null)
   
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -82,6 +88,23 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             : row
         )
       )
+    } else if (update.type === 'scan_highlight') {
+      // Handle scan highlights from other users
+      console.log('🔄 Received scan highlight from collaborator:', update)
+      
+      const rowId = update.rowId
+      if (rowId) {
+        setHighlightedRows(prev => new Set([...prev, rowId]))
+        
+        // Auto-clear highlight after 3 seconds for collaborative highlights
+        setTimeout(() => {
+          setHighlightedRows(prev => {
+            const newSet = new Set(prev)
+            newSet.delete(rowId)
+            return newSet
+          })
+        }, 3000)
+      }
     }
   }, [])
 
@@ -418,6 +441,41 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     
     // Close the modal
     setIsBarcodeScanModalOpen(false)
+  }
+
+  const handleScanSuccess = (result: { row: TableRow; barcode: string; columnName: string }) => {
+    console.log('🎯 Barcode scan success:', result)
+    
+    const rowId = result.row.id
+    if (!rowId) return
+    
+    // Add the row to highlighted set
+    setHighlightedRows(prev => new Set([...prev, rowId]))
+    
+    // Show success popover (you can implement this later)
+    // For now, just highlight and select the row
+    setSelectedCell({ 
+      rowId: rowId, 
+      columnId: columns.find(col => col.name === result.columnName)?.id || columns[0]?.id || '' 
+    })
+    
+    // Auto-clear highlight after 5 seconds
+    setTimeout(() => {
+      setHighlightedRows(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(rowId)
+        return newSet
+      })
+    }, 5000)
+    
+    // Broadcast the scan result to other users (for collaborative highlighting)
+    broadcastUpdate({
+      type: 'scan_highlight',
+      rowId: rowId,
+      barcode: result.barcode,
+      columnName: result.columnName,
+      timestamp: new Date().toISOString()
+    })
   }
 
   const renderCell = (row: Row, column: Column) => {
@@ -914,8 +972,17 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={row.id} className="group hover:bg-gray-50">
+            {rows.map((row, rowIndex) => {
+              const isHighlighted = highlightedRows.has(row.id)
+              return (
+              <tr 
+                key={row.id} 
+                className={`group hover:bg-gray-50 ${
+                  isHighlighted 
+                    ? 'bg-green-100 border-green-300 animate-pulse' 
+                    : ''
+                }`}
+              >
                 <td className="border-r border-b border-gray-200 bg-gray-50 text-center text-xs text-gray-500">
                   <div className="flex items-center justify-center h-full">
                     <span className="group-hover:hidden">{rowIndex + 1}</span>
@@ -948,7 +1015,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
                 ))}
                 <td className="border-b border-gray-200"></td>
               </tr>
-            ))}
+            )
+            })}
             <tr>
               <td colSpan={columns.filter(c => c.is_visible).length + 2} className="border-b border-gray-200">
                 <button
@@ -1012,6 +1080,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           settings: col.settings
         }))}
         onRowSelect={handleBarcodeRowSelect}
+        onScanSuccess={handleScanSuccess}
       />
     </div>
   )
