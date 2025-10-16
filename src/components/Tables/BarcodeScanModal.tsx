@@ -44,10 +44,11 @@ export function BarcodeScanModal({
     isScanning,
     isConnected,
     connectedDevices,
+    scanResults: hookScanResults,
     startScanning,
     stopScanning,
     lookupBarcode
-  } = useBarcodeScanning(tableId)
+  } = useBarcodeScanning(tableId, selectedColumn?.name)
 
   // Filter columns that are suitable for barcode lookup
   const suitableColumns = columns.filter(column => {
@@ -64,6 +65,23 @@ export function BarcodeScanModal({
       setIsLoading(false)
     }
   }, [isOpen])
+
+  // Watch for scan results from the hook and switch to results view
+  useEffect(() => {
+    if (hookScanResults.length > 0 && currentStep === 'scanning') {
+      // Convert hook results to our format and switch to results
+      const convertedResults = hookScanResults.map(result => ({
+        id: result.id,
+        barcode: result.barcode,
+        timestamp: result.timestamp,
+        success: result.found,
+        foundRows: result.rowData ? [result.rowData] : [],
+        errorMessage: result.error
+      }))
+      setScanResults(convertedResults)
+      setCurrentStep('results')
+    }
+  }, [hookScanResults, currentStep])
 
   // Handle successful barcode scan
   const handleScanSuccess = async (barcode: string) => {

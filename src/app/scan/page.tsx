@@ -6,6 +6,13 @@ import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
 import { ArrowLeft, ScanLine, Wifi, WifiOff, CheckCircle, AlertCircle } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
+import { createClient } from '@supabase/supabase-js'
+
+// Supabase client for real-time communication
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 function ScanPageContent() {
   const searchParams = useSearchParams()
@@ -18,6 +25,7 @@ function ScanPageContent() {
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const scannerElementRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<any>(null)
 
   // Get pairing parameters from URL
   const tableId = searchParams.get('table')
@@ -30,12 +38,52 @@ function ScanPageContent() {
       return
     }
 
-    // Simulate connection status (in real implementation, this would connect to Supabase)
-    setTimeout(() => {
-      setConnectionStatus('connected')
-      // Auto-start scanning when connected
-      setIsScanning(true)
-    }, 1000)
+    // Connect to Supabase real-time channel for this pairing session
+    const connectToDesktop = async () => {
+      const channelName = `barcode_scanner_${tableId}_${pairingCode}`
+      const channel = supabase.channel(channelName)
+      
+      channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('🖥️ Desktop connected:', key)
+        setConnectionStatus('connected')
+        // Auto-start scanning when desktop is connected
+        setIsScanning(true)
+      })
+
+      channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('🖥️ Desktop disconnected:', key)
+        setConnectionStatus('disconnected')
+      })
+
+      // Listen for scan result acknowledgments
+      channel.on('broadcast', { event: 'scan_result_ack' }, ({ payload }) => {
+        console.log('✅ Desktop received scan result:', payload)
+      })
+
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Track mobile device presence
+          await channel.track({
+            deviceType: 'mobile',
+            userAgent: navigator.userAgent,
+            pairingCode,
+            timestamp: new Date().toISOString()
+          })
+          console.log('📱 Mobile device connected to channel')
+        }
+      })
+
+      channelRef.current = channel
+    }
+
+    connectToDesktop()
+
+    return () => {
+      if (channelRef.current) {
+        channelRef.current.unsubscribe()
+        channelRef.current = null
+      }
+    }
   }, [tableId, columnName, pairingCode])
 
   useEffect(() => {
@@ -83,8 +131,22 @@ function ScanPageContent() {
       setScanResult(decodedText)
       setIsScanning(false)
       
-      // Here you would normally send the result to the desktop via Supabase
-      // For now, we'll show the success message
+      // Send scan result to desktop via Supabase
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'barcode_scanned',
+          payload: {
+            barcode: decodedText,
+            column: columnName,
+            tableId,
+            pairingCode,
+            timestamp: new Date().toISOString(),
+            deviceType: 'mobile'
+          }
+        })
+        console.log('📡 Sent scan result to desktop:', decodedText)
+      }
     }
 
     const onScanFailure = (error: string) => {

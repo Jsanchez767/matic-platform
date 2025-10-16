@@ -73,13 +73,33 @@ export function useBarcodeScanning(
 
   // Initialize real-time channel
   useEffect(() => {
-    const channelName = `barcode_scanning_${tableId}`
+    const channelName = pairingCode 
+      ? `barcode_scanner_${tableId}_${pairingCode}`
+      : `barcode_scanning_${tableId}`
+    
     const channel = supabase.channel(channelName)
 
-    // Listen for scan events
+    // Listen for scan events from mobile devices
     channel.on('broadcast', { event: 'barcode_scanned' }, (payload) => {
-      console.log('📱 Received barcode scan:', payload)
-      handleRemoteScan(payload.barcode, payload.sessionId)
+      console.log('📱 Received barcode scan from mobile:', payload)
+      if (payload.payload?.barcode) {
+        handleRemoteScan(payload.payload.barcode, payload.payload.deviceType || 'mobile')
+      }
+    })
+
+    // Send acknowledgment back to mobile
+    channel.on('broadcast', { event: 'barcode_scanned' }, (payload) => {
+      if (payload.payload?.barcode) {
+        channel.send({
+          type: 'broadcast', 
+          event: 'scan_result_ack',
+          payload: { 
+            barcode: payload.payload.barcode,
+            received: true,
+            timestamp: new Date().toISOString()
+          }
+        })
+      }
     })
 
     // Listen for pairing events
@@ -106,21 +126,22 @@ export function useBarcodeScanning(
     })
 
     // Subscribe and track presence
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        const deviceInfo = getDeviceInfo()
-        await channel.track({
-          sessionId,
-          deviceInfo,
-          tableId,
-          timestamp: new Date().toISOString()
-        })
-        setIsConnected(true)
-        console.log('✅ Connected to barcode scanning channel')
-      }
-    })
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          const deviceInfo = getDeviceInfo()
+          await channel.track({
+            sessionId,
+            deviceInfo,
+            tableId,
+            pairingCode,
+            timestamp: new Date().toISOString()
+          })
+          setIsConnected(true)
+          console.log('✅ Connected to barcode scanning channel:', channelName)
+        }
+      })
 
-    channelRef.current = channel
+      channelRef.current = channel
 
     return () => {
       if (channelRef.current) {
@@ -131,13 +152,14 @@ export function useBarcodeScanning(
     }
   }, [tableId, sessionId, pairingCode])
 
-  // Handle remote scan from another device
-  const handleRemoteScan = async (barcode: string, remotesSessionId: string) => {
-    if (remotesSessionId === sessionId) return // Ignore our own scans
-    
-    console.log('🔍 Processing remote barcode scan:', barcode)
+  // Handle remote scan from mobile device
+  const handleRemoteScan = async (barcode: string, deviceType: string = 'mobile') => {
+    console.log(`🔍 Processing ${deviceType} barcode scan:`, barcode)
     const result = await lookupBarcode(barcode)
     setScanResults(prev => [result, ...prev])
+    
+    // If we found results, this should trigger the results view
+    return result
   }
 
   // Update connected devices from presence state
