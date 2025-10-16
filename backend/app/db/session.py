@@ -18,7 +18,6 @@ if _settings.environment == "production":
             "ssl": "require",
             "server_settings": {"application_name": "matic-platform"},
             "command_timeout": 5,
-            "connect_timeout": 10,
         }
     }
 else:
