@@ -8,6 +8,7 @@ import { BarcodeScanModal } from './BarcodeScanModal'
 import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
 import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
+import type { TableRow } from '@/types/data-tables'
 
 // @ts-ignore - Next.js injects env vars at build time
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
@@ -407,20 +408,16 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   }
 
   // Barcode scanning handlers
-  const handleBarcodeRowFound = (rowId: string, rowData: any) => {
-    console.log('Barcode scan found row:', { rowId, rowData })
+  const handleBarcodeRowSelect = (row: TableRow) => {
+    console.log('Barcode scan selected row:', row)
     
-    // Highlight the found row (you can implement visual highlighting)
-    setSelectedCell({ rowId, columnId: columns[0]?.id || '' })
-    
-    // Scroll to the row if needed
-    // You can implement row scrolling here
+    // Highlight the found row
+    if (row.id) {
+      setSelectedCell({ rowId: row.id, columnId: columns[0]?.id || '' })
+    }
     
     // Close the modal
     setIsBarcodeScanModalOpen(false)
-    
-    // Optional: Show success message
-    alert(`Found row: ${JSON.stringify(rowData.data)}`)
   }
 
   const renderCell = (row: Row, column: Column) => {
@@ -1002,7 +999,6 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         isOpen={isBarcodeScanModalOpen}
         onClose={() => setIsBarcodeScanModalOpen(false)}
         tableId={tableId}
-        workspaceId={workspaceId}
         columns={columns.map(col => ({
           id: col.id,
           name: col.name,
@@ -1015,7 +1011,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           linked_table_id: col.linked_table_id,
           settings: col.settings
         }))}
-        onRowFound={handleBarcodeRowFound}
+        onRowSelect={handleBarcodeRowSelect}
       />
     </div>
   )
