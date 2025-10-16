@@ -84,6 +84,11 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
   const { send: broadcastUpdate, isConnected, connectionStatus } = useTableRealtime(tableId, handleRealtimeUpdate)
 
+  // Debug logging
+  useEffect(() => {
+    console.log('TableGridView: WebSocket connection status changed:', connectionStatus)
+  }, [connectionStatus])
+
   useEffect(() => {
     loadTableData()
   }, [tableId])
@@ -802,18 +807,20 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {/* Connection status */}
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          {/* Connection status - Enhanced visibility */}
+          <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 px-3 py-1.5 rounded-lg border">
             <div 
-              className={`w-2 h-2 rounded-full ${
+              className={`w-3 h-3 rounded-full ${
                 connectionStatus === 'connected' ? 'bg-green-500' : 
                 connectionStatus === 'connecting' ? 'bg-yellow-500' :
                 connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
               }`}
             />
-            {connectionStatus === 'connected' ? 'Live' : 
-             connectionStatus === 'connecting' ? 'Connecting...' :
-             connectionStatus === 'error' ? 'Offline' : 'Offline'}
+            <span className="font-medium">
+              {connectionStatus === 'connected' ? 'Live' : 
+               connectionStatus === 'connecting' ? 'Connecting...' :
+               connectionStatus === 'error' ? 'Offline' : 'Offline'}
+            </span>
             {connectionStatus === 'error' && (
               <span className="text-xs text-gray-400" title="Real-time updates may be limited on free hosting">
                 (Limited)

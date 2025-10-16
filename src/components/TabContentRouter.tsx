@@ -5,7 +5,6 @@ import { useTabContext } from './WorkspaceTabProvider'
 import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock } from 'lucide-react'
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
-import { DebugTableView } from './DebugTableView'
 
 interface TabContentRouterProps {
   tab?: TabData | null

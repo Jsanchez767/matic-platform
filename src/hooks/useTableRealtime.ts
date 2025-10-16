@@ -16,6 +16,8 @@ export function useTableRealtime(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
 
+  console.log('useTableRealtime: Hook initialized', { tableId, connectionStatus })
+
   const connect = useCallback(() => {
     if (!tableId) {
       console.log('useTableRealtime: No tableId provided, skipping WebSocket connection')
@@ -46,6 +48,7 @@ export function useTableRealtime(
 
       ws.onopen = () => {
         console.log(`Connected to table ${tableId} WebSocket`)
+        console.log('WebSocket connection status: CONNECTED')
         setConnectionStatus('connected')
       }
 
