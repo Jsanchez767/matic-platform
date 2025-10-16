@@ -158,7 +158,7 @@ function ScanPageContent() {
       false
     )
 
-    const onScanSuccess = (decodedText: string) => {
+    const onScanSuccess = async (decodedText: string) => {
       console.log('📱 Mobile scan success:', decodedText)
       
       // Trigger haptic feedback
@@ -172,13 +172,49 @@ function ScanPageContent() {
       setScanResult(decodedText)
       setIsScanning(false)
       
+      // Perform lookup to find matching records
+      console.log('🔍 Starting lookup for barcode:', decodedText)
+      let foundRows: any[] = []
+      
+      if (tableId && columnName) {
+        try {
+          // Import API client for lookup
+          const { rowsAPI } = await import('@/lib/api/data-tables-client')
+          
+          // Get all rows and search for matches
+          const allRows = await rowsAPI.list(tableId)
+          console.log(`📊 Fetched ${allRows.length} total rows`)
+          console.log('🔍 Looking in column:', columnName)
+          
+          const matchingRows = allRows.filter(row => {
+            console.log('🔎 Checking row data:', row.data)
+            
+            // Check if the column value matches the barcode
+            const value = row.data[columnName]
+            console.log(`📝 Column "${columnName}" value:`, value)
+            
+            const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
+            if (matches) {
+              console.log('✅ MATCH FOUND!')
+            }
+            return matches
+          })
+          
+          foundRows = matchingRows
+          console.log(`🎯 Found ${foundRows.length} matching records`)
+          
+        } catch (error) {
+          console.error('❌ Lookup failed:', error)
+        }
+      }
+      
       // Save scan result to localStorage for the results page
       const scanResult = {
         id: Date.now().toString(),
         barcode: decodedText,
         timestamp: new Date().toISOString(),
         success: true,
-        foundRows: [], // Will be populated by the lookup
+        foundRows: foundRows, // Now populated with actual lookup results
         column: columnName,
         tableId
       }

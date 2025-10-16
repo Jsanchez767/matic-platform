@@ -238,9 +238,26 @@ export function useBarcodeScanning(
         
         // Fallback to client-side search if backend endpoint doesn't exist
         const allRows = await rowsAPI.list(tableId)
+        console.log(`📊 Total rows fetched: ${allRows.length}`)
+        console.log(`🔍 Looking for barcode "${barcode}" in column "${columnName}"`)
+        
         matchingRow = allRows.find(row => {
-          const value = row.data[columnName]
-          return value && value.toString().toLowerCase() === barcode.toLowerCase()
+          console.log(`🔎 Checking row:`, row.data)
+          
+          // Try both column name and column ID as keys
+          let value = row.data[columnName]
+          if (!value && selectedColumnId) {
+            value = row.data[selectedColumnId]
+          }
+          
+          console.log(`📝 Column "${columnName}" value:`, value)
+          console.log(`🆚 Comparing "${value}" === "${barcode}"`)
+          
+          const matches = value && value.toString().toLowerCase() === barcode.toLowerCase()
+          if (matches) {
+            console.log(`✅ MATCH FOUND!`)
+          }
+          return matches
         })
         console.log(`🔍 Client-side search found ${matchingRow ? 1 : 0} matches`)
       }
