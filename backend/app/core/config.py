@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/matic"
     debug: bool = False
+    environment: str = "development"  # development, production
     supabase_url: str = ""
     supabase_anon_key: str = ""
 
