@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Search, X, Plus, Link2 } from 'lucide-react'
-import { useRealTimeTableLinks } from '@/hooks/useRealTimeTableLinks'
+import { rowsAPI } from '@/lib/api/data-tables-client'
 
 interface LinkedRecord {
   id: string
@@ -34,75 +34,117 @@ export function RealTimeLinkField({
   const [availableRecords, setAvailableRecords] = useState<LinkedRecord[]>([])
   const [linkedRecords, setLinkedRecords] = useState<LinkedRecord[]>([])
   const [loading, setLoading] = useState(false)
-  
-  // Use the real-time links hook
-  const { getLinkedRecords, createRowLink, removeRowLink } = useRealTimeTableLinks(tableId)
 
   // Load linked records when value changes
   useEffect(() => {
-    if (value.length > 0) {
+    if (value.length > 0 && linkedTableId) {
       loadLinkedRecords()
     } else {
       setLinkedRecords([])
     }
-  }, [value])
+  }, [value, linkedTableId])
 
-  // Load available records when editing starts
+  // Load available records when editing starts or search changes
   useEffect(() => {
-    if (isEditing) {
+    if (isEditing && linkedTableId) {
       loadAvailableRecords()
     }
-  }, [isEditing, search])
+  }, [isEditing, search, linkedTableId])
 
   const loadLinkedRecords = async () => {
+    if (!linkedTableId || value.length === 0) return
+    
     try {
       setLoading(true)
-      const response = await fetch(
-        `/api/tables/${tableId}/rows/${rowId}/links?column_id=${columnId}`
-      )
-      const data = await response.json()
-      setLinkedRecords(data.records || [])
+      // Fetch the actual records from the linked table
+      const allRecords = await rowsAPI.list(linkedTableId)
+      const linkedRecordsData = allRecords.filter(record => value.includes(record.id!))
+      
+      // Convert to LinkedRecord format with display names
+      const formattedRecords: LinkedRecord[] = linkedRecordsData.map(record => ({
+        id: record.id!,
+        display_name: getRecordDisplayName(record),
+        data: record.data
+      }))
+      
+      setLinkedRecords(formattedRecords)
     } catch (error) {
       console.error('Error loading linked records:', error)
+      setLinkedRecords([])
     } finally {
       setLoading(false)
     }
   }
 
   const loadAvailableRecords = async () => {
+    if (!linkedTableId) return
+    
     try {
       setLoading(true)
-      const searchParam = search ? `&search=${encodeURIComponent(search)}` : ''
-      const response = await fetch(
-        `/api/tables/${tableId}/columns/${columnId}/available-records?limit=20${searchParam}`
-      )
-      const data = await response.json()
-      setAvailableRecords(data.records || [])
+      // Fetch all records from the linked table
+      const allRecords = await rowsAPI.list(linkedTableId)
+      
+      // Filter by search if provided
+      let filteredRecords = allRecords
+      if (search) {
+        const searchLower = search.toLowerCase()
+        filteredRecords = allRecords.filter(record => {
+          const displayName = getRecordDisplayName(record).toLowerCase()
+          return displayName.includes(searchLower)
+        })
+      }
+      
+      // Convert to LinkedRecord format
+      const formattedRecords: LinkedRecord[] = filteredRecords.map(record => ({
+        id: record.id!,
+        display_name: getRecordDisplayName(record),
+        data: record.data
+      }))
+      
+      setAvailableRecords(formattedRecords)
     } catch (error) {
       console.error('Error loading available records:', error)
+      setAvailableRecords([])
     } finally {
       setLoading(false)
     }
   }
 
+  // Helper function to get a meaningful display name from a record
+  const getRecordDisplayName = (record: any): string => {
+    const data = record.data || {}
+    
+    // Try common field names for the display value
+    const possibleNames = ['name', 'title', 'label', 'display_name', 'text']
+    
+    for (const field of possibleNames) {
+      if (data[field] && typeof data[field] === 'string') {
+        return data[field]
+      }
+    }
+    
+    // If no good field found, use the first string value
+    const firstStringValue = Object.values(data).find(val => 
+      typeof val === 'string' && val.trim().length > 0
+    ) as string
+    
+    if (firstStringValue) {
+      return firstStringValue
+    }
+    
+    // Fallback to shortened record ID
+    return `Record ${record.id?.substring(0, 8) || 'Unknown'}`
+  }
+
   const handleLinkRecord = async (targetRecordId: string) => {
     try {
-      // Optimistic update
+      // Optimistic update - immediately update the UI
       const newValue = [...value, targetRecordId]
       onChange(newValue)
       onCellEdit(rowId, columnName, newValue)
 
-      // Create the actual link via API
-      await fetch(`/api/tables/${tableId}/rows/${rowId}/links`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          column_id: columnId,
-          target_row_id: targetRecordId
-        })
-      })
-
-      // Real-time subscription will handle the UI update
+      // The linked records will be updated via the useEffect that watches 'value'
+      // No need to reload the popup - it will update automatically
     } catch (error) {
       console.error('Error linking record:', error)
       // Revert optimistic update on error
@@ -112,18 +154,13 @@ export function RealTimeLinkField({
 
   const handleUnlinkRecord = async (targetRecordId: string) => {
     try {
-      // Optimistic update
+      // Optimistic update - immediately update the UI
       const newValue = value.filter(id => id !== targetRecordId)
       onChange(newValue)
       onCellEdit(rowId, columnName, newValue)
 
-      // Remove the actual link via API
-      await fetch(
-        `/api/tables/${tableId}/rows/${rowId}/links/${targetRecordId}?column_id=${columnId}`,
-        { method: 'DELETE' }
-      )
-
-      // Real-time subscription will handle the UI update
+      // The linked records will be updated via the useEffect that watches 'value'
+      // No need to reload the popup - it will update automatically
     } catch (error) {
       console.error('Error unlinking record:', error)
       // Revert optimistic update on error
