@@ -14,6 +14,7 @@ function ScanPageContent() {
   const [scanResult, setScanResult] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
+  const [isInitializingCamera, setIsInitializingCamera] = useState(false)
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const scannerElementRef = useRef<HTMLDivElement>(null)
@@ -30,7 +31,11 @@ function ScanPageContent() {
     }
 
     // Simulate connection status (in real implementation, this would connect to Supabase)
-    setTimeout(() => setConnectionStatus('connected'), 1000)
+    setTimeout(() => {
+      setConnectionStatus('connected')
+      // Auto-start scanning when connected
+      setIsScanning(true)
+    }, 1000)
   }, [tableId, columnName, pairingCode])
 
   useEffect(() => {
@@ -53,7 +58,9 @@ function ScanPageContent() {
       fps: 10,
       qrbox: { width: 280, height: 280 },
       aspectRatio: 1.0,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      rememberLastUsedCamera: true,
+      showTorchButtonIfSupported: true
     }
 
     const scanner = new Html5QrcodeScanner(
@@ -82,13 +89,21 @@ function ScanPageContent() {
 
     const onScanFailure = (error: string) => {
       // Only log actual errors, not normal scan failures
-      if (!error.includes('No MultiFormat Readers')) {
+      if (!error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
         console.warn('Scan failure:', error)
       }
     }
 
-    scanner.render(onScanSuccess, onScanFailure)
-    scannerRef.current = scanner
+    try {
+      scanner.render(onScanSuccess, onScanFailure)
+      scannerRef.current = scanner
+      setIsInitializingCamera(false)
+    } catch (err) {
+      console.error('Failed to initialize scanner:', err)
+      setError('Camera access denied or not available. Please allow camera permissions and try again.')
+      setIsScanning(false)
+      setIsInitializingCamera(false)
+    }
   }
 
   const playSuccessSound = () => {
@@ -115,6 +130,7 @@ function ScanPageContent() {
 
   const handleStartScanning = () => {
     setIsScanning(true)
+    setIsInitializingCamera(true)
     setError(null)
     setScanResult(null)
   }
@@ -240,25 +256,34 @@ function ScanPageContent() {
           <Card className="p-4">
             {isScanning ? (
               <div>
-                <div 
-                  id="mobile-scanner-element" 
-                  ref={scannerElementRef}
-                  className="w-full mb-4"
-                />
-                <Button 
-                  variant="outline" 
-                  onClick={handleStopScanning}
-                  className="w-full"
-                >
-                  Stop Scanning
-                </Button>
+                {isInitializingCamera ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+                    <p className="text-gray-600">Initializing camera...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div 
+                      id="mobile-scanner-element" 
+                      ref={scannerElementRef}
+                      className="w-full mb-4"
+                    />
+                    <Button 
+                      variant="outline" 
+                      onClick={handleStopScanning}
+                      className="w-full"
+                    >
+                      Stop Scanning
+                    </Button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="text-center py-8">
                 <ScanLine className="w-16 h-16 mx-auto text-purple-600 mb-4" />
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Ready to Scan</h2>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Camera Access Required</h2>
                 <p className="text-gray-600 mb-6">
-                  Point your camera at a barcode or QR code to scan it
+                  Please allow camera access to start scanning barcodes
                 </p>
                 <Button 
                   onClick={handleStartScanning}
