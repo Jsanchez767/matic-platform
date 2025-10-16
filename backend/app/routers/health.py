@@ -43,7 +43,7 @@ async def detailed_health_check(session: AsyncSession = Depends(get_session)):
         result = await session.execute(text("SELECT version() as db_version"))
         db_version = result.fetchone()[0] if result.rowcount > 0 else "unknown"
         
-        # Get connection pool info
+        # Get basic connection pool info
         from app.db.session import engine
         pool = engine.pool
         
@@ -52,7 +52,6 @@ async def detailed_health_check(session: AsyncSession = Depends(get_session)):
             "checked_in": pool.checkedin(),
             "checked_out": pool.checkedout(),
             "overflow": pool.overflow(),
-            "invalid": pool.invalid()
         }
         
         return {
