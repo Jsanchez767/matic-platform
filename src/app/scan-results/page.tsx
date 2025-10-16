@@ -1,13 +1,20 @@
 'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import { ArrowLeft, Search, Download, RefreshCw, Calendar, CheckCircle, XCircle } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Input } from '@/ui-components/input'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
 import { rowsAPI } from '@/lib/api/data-tables-client'
+import { createClient } from '@supabase/supabase-js'
+
+// Supabase client for real-time communication
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface ScanResult {
   id: string
@@ -27,6 +34,7 @@ function ScanResultsContent() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [tableColumns, setTableColumns] = useState<any[]>([])
+  const channelRef = useRef<any>(null)
 
   const tableId = searchParams.get('table')
   const columnName = searchParams.get('column')
@@ -35,8 +43,56 @@ function ScanResultsContent() {
     if (tableId && columnName) {
       loadScanResults()
       loadTableColumns()
+      setupRealtimeSubscription()
+    }
+
+    return () => {
+      if (channelRef.current) {
+        channelRef.current.unsubscribe()
+        channelRef.current = null
+      }
     }
   }, [tableId, columnName])
+
+  const setupRealtimeSubscription = () => {
+    if (!tableId || !columnName) return
+
+    const channelName = `scan_results_${tableId}_${columnName}`
+    console.log('📺 Setting up real-time subscription for scan results:', channelName)
+    
+    const channel = supabase.channel(channelName)
+    
+    // Listen for new scans from mobile devices
+    channel.on('broadcast', { event: 'barcode_scanned' }, ({ payload }) => {
+      console.log('📱 Received new scan via real-time:', payload)
+      
+      if (payload.tableId === tableId && payload.column === columnName) {
+        // Add the new scan to the results
+        const newScanResult: ScanResult = {
+          id: Date.now().toString(),
+          barcode: payload.barcode,
+          timestamp: new Date(payload.timestamp),
+          success: true,
+          foundRows: [], // Will be populated by lookup
+          column: columnName,
+          tableId: tableId
+        }
+        
+        setScanResults(prev => [newScanResult, ...prev])
+        
+        // Trigger a refresh to get updated localStorage data with lookup results
+        setTimeout(() => {
+          loadScanResults()
+        }, 1000)
+      }
+    })
+
+    channel.subscribe((status) => {
+      console.log('📺 Scan results real-time subscription status:', status)
+    })
+    
+    channelRef.current = channel
+  }
 
   useEffect(() => {
     // Filter results based on search query
@@ -70,7 +126,7 @@ function ScanResultsContent() {
     try {
       setIsLoading(true)
       
-      // Get mock scan results from localStorage (in production, this would come from a database)
+      // Get scan results from localStorage (in production, this would come from a database)
       const storedResults = localStorage.getItem(`scan_results_${tableId}_${columnName}`)
       if (storedResults) {
         const results = JSON.parse(storedResults).map((result: any) => ({
@@ -78,45 +134,11 @@ function ScanResultsContent() {
           timestamp: new Date(result.timestamp)
         }))
         setScanResults(results)
+        console.log(`📊 Loaded ${results.length} scan results from localStorage`)
       } else {
-        // Create some sample data for demonstration
-        const sampleResults: ScanResult[] = [
-          {
-            id: '1',
-            barcode: 'test@example.com',
-            timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-            success: true,
-            foundRows: [{
-              id: 'row1',
-              data: {
-                id: 'user001',
-                email: 'test@example.com',
-                name: 'John Doe',
-                description: 'Sample user record'
-              }
-            }],
-            column: columnName!,
-            tableId: tableId!
-          },
-          {
-            id: '2',
-            barcode: 'admin@company.com',
-            timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-            success: true,
-            foundRows: [{
-              id: 'row2',
-              data: {
-                id: 'user002',
-                email: 'admin@company.com',
-                name: 'Jane Smith',
-                description: 'Administrator account'
-              }
-            }],
-            column: columnName!,
-            tableId: tableId!
-          }
-        ]
-        setScanResults(sampleResults)
+        // No stored results, start with empty array
+        setScanResults([])
+        console.log('📊 No stored scan results found')
       }
     } catch (error) {
       console.error('Error loading scan results:', error)
@@ -124,6 +146,17 @@ function ScanResultsContent() {
       setIsLoading(false)
     }
   }
+
+  // Auto-refresh every 5 seconds to pick up new scans
+  useEffect(() => {
+    if (!tableId || !columnName) return
+
+    const interval = setInterval(() => {
+      loadScanResults()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [tableId, columnName])
 
   const formatTimestamp = (timestamp: Date) => {
     const now = new Date()
