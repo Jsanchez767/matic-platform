@@ -58,6 +58,15 @@ export function useBarcodeScanning(
   const [scanResults, setScanResults] = useState<ScanResult[]>([])
   const [pairingCode, setPairingCode] = useState<string | null>(null)
   
+  // Generate pairing code on initialization
+  useEffect(() => {
+    if (!pairingCode) {
+      const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+      setPairingCode(code)
+      console.log('🔑 Generated pairing code:', code)
+    }
+  }, [])
+  
   // Refs for cleanup
   const channelRef = useRef<any>(null)
   const presenceRef = useRef<any>(null)

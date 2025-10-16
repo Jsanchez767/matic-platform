@@ -41,18 +41,40 @@ function ScanPageContent() {
     // Connect to Supabase real-time channel for this pairing session
     const connectToDesktop = async () => {
       const channelName = `barcode_scanner_${tableId}_${pairingCode}`
+      console.log('📱 Connecting to channel:', channelName)
       const channel = supabase.channel(channelName)
       
+      channel.on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        console.log('👥 Presence sync:', state)
+        
+        // Check if desktop is present
+        const hasDesktop = Object.values(state).some((presences: any) => 
+          presences.some((p: any) => p.deviceInfo?.type === 'desktop')
+        )
+        
+        if (hasDesktop) {
+          console.log('🖥️ Desktop found in presence')
+          setConnectionStatus('connected')
+          setIsScanning(true)
+        }
+      })
+
       channel.on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('🖥️ Desktop connected:', key)
-        setConnectionStatus('connected')
-        // Auto-start scanning when desktop is connected
-        setIsScanning(true)
+        console.log('🖥️ Device joined:', key, newPresences)
+        const isDesktop = newPresences.some((p: any) => p.deviceInfo?.type === 'desktop')
+        if (isDesktop) {
+          setConnectionStatus('connected')
+          setIsScanning(true)
+        }
       })
 
       channel.on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('🖥️ Desktop disconnected:', key)
-        setConnectionStatus('disconnected')
+        console.log('🖥️ Device left:', key, leftPresences)
+        const wasDesktop = leftPresences.some((p: any) => p.deviceInfo?.type === 'desktop')
+        if (wasDesktop) {
+          setConnectionStatus('disconnected')
+        }
       })
 
       // Listen for scan result acknowledgments
@@ -266,6 +288,45 @@ function ScanPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Custom styles to override html5-qrcode white text */}
+      <style jsx global>{`
+        #mobile-scanner-element {
+          color: #374151 !important;
+        }
+        #mobile-scanner-element * {
+          color: #374151 !important;
+        }
+        #mobile-scanner-element button {
+          background-color: #7C3AED !important;
+          border-color: #7C3AED !important;
+          color: white !important;
+          border-radius: 0.5rem !important;
+          padding: 0.75rem 1.5rem !important;
+          font-weight: 500 !important;
+          margin: 0.5rem !important;
+        }
+        #mobile-scanner-element button:hover {
+          background-color: #6D28D9 !important;
+        }
+        #mobile-scanner-element select {
+          background-color: white !important;
+          border: 1px solid #D1D5DB !important;
+          border-radius: 0.375rem !important;
+          padding: 0.5rem !important;
+          color: #374151 !important;
+          margin: 0.5rem !important;
+        }
+        #mobile-scanner-element .qr-code-text,
+        #mobile-scanner-element div,
+        #mobile-scanner-element span,
+        #mobile-scanner-element p {
+          color: #374151 !important;
+        }
+        .html5-qrcode-element {
+          color: #374151 !important;
+        }
+      `}</style>
+      
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-4">
         <div className="flex items-center justify-between">

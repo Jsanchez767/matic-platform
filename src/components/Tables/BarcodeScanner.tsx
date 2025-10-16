@@ -91,13 +91,24 @@ export function BarcodeScanner({
       const code = Math.random().toString(36).substring(2, 8).toUpperCase()
       setPairingCode(code)
       
+      // Use current location origin, but ensure it's correct for development
+      let baseUrl = window.location.origin
+      
+      // If we're in development and the origin doesn't start with localhost, 
+      // fallback to localhost with current port
+      if (process.env.NODE_ENV === 'development' && !baseUrl.includes('localhost')) {
+        baseUrl = `http://localhost:${window.location.port || '3003'}`
+      }
+      
       const pairingData = {
         type: 'barcode_scanner_pairing',
         tableId,
         columnName: selectedColumn.name,
         pairingCode: code,
-        url: `${window.location.origin}/scan?table=${tableId}&column=${selectedColumn.name}&code=${code}`
+        url: `${baseUrl}/scan?table=${tableId}&column=${selectedColumn.name}&code=${code}`
       }
+      
+      console.log('🔗 Generated QR URL:', pairingData.url)
       
       const qrDataURL = await QRCode.toDataURL(JSON.stringify(pairingData), {
         width: 200,
