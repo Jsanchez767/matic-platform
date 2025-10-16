@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
-import { ArrowLeft, ScanLine, Wifi, WifiOff, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, ScanLine, Wifi, WifiOff, CheckCircle, AlertCircle, Camera } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
 import { createClient } from '@supabase/supabase-js'
@@ -19,6 +19,7 @@ function ScanPageContent() {
   const router = useRouter()
   const [isScanning, setIsScanning] = useState(false)
   const [scanResult, setScanResult] = useState<string | null>(null)
+  const [scanHistory, setScanHistory] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [isInitializingCamera, setIsInitializingCamera] = useState(false)
@@ -169,8 +170,8 @@ function ScanPageContent() {
       // Play success sound
       playSuccessSound()
       
-      setScanResult(decodedText)
-      setIsScanning(false)
+      // Keep camera scanning - don't stop it
+      // setIsScanning(false) // Removed to keep camera always on
       
       // Perform lookup to find matching records
       console.log('🔍 Starting lookup for barcode:', decodedText)
@@ -218,6 +219,10 @@ function ScanPageContent() {
         column: columnName,
         tableId
       }
+      
+      // Add to local scan history for real-time display
+      setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
+      setScanResult(decodedText) // Still set for status display
       
       const existingResults = JSON.parse(localStorage.getItem(`scan_results_${tableId}_${columnName}`) || '[]')
       existingResults.unshift(scanResult)
@@ -300,7 +305,22 @@ function ScanPageContent() {
   const handleScanAnother = () => {
     setScanResult(null)
     setError(null)
-    handleStartScanning()
+    
+    // Properly clear the existing scanner
+    if (scannerRef.current) {
+      scannerRef.current.clear().catch(console.error)
+      scannerRef.current = null
+    }
+    
+    // Reset scanning state and reinitialize
+    setIsScanning(false)
+    setIsInitializingCamera(false)
+    
+    // Use setTimeout to ensure state has been updated before reinitializing
+    setTimeout(() => {
+      setIsScanning(true)
+      setIsInitializingCamera(true)
+    }, 100)
   }
 
   const getConnectionIcon = () => {
@@ -440,83 +460,115 @@ function ScanPageContent() {
           </div>
         </Card>
 
-        {/* Scan Result */}
-        {scanResult && (
-          <Card className="p-4 mb-6 border-green-200 bg-green-50">
-            <div className="text-center">
-              <CheckCircle className="w-12 h-12 mx-auto text-green-600 mb-3" />
-              <h2 className="font-semibold text-green-900 mb-2">Scan Successful!</h2>
-              <div className="bg-white border rounded p-3 mb-4">
-                <code className="text-sm font-mono break-all">{scanResult}</code>
-              </div>
-              <p className="text-sm text-green-700 mb-4">
-                Result sent to desktop. You can continue scanning or view all results.
-              </p>
-              <div className="space-y-3">
-                <Button 
-                  onClick={handleScanAnother}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  Scan Another Code
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    const resultsUrl = `/scan-results?table=${tableId}&column=${columnName}`
-                    window.open(resultsUrl, '_blank')
-                  }}
-                  className="w-full"
-                >
-                  View All Results
-                </Button>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* Scanner Interface */}
-        {connectionStatus === 'connected' && !scanResult && (
-          <Card className="p-4">
+                {/* Scanner Interface - Always visible when connected */}
+        {connectionStatus === 'connected' && (
+          <Card className="p-4 mb-6">
             {isScanning ? (
               <div>
-                {isInitializingCamera ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-                    <p className="text-gray-600">Initializing camera...</p>
-                  </div>
-                ) : (
-                  <>
-                    <div 
-                      id="mobile-scanner-element" 
-                      ref={scannerElementRef}
-                      className="w-full mb-4"
-                    />
-                    <Button 
-                      variant="outline" 
-                      onClick={handleStopScanning}
-                      className="w-full"
-                    >
-                      Stop Scanning
-                    </Button>
-                  </>
-                )}
+                <div 
+                  id="mobile-scanner-element" 
+                  ref={scannerElementRef}
+                  className="w-full rounded-lg overflow-hidden"
+                />
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-600 mb-4">
+                    Point your camera at a barcode. The camera will continue scanning automatically.
+                  </p>
+                  <Button 
+                    onClick={handleStopScanning}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Stop Scanning
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
-                <ScanLine className="w-16 h-16 mx-auto text-purple-600 mb-4" />
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Camera Access Required</h2>
-                <p className="text-gray-600 mb-6">
-                  Please allow camera access to start scanning barcodes
-                </p>
+                <Camera className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-gray-600 mb-4">Ready to scan barcodes</p>
                 <Button 
                   onClick={handleStartScanning}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
-                  <ScanLine className="w-4 h-4 mr-2" />
+                  <Camera className="w-4 h-4 mr-2" />
                   Start Camera
                 </Button>
               </div>
             )}
+          </Card>
+        )}
+
+        {/* Real-time Scan History */}
+        {scanHistory.length > 0 && (
+          <Card className="p-4 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">Recent Scans</h3>
+              <Button 
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const resultsUrl = `/scan-results?table=${tableId}&column=${columnName}`
+                  window.open(resultsUrl, '_blank')
+                }}
+              >
+                View All
+              </Button>
+            </div>
+            <div className="space-y-3 max-h-60 overflow-y-auto">
+              {scanHistory.map((scan, index) => (
+                <div 
+                  key={scan.id} 
+                  className={`p-3 rounded-lg border ${
+                    index === 0 
+                      ? 'border-green-200 bg-green-50' 
+                      : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <code className="text-sm font-mono text-gray-900 break-all">
+                      {scan.barcode}
+                    </code>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      scan.foundRows.length > 0 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {scan.foundRows.length > 0 
+                        ? `${scan.foundRows.length} found`
+                        : 'No matches'
+                      }
+                    </span>
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(scan.timestamp).toLocaleTimeString()}
+                    {scan.foundRows.length > 0 && (
+                      <span className="ml-2 text-green-600">
+                        • {scan.foundRows.map((row: any) => 
+                          Object.values(row.data).slice(0, 2).join(', ')
+                        ).join(' | ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Most Recent Scan Status */}
+        {scanResult && (
+          <Card className="p-4 mb-6 border-green-200 bg-green-50">
+            <div className="text-center">
+              <CheckCircle className="w-8 h-8 mx-auto text-green-600 mb-2" />
+              <h4 className="font-medium text-green-900 mb-1">Latest Scan</h4>
+              <div className="bg-white border rounded p-2 mb-3">
+                <code className="text-sm font-mono break-all">{scanResult}</code>
+              </div>
+              <p className="text-xs text-green-700">
+                Camera continues scanning automatically
+              </p>
+            </div>
           </Card>
         )}
 

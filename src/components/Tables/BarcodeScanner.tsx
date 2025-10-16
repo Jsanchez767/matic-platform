@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
-import { Camera, CameraOff, Smartphone, Monitor, QrCode, ArrowLeft, Wifi, WifiOff } from 'lucide-react'
+import { Camera, CameraOff, Smartphone, Monitor, QrCode, ArrowLeft, Wifi, WifiOff, Grid, LayoutList, Calendar, Image, Columns3, Eye } from 'lucide-react'
 import { Button } from '@/ui-components/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
 import QRCode from 'qrcode'
 import type { TableColumn } from '@/types/data-tables'
 
@@ -40,9 +41,28 @@ export function BarcodeScanner({
   const [pairingCode, setPairingCode] = useState<string>('')
   const [hasCamera, setHasCamera] = useState(false)
   const [scannerError, setScannerError] = useState<string>('')
+  const [selectedView, setSelectedView] = useState<'scanner' | 'table'>('scanner')
   
   const scannerRef = useRef<Html5QrcodeScanner | null>(null)
   const scannerElementRef = useRef<HTMLDivElement>(null)
+
+  // View options for mobile scanner
+  const viewOptions = [
+    {
+      key: 'scanner',
+      label: 'Scanner View',
+      description: 'Real-time camera scanning',
+      icon: Camera,
+      url: 'scan'
+    },
+    {
+      key: 'table',
+      label: 'Table View', 
+      description: 'Scan results in table format',
+      icon: Grid,
+      url: 'scan-results'
+    }
+  ]
 
   // Detect if this is a mobile device
   useEffect(() => {
@@ -70,7 +90,7 @@ export function BarcodeScanner({
     if (!isMobile) {
       generatePairingQR()
     }
-  }, [isMobile, tableId])
+  }, [isMobile, tableId, selectedView])
 
   // Initialize camera scanner for mobile
   useEffect(() => {
@@ -104,12 +124,17 @@ export function BarcodeScanner({
         console.log('🔧 Development override: using localhost URL')
       }
       
+      // Get the selected view configuration
+      const selectedViewConfig = viewOptions.find(v => v.key === selectedView)
+      const viewUrl = selectedViewConfig?.url || 'scan'
+      
       const pairingData = {
         type: 'barcode_scanner_pairing',
         tableId,
         columnName: selectedColumn.name,
         pairingCode: code,
-        url: `${baseUrl}/scan?table=${tableId}&column=${selectedColumn.name}&code=${code}`
+        view: selectedView,
+        url: `${baseUrl}/${viewUrl}?table=${tableId}&column=${selectedColumn.name}&code=${code}`
       }
       
       console.log('🔗 Generated QR URL:', pairingData.url)
@@ -336,6 +361,50 @@ export function BarcodeScanner({
         <p className="text-sm text-gray-600 mb-4">
           Scan this QR code with your phone to start scanning barcodes
         </p>
+
+        {/* View Selector */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Choose mobile view:
+          </label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <div className="flex items-center space-x-2">
+                  {(() => {
+                    const selectedViewConfig = viewOptions.find(v => v.key === selectedView)
+                    const IconComponent = selectedViewConfig?.icon || Camera
+                    return (
+                      <>
+                        <IconComponent className="w-4 h-4" />
+                        <span>{selectedViewConfig?.label}</span>
+                      </>
+                    )
+                  })()}
+                </div>
+                <Eye className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-80">
+              {viewOptions.map((view) => {
+                const IconComponent = view.icon
+                return (
+                  <DropdownMenuItem
+                    key={view.key}
+                    onClick={() => setSelectedView(view.key as 'scanner' | 'table')}
+                    className="flex items-start space-x-3 p-3"
+                  >
+                    <IconComponent className="w-5 h-5 text-gray-500 mt-0.5" />
+                    <div className="flex-1">
+                      <div className="font-medium">{view.label}</div>
+                      <div className="text-sm text-gray-500">{view.description}</div>
+                    </div>
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         
         {qrCodeDataURL && (
           <div className="bg-white p-4 rounded-lg inline-block mb-4">

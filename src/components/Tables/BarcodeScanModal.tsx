@@ -18,7 +18,7 @@ interface BarcodeScanModalProps {
   onScanSuccess?: (result: { row: TableRow; barcode: string; columnName: string }) => void
 }
 
-type Step = 'column-selection' | 'scanning' | 'results'
+type Step = 'column-selection' | 'scanning'
 
 interface ScanResult {
   id: string
@@ -68,66 +68,24 @@ export function BarcodeScanModal({
     }
   }, [isOpen])
 
-  // Watch for scan results from the hook and switch to results view
+  // Watch for scan results from the hook and redirect to scan-results page
   useEffect(() => {
-    if (hookScanResults.length > 0 && currentStep === 'scanning') {
-      // Convert hook results to our format and switch to results
-      const convertedResults = hookScanResults.map(result => ({
-        id: result.id,
-        barcode: result.barcode,
-        timestamp: result.timestamp,
-        success: result.found,
-        foundRows: result.rowData ? [result.rowData] : [],
-        errorMessage: result.error
-      }))
-      setScanResults(convertedResults)
-      setCurrentStep('results')
+    if (hookScanResults.length > 0 && currentStep === 'scanning' && selectedColumn) {
+      // Close modal and redirect to scan-results page
+      onClose()
+      const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
+      window.open(resultsUrl, '_blank')
     }
-  }, [hookScanResults, currentStep])
+  }, [hookScanResults, currentStep, selectedColumn, onClose, tableId])
 
-  // Handle successful barcode scan
+  // Handle successful barcode scan - now redirects to scan-results page
   const handleScanSuccess = async (barcode: string) => {
     if (!selectedColumn) return
     
-    setIsLoading(true)
-    
-    try {
-      const scanResult = await lookupBarcode(barcode)
-      
-      const result: ScanResult = {
-        id: crypto.randomUUID(),
-        barcode,
-        timestamp: new Date(),
-        success: scanResult.found,
-        foundRows: scanResult.rowData ? [scanResult.rowData] : []
-      }
-      
-      setScanResults(prev => [result, ...prev])
-      setCurrentStep('results')
-      
-      // Call onScanSuccess callback if row was found
-      if (scanResult.found && scanResult.rowData && onScanSuccess && selectedColumn) {
-        onScanSuccess({
-          row: scanResult.rowData,
-          barcode,
-          columnName: selectedColumn.name
-        })
-      }
-    } catch (error) {
-      const result: ScanResult = {
-        id: crypto.randomUUID(),
-        barcode,
-        timestamp: new Date(),
-        success: false,
-        foundRows: [],
-        errorMessage: error instanceof Error ? error.message : 'Unknown error occurred'
-      }
-      
-      setScanResults(prev => [result, ...prev])
-      setCurrentStep('results')
-    } finally {
-      setIsLoading(false)
-    }
+    // Close modal and redirect to scan-results page
+    onClose()
+    const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
+    window.open(resultsUrl, '_blank')
   }
 
   const handleColumnSelect = (column: TableColumn) => {
@@ -143,30 +101,10 @@ export function BarcodeScanModal({
     }
   }
 
-  const handleBackToScanning = () => {
-    setCurrentStep('scanning')
-  }
-
-  const handleScanAnother = () => {
-    setCurrentStep('scanning')
-  }
-
-  const handleClearHistory = () => {
-    setScanResults([])
-  }
-
-  const handleViewFullResults = () => {
-    if (selectedColumn) {
-      const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
-      window.open(resultsUrl, '_blank')
-    }
-  }
-
   const getStepIndicator = () => {
     const steps = [
       { key: 'column-selection', label: 'Select Column', active: currentStep === 'column-selection' },
-      { key: 'scanning', label: 'Scan Barcode', active: currentStep === 'scanning' },
-      { key: 'results', label: 'View Results', active: currentStep === 'results' }
+      { key: 'scanning', label: 'Scan Barcode', active: currentStep === 'scanning' }
     ]
 
     return (
@@ -253,35 +191,6 @@ export function BarcodeScanModal({
             onBack={handleBackToColumnSelection}
             onScanSuccess={handleScanSuccess}
           />
-        ) : null
-
-      case 'results':
-        return selectedColumn ? (
-          <div className="space-y-4">
-            <ScanResults
-              tableId={tableId}
-              selectedColumn={selectedColumn}
-              results={scanResults}
-              isLoading={isLoading}
-              onBack={handleBackToScanning}
-              onScanAnother={handleScanAnother}
-              onClearHistory={handleClearHistory}
-              onRowSelect={onRowSelect}
-            />
-            
-            {scanResults.length > 0 && (
-              <div className="pt-4 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  onClick={handleViewFullResults}
-                  className="w-full"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View Full Results Table
-                </Button>
-              </div>
-            )}
-          </div>
         ) : null
 
       default:
