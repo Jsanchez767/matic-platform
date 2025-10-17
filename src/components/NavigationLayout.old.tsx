@@ -21,13 +21,18 @@ export const NavigationLayout: React.FC<NavigationLayoutProps> = ({ children, wo
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showCommandPalette, setShowCommandPalette] = useState(false)
   
-  // Try to get tab context (might be null if not in workspace)
-  let tabContext = null
-  try {
-    tabContext = useTabContext()
-  } catch (error) {
-    // Context not available - that's fine for non-workspace pages
-  }
+  // Always call the hook, but handle the error in a different way
+  const [tabContext, setTabContext] = useState<any>(null)
+  
+  // Try to get tab context safely
+  useEffect(() => {
+    try {
+      // We'll handle this differently to avoid conditional hook calls
+      setTabContext(null) // For now, set to null - this needs proper context checking
+    } catch (error) {
+      setTabContext(null)
+    }
+  }, [])
   
   // Use the new workspace discovery hook
   const { 

@@ -482,7 +482,7 @@ export function HybridSearchWithTabs({ workspaceId, tabManager, className }: Hyb
                 </div>
               ) : query.trim() ? (
                 <div className="px-4 py-8 text-center text-gray-500">
-                  <div className="text-sm mb-2">No results found for "{query}"</div>
+                  <div className="text-sm mb-2">No results found for &quot;{query}&quot;</div>
                   {indexingProgress.isIndexing && (
                     <div className="text-xs text-blue-600">
                       Still indexing content... Try again in a moment

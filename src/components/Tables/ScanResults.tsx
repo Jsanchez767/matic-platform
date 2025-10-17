@@ -258,7 +258,7 @@ export function ScanResults({
               <Search className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <h4 className="font-medium text-gray-900 mb-2">No Results Found</h4>
               <p className="text-gray-600 text-sm">
-                No scans match your search: "{searchQuery}"
+                No scans match your search: &quot;{searchQuery}&quot;
               </p>
             </>
           )}

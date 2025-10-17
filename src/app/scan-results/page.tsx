@@ -7,7 +7,7 @@ import { Button } from '@/ui-components/button'
 import { Input } from '@/ui-components/input'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
-import { rowsAPI } from '@/lib/api/data-tables-client'
+import { rowsAPI, tablesAPI } from '@/lib/api/data-tables-client'
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase client for real-time communication
@@ -131,16 +131,31 @@ function ScanResultsContent() {
 
   const loadTableColumns = async () => {
     try {
-      // In a real implementation, you'd fetch table schema here
-      // For now, we'll use some mock columns
+      if (!tableId) return
+      
+      // Fetch table schema from FastAPI backend
+      const tableData = await tablesAPI.get(tableId)
+      if (tableData && tableData.columns) {
+        setTableColumns(tableData.columns)
+        console.log(`📊 Loaded ${tableData.columns.length} table columns from backend`)
+      } else {
+        // Fallback to default columns
+        setTableColumns([
+          { name: 'id', label: 'ID', type: 'text' },
+          { name: columnName || 'barcode', label: columnName || 'Barcode', type: 'text' },
+          { name: 'name', label: 'Name', type: 'text' },
+          { name: 'description', label: 'Description', type: 'text' }
+        ])
+      }
+    } catch (error) {
+      console.error('Error loading table columns:', error)
+      // Fallback to default columns on error
       setTableColumns([
         { name: 'id', label: 'ID', type: 'text' },
-        { name: columnName, label: columnName, type: 'text' },
+        { name: columnName || 'barcode', label: columnName || 'Barcode', type: 'text' },
         { name: 'name', label: 'Name', type: 'text' },
         { name: 'description', label: 'Description', type: 'text' }
       ])
-    } catch (error) {
-      console.error('Error loading table columns:', error)
     }
   }
 

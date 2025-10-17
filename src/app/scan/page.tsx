@@ -2,8 +2,8 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, Suspense } from 'react'
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
-import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp } from 'lucide-react'
+import QrScanner from 'qr-scanner'
+import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
@@ -36,11 +36,13 @@ function ScanPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null)
-  const [selectedCamera, setSelectedCamera] = useState('back')
+  const [selectedCamera, setSelectedCamera] = useState('environment')
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [availableCameras, setAvailableCameras] = useState<QrScanner.Camera[]>([])
+  const [cameraPermission, setCameraPermission] = useState<'unknown' | 'granted' | 'denied' | 'requesting'>('unknown')
   
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  const scannerElementRef = useRef<HTMLDivElement>(null)
+  const scannerRef = useRef<QrScanner | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
 
   // Get pairing parameters from URL
@@ -138,38 +140,140 @@ function ScanPageContent() {
     }
   }, [tableId, columnName, pairingCode])
 
+  // Check camera permissions on mount
+  const checkCameraPermissions = async () => {
+    try {
+      const permission = await navigator.permissions.query({ name: 'camera' as PermissionName })
+      setCameraPermission(permission.state as 'granted' | 'denied')
+      
+      // Listen for permission changes
+      permission.onchange = () => {
+        setCameraPermission(permission.state as 'granted' | 'denied')
+        if (permission.state === 'granted') {
+          // Load cameras when permission is granted
+          QrScanner.listCameras(true).then(cameras => {
+            console.log('Available cameras:', cameras)
+            setAvailableCameras(cameras)
+          }).catch(err => {
+            console.error('Failed to list cameras:', err)
+          })
+        }
+      }
+    } catch (error) {
+      console.log('Permission API not supported, will check on camera access')
+      setCameraPermission('unknown')
+    }
+  }
+
+  // Request camera permissions explicitly
+  const requestCameraPermissions = async () => {
+    setCameraPermission('requesting')
+    try {
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: selectedCamera } })
+      
+      // If successful, stop the stream and update permission
+      stream.getTracks().forEach(track => track.stop())
+      setCameraPermission('granted')
+      
+      // Load available cameras after permission granted
+      QrScanner.listCameras(true).then(cameras => {
+        console.log('Available cameras:', cameras)
+        setAvailableCameras(cameras)
+      }).catch(err => {
+        console.error('Failed to list cameras:', err)
+      })
+    } catch (error) {
+      console.error('Camera permission denied:', error)
+      setCameraPermission('denied')
+    }
+  }
+
   useEffect(() => {
-    if (isScanning && scannerElementRef.current && connectionStatus === 'connected') {
+    // Check permissions and load cameras
+    checkCameraPermissions()
+    
+    // If permission is already granted or unknown, try to list cameras
+    if (cameraPermission === 'granted' || cameraPermission === 'unknown') {
+      QrScanner.listCameras(true).then(cameras => {
+        console.log('Available cameras:', cameras)
+        setAvailableCameras(cameras)
+        if (cameras.length > 0 && cameraPermission === 'unknown') {
+          setCameraPermission('granted')
+        }
+      }).catch(err => {
+        console.error('Failed to list cameras:', err)
+        if (cameraPermission === 'unknown') {
+          setCameraPermission('denied')
+        }
+      })
+    }
+  }, [cameraPermission])
+
+  useEffect(() => {
+    if (isScanning && videoRef.current && connectionStatus === 'connected' && cameraPermission === 'granted') {
       initializeScanner()
     }
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
+        scannerRef.current.stop()
+        scannerRef.current.destroy()
         scannerRef.current = null
       }
     }
-  }, [isScanning, connectionStatus])
+  }, [isScanning, connectionStatus, selectedCamera, cameraPermission])
 
-  const initializeScanner = () => {
-    if (!scannerElementRef.current) return
+  const initializeScanner = async () => {
+    if (!videoRef.current) return
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 280, height: 280 },
-      aspectRatio: 1.0,
-      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
-      rememberLastUsedCamera: true,
-      showTorchButtonIfSupported: true
+    // Check camera permissions before initializing
+    if (cameraPermission === 'denied') {
+      toast.error('Camera access is denied. Please allow camera permissions to scan barcodes.')
+      return
+    }
+    
+    if (cameraPermission === 'requesting') {
+      console.log('Camera permission is being requested, waiting...')
+      return
     }
 
-    const scanner = new Html5QrcodeScanner(
-      'mobile-scanner-element',
-      config,
-      false
-    )
+    try {
+      // Stop existing scanner if any
+      if (scannerRef.current) {
+        scannerRef.current.stop()
+        scannerRef.current.destroy()
+      }
 
-    const onScanSuccess = async (decodedText: string) => {
+      const scanner = new QrScanner(
+        videoRef.current,
+        (result) => onScanSuccess(result.data),
+        {
+          onDecodeError: (err) => {
+            // Only log actual errors, not normal decode failures
+            const errorName = typeof err === 'string' ? err : err.name || err.toString()
+            if (!errorName.includes('NotFoundException') && !errorName.includes('No QR code found')) {
+              console.warn('Decode error:', err)
+            }
+          },
+          preferredCamera: selectedCamera,
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          returnDetailedScanResult: true,
+        }
+      )
+
+      await scanner.start()
+      scannerRef.current = scanner
+      console.log('QR Scanner initialized successfully')
+    } catch (err) {
+      console.error('Failed to initialize scanner:', err)
+      setError('Camera access denied or not available. Please allow camera permissions and try again.')
+      setIsScanning(false)
+    }
+  }
+
+  const onScanSuccess = async (decodedText: string) => {
       console.log('📱 Mobile scan success:', decodedText)
       
       // Prevent duplicate scanning of the same barcode
@@ -301,23 +405,6 @@ function ScanPageContent() {
       }
     }
 
-    const onScanFailure = (error: string) => {
-      // Only log actual errors, not normal scan failures
-      if (!error.includes('No MultiFormat Readers') && !error.includes('NotFoundException')) {
-        console.warn('Scan failure:', error)
-      }
-    }
-
-    try {
-      scanner.render(onScanSuccess, onScanFailure)
-      scannerRef.current = scanner
-    } catch (err) {
-      console.error('Failed to initialize scanner:', err)
-      setError('Camera access denied or not available. Please allow camera permissions and try again.')
-      setIsScanning(false)
-    }
-  }
-
   const playSuccessSound = () => {
     try {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -341,13 +428,25 @@ function ScanPageContent() {
   }
 
   const handleToggleScanning = () => {
+    if (!isScanning && cameraPermission === 'denied') {
+      toast.error('Camera access is denied. Please click "Grant Access" to allow camera permissions.')
+      return
+    }
+    
+    if (!isScanning && cameraPermission === 'unknown') {
+      toast.info('Checking camera permissions...')
+      requestCameraPermissions()
+      return
+    }
+    
     setIsScanning(!isScanning)
     if (!isScanning) {
       toast.info('Camera started')
     } else {
       toast.info('Camera stopped')
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
+        scannerRef.current.stop()
+        scannerRef.current.destroy()
         scannerRef.current = null
       }
     }
@@ -445,7 +544,7 @@ function ScanPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
+    <div className="scan-page min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       <Toaster />
       
       {/* Header */}
@@ -507,15 +606,17 @@ function ScanPageContent() {
           <div className="p-4">
             {/* Camera Preview Area */}
             <div className="relative mb-4 rounded-lg overflow-hidden bg-gray-900 aspect-square">
-              {/* Scanner Element */}
-              <div 
-                id="mobile-scanner-element" 
-                ref={scannerElementRef}
-                className="absolute inset-0"
-                style={{ display: isScanning ? 'block' : 'none' }}
-              />
-              
-              {/* Placeholder when not scanning */}
+            {/* Video Element for QR Scanner */}
+            <video 
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ 
+                display: isScanning ? 'block' : 'none',
+                transform: 'scaleX(-1)' // Mirror for front camera
+              }}
+              playsInline
+              muted
+            />              {/* Placeholder when not scanning */}
               {!isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-white text-center">
@@ -562,17 +663,42 @@ function ScanPageContent() {
                   onChange={(e) => setSelectedCamera(e.target.value)}
                   className="flex-1 h-9 rounded-md border border-gray-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="front">Front Camera</option>
-                  <option value="back">Back Camera</option>
+                  <option value="user">Front Camera</option>
+                  <option value="environment">Back Camera</option>
+                  {availableCameras.map((camera, index) => (
+                    <option key={camera.id} value={camera.id}>
+                      {camera.label || `Camera ${index + 1}`}
+                    </option>
+                  ))}
                 </select>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleTestScan}
-                  disabled={!isScanning}
+                  onClick={requestCameraPermissions}
+                  disabled={cameraPermission === 'granted' || cameraPermission === 'requesting'}
                   className="shrink-0"
                 >
-                  Test Scan
+                  {cameraPermission === 'requesting' && (
+                    <div className="w-3 h-3 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+                  )}
+                  {cameraPermission === 'granted' ? (
+                    <>
+                      <CheckCircle2 className="w-3 h-3 mr-1 text-green-500" />
+                      Camera Ready
+                    </>
+                  ) : cameraPermission === 'denied' ? (
+                    <>
+                      <AlertCircle className="w-3 h-3 mr-1 text-red-500" />
+                      Grant Access
+                    </>
+                  ) : cameraPermission === 'requesting' ? (
+                    'Requesting...'
+                  ) : (
+                    <>
+                      <Shield className="w-3 h-3 mr-1" />
+                      Camera Access
+                    </>
+                  )}
                 </Button>
               </div>
               
@@ -629,26 +755,32 @@ function ScanPageContent() {
 
       {/* Scan History Drawer */}
       <Drawer open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
-        <DrawerContent className="max-h-[85vh] bg-white"
-          style={{
-            background: 'white',
-            position: 'fixed',
-            zIndex: 9999
-          }}
-        >
+        <DrawerContent className="max-h-[85vh]">
           <DrawerHeader>
             <div className="flex items-center justify-between">
               <DrawerTitle>All Scans</DrawerTitle>
-              {scanHistory.length > 0 && (
+              <div className="flex gap-2">
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  onClick={handleClearHistory}
+                  onClick={() => {
+                    const url = `/scan-results?table=${tableId}&column=${columnName}`
+                    window.open(url, '_blank')
+                  }}
                 >
-                  <Trash2 className="w-3 h-3 mr-1" />
-                  Clear All
+                  View All Results
                 </Button>
-              )}
+                {scanHistory.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearHistory}
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    Clear All
+                  </Button>
+                )}
+              </div>
             </div>
             <DrawerDescription>
               {scanHistory.length === 0 

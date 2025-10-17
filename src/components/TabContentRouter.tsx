@@ -271,7 +271,7 @@ function SearchResultsView({
             Search Results
           </h1>
           <p className="text-gray-600">
-            Results for "{query}" ({results.length} found)
+            Results for &quot;{query}&quot; ({results.length} found)
           </p>
         </div>
 

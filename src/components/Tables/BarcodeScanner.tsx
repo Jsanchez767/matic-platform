@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Html5QrcodeScanner, Html5QrcodeScanType } from 'html5-qrcode'
+import QrScanner from 'qr-scanner'
 import { Camera, CameraOff, Smartphone, Monitor, QrCode, ArrowLeft, Wifi, WifiOff, Grid, LayoutList, Calendar, Image, Columns3, Eye } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
@@ -43,8 +43,8 @@ export function BarcodeScanner({
   const [scannerError, setScannerError] = useState<string>('')
   const [selectedView, setSelectedView] = useState<'scanner' | 'table'>('scanner')
   
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null)
-  const scannerElementRef = useRef<HTMLDivElement>(null)
+  const scannerRef = useRef<QrScanner | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   // View options for mobile scanner
   const viewOptions = [
@@ -94,13 +94,14 @@ export function BarcodeScanner({
 
   // Initialize camera scanner for mobile
   useEffect(() => {
-    if (isMobile && hasCamera && isScanning && scannerElementRef.current) {
+    if (isMobile && hasCamera && isScanning && videoRef.current) {
       initializeMobileScanner()
     }
 
     return () => {
       if (scannerRef.current) {
-        scannerRef.current.clear().catch(console.error)
+        scannerRef.current.stop()
+        scannerRef.current.destroy()
         scannerRef.current = null
       }
     }
@@ -151,53 +152,58 @@ export function BarcodeScanner({
     }
   }
 
-  const initializeMobileScanner = () => {
-    if (!scannerElementRef.current) return
+  const initializeMobileScanner = async () => {
+    if (!videoRef.current) return
 
-    const config = {
-      fps: 10,
-      qrbox: { width: 250, height: 250 },
-      aspectRatio: 1.0,
-      supportedScanTypes: [
-        Html5QrcodeScanType.SCAN_TYPE_CAMERA
-      ]
-    }
-
-    const scanner = new Html5QrcodeScanner(
-      'barcode-scanner-element',
-      config,
-      false
-    )
-
-    const onScanSuccess = (decodedText: string) => {
-      console.log('📱 Barcode scanned:', decodedText)
-      
-      // Trigger haptic feedback if available
-      if ('vibrate' in navigator) {
-        navigator.vibrate(200)
+    try {
+      // Stop existing scanner if any
+      if (scannerRef.current) {
+        scannerRef.current.stop()
+        scannerRef.current.destroy()
       }
-      
-      // Play success sound
-      playSuccessSound()
-      
-      // Notify parent component
-      if (onScanSuccess) {
-        onScanSuccess(decodedText)
-      }
-      
-      // Stop scanning after successful scan
-      onStopScanning()
-    }
 
-    const onScanFailure = (error: string) => {
-      // Ignore frequent scan failures, they're normal
-      if (!error.includes('No MultiFormat Readers')) {
-        console.warn('Scan failure:', error)
-      }
-    }
+      const scanner = new QrScanner(
+        videoRef.current,
+        (result) => {
+          console.log('📱 Barcode scanned:', result.data)
+          
+          // Trigger haptic feedback if available
+          if ('vibrate' in navigator) {
+            navigator.vibrate(200)
+          }
+          
+          // Play success sound
+          playSuccessSound()
+          
+          // Notify parent component
+          if (onScanSuccess) {
+            onScanSuccess(result.data)
+          }
+          
+          // Stop scanning after successful scan
+          onStopScanning()
+        },
+        {
+          onDecodeError: (err) => {
+            // Only log actual errors, not normal decode failures
+            const errorName = typeof err === 'string' ? err : err.name || err.toString()
+            if (!errorName.includes('NotFoundException') && !errorName.includes('No QR code found')) {
+              console.warn('Decode error:', err)
+            }
+          },
+          preferredCamera: 'environment',
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          returnDetailedScanResult: true,
+        }
+      )
 
-    scanner.render(onScanSuccess, onScanFailure)
-    scannerRef.current = scanner
+      await scanner.start()
+      scannerRef.current = scanner
+    } catch (err) {
+      console.error('Failed to initialize scanner:', err)
+      setScannerError('Camera access denied or not available')
+    }
   }
 
   const playSuccessSound = () => {
@@ -258,11 +264,14 @@ export function BarcodeScanner({
           <div className="bg-gray-100 rounded-lg p-4">
             {isScanning ? (
               <div>
-                <div 
-                  id="barcode-scanner-element" 
-                  ref={scannerElementRef}
-                  className="w-full"
-                />
+                <div className="relative aspect-square max-w-sm mx-auto mb-4 bg-black rounded-lg overflow-hidden">
+                  <video 
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    playsInline
+                    muted
+                  />
+                </div>
                 <div className="mt-4 text-center">
                   <p className="text-sm text-gray-600 mb-4">
                     Point your camera at a barcode or QR code
