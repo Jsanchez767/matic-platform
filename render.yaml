@@ -1,4 +1,5 @@
 services:
+  # Backend - FastAPI Application  
   - type: web
     name: matic-backend
     runtime: python
@@ -15,3 +16,5 @@ services:
         value: false
       - key: PYTHON_VERSION
         value: "3.11"
+      - key: PYTHONPATH
+        value: "."
