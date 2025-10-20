@@ -163,7 +163,7 @@ function ScanResultsContent() {
     try {
       setIsLoading(true)
       
-      // Get scan results from localStorage (in production, this would come from a database)
+      // First, load scan results from localStorage for immediate display
       const storedResults = localStorage.getItem(`scan_results_${tableId}_${columnName}`)
       if (storedResults) {
         const results = JSON.parse(storedResults).map((result: any) => ({
@@ -172,13 +172,15 @@ function ScanResultsContent() {
         }))
         setScanResults(results)
         console.log(`📊 Loaded ${results.length} scan results from localStorage`)
-      } else {
-        // No stored results, start with empty array
-        setScanResults([])
-        console.log('📊 No stored scan results found')
       }
+      
+      // TODO: In the future, we could also load scan history from the database
+      // This would allow scan results to persist across devices and sessions
+      // const scanHistory = await scanHistoryAPI.list(tableId, columnName)
+      
     } catch (error) {
       console.error('Error loading scan results:', error)
+      setScanResults([])
     } finally {
       setIsLoading(false)
     }

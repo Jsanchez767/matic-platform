@@ -307,27 +307,37 @@ function ScanPageContent() {
           // Import API client for lookup
           const { rowsAPI } = await import('@/lib/api/data-tables-client')
           
-          // Get all rows and search for matches
-          const allRows = await rowsAPI.list(tableId)
-          console.log(`📊 Fetched ${allRows.length} total rows`)
-          console.log('🔍 Looking in column:', columnName)
-          
-          const matchingRows = allRows.filter(row => {
-            console.log('🔎 Checking row data:', row.data)
+          // Try to use efficient backend search first
+          try {
+            console.log('🚀 Using backend search endpoint...')
+            const searchResults = await rowsAPI.search(tableId, columnName, decodedText)
+            foundRows = searchResults
+            console.log(`✅ Backend search found ${foundRows.length} matching records`)
+          } catch (searchError) {
+            console.warn('⚠️ Backend search not available, falling back to client-side search:', searchError)
             
-            // Check if the column value matches the barcode
-            const value = row.data[columnName]
-            console.log(`📝 Column "${columnName}" value:`, value)
+            // Fallback to client-side search
+            const allRows = await rowsAPI.list(tableId)
+            console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
+            console.log('🔍 Looking in column:', columnName)
             
-            const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
-            if (matches) {
-              console.log('✅ MATCH FOUND!')
-            }
-            return matches
-          })
-          
-          foundRows = matchingRows
-          console.log(`🎯 Found ${foundRows.length} matching records`)
+            const matchingRows = allRows.filter(row => {
+              console.log('🔎 Checking row data:', row.data)
+              
+              // Check if the column value matches the barcode
+              const value = row.data[columnName]
+              console.log(`📝 Column "${columnName}" value:`, value)
+              
+              const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
+              if (matches) {
+                console.log('✅ MATCH FOUND!')
+              }
+              return matches
+            })
+            
+            foundRows = matchingRows
+            console.log(`🎯 Fallback search found ${foundRows.length} matching records`)
+          }
           
         } catch (error) {
           console.error('❌ Lookup failed:', error)
@@ -366,6 +376,16 @@ function ScanPageContent() {
       } else {
         toast.error('No matches found', {
           description: 'Barcode not found in database',
+          action: {
+            label: 'Create New Record',
+            onClick: () => {
+              // Navigate to create new record with pre-filled barcode
+              if (tableId && columnName) {
+                const createUrl = `/workspace/table/${tableId}?action=create&${columnName}=${encodeURIComponent(decodedText)}`
+                window.open(createUrl, '_blank')
+              }
+            }
+          }
         })
       }
 
@@ -629,12 +649,6 @@ function ScanPageContent() {
               {/* Scanning overlay */}
               {isScanning && (
                 <div className="absolute inset-0 pointer-events-none">
-                  {/* Corner brackets */}
-                  <div className="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-                  <div className="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-                  <div className="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-                  <div className="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-                  
                   {/* Scanning line animation */}
                   <div className="absolute inset-x-8 top-1/2 h-0.5 bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
                 </div>
