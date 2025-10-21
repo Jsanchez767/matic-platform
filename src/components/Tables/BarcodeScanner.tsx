@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import QrScanner from 'qr-scanner'
 import { Camera, CameraOff, Smartphone, Monitor, QrCode, ArrowLeft, Wifi, WifiOff, Grid, LayoutList, Calendar, Image, Columns3, Eye } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
@@ -43,7 +42,7 @@ export function BarcodeScanner({
   const [scannerError, setScannerError] = useState<string>('')
   const [selectedView, setSelectedView] = useState<'scanner' | 'table'>('scanner')
   
-  const scannerRef = useRef<QrScanner | null>(null)
+  // const scannerRef = useRef<QrScanner | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // View options for mobile scanner
@@ -92,20 +91,7 @@ export function BarcodeScanner({
     }
   }, [isMobile, tableId, selectedView])
 
-  // Initialize camera scanner for mobile
-  useEffect(() => {
-    if (isMobile && hasCamera && isScanning && videoRef.current) {
-      initializeMobileScanner()
-    }
-
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop()
-        scannerRef.current.destroy()
-        scannerRef.current = null
-      }
-    }
-  }, [isMobile, hasCamera, isScanning])
+  // TODO: Migrate scanner logic to ZXing or remove this component if not needed.
 
   const generatePairingQR = async () => {
     try {
@@ -152,59 +138,9 @@ export function BarcodeScanner({
     }
   }
 
-  const initializeMobileScanner = async () => {
-    if (!videoRef.current) return
-
-    try {
-      // Stop existing scanner if any
-      if (scannerRef.current) {
-        scannerRef.current.stop()
-        scannerRef.current.destroy()
-      }
-
-      const scanner = new QrScanner(
-        videoRef.current,
-        (result) => {
-          console.log('📱 Barcode scanned:', result.data)
-          
-          // Trigger haptic feedback if available
-          if ('vibrate' in navigator) {
-            navigator.vibrate(200)
-          }
-          
-          // Play success sound
-          playSuccessSound()
-          
-          // Notify parent component
-          if (onScanSuccess) {
-            onScanSuccess(result.data)
-          }
-          
-          // Stop scanning after successful scan
-          onStopScanning()
-        },
-        {
-          onDecodeError: (err) => {
-            // Only log actual errors, not normal decode failures
-            const errorName = typeof err === 'string' ? err : err.name || err.toString()
-            if (!errorName.includes('NotFoundException') && !errorName.includes('No QR code found')) {
-              console.warn('Decode error:', err)
-            }
-          },
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          returnDetailedScanResult: true,
-        }
-      )
-
-      await scanner.start()
-      scannerRef.current = scanner
-    } catch (err) {
-      console.error('Failed to initialize scanner:', err)
-      setScannerError('Camera access denied or not available')
-    }
-  }
+  // const initializeMobileScanner = async () => {
+  //   // ZXing migration or removal needed
+  // }
 
   const playSuccessSound = () => {
     try {
