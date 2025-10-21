@@ -2,7 +2,8 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, Suspense } from 'react'
-import QrScanner from 'qr-scanner'
+import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat, IScannerControls } from '@zxing/browser'
+import { Exception, NotFoundException, Result } from '@zxing/library'
 import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
@@ -13,6 +14,10 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } f
 import { Toaster } from '@/ui-components/sonner'
 import { toast } from 'sonner'
 import { createClient } from '@supabase/supabase-js'
+import { tablesAPI } from '@/lib/api/data-tables-client'
+import { scanHistoryAPI } from '@/lib/api/scan-history-client'
+import type { DataTable, TableColumn } from '@/types/data-tables'
+import type { ScanHistoryRecord } from '@/types/scan-history'
 
 // Supabase client for real-time communication
 const supabase = createClient(
@@ -24,8 +29,10 @@ interface ScannedItem {
   id: string
   barcode: string
   timestamp: Date
-  foundRows: any[]
+  foundRows: Array<{ id?: string; data: Record<string, any> }>
   success: boolean
+  status: 'success' | 'failure'
+  historyId?: string
 }
 
 function ScanPageContent() {
@@ -38,17 +45,95 @@ function ScanPageContent() {
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null)
   const [selectedCamera, setSelectedCamera] = useState('environment')
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const [availableCameras, setAvailableCameras] = useState<QrScanner.Camera[]>([])
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([])
   const [cameraPermission, setCameraPermission] = useState<'unknown' | 'granted' | 'denied' | 'requesting'>('unknown')
+  const [tableInfo, setTableInfo] = useState<DataTable | null>(null)
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const [resolvedColumnId, setResolvedColumnId] = useState<string | null>(null)
+  const [columnLabel, setColumnLabel] = useState<string | null>(null)
+  const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
+  const scannerControlsRef = useRef<IScannerControls | null>(null)
   
-  const scannerRef = useRef<QrScanner | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
+
+  const ensureCodeReader = () => {
+    if (!scannerRef.current) {
+      const hints = new Map()
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+        BarcodeFormat.QR_CODE,
+        BarcodeFormat.DATA_MATRIX,
+        BarcodeFormat.CODE_128,
+        BarcodeFormat.CODE_39,
+        BarcodeFormat.EAN_13,
+        BarcodeFormat.EAN_8,
+        BarcodeFormat.UPC_A,
+        BarcodeFormat.UPC_E,
+      ])
+      hints.set(DecodeHintType.TRY_HARDER, true)
+      scannerRef.current = new BrowserMultiFormatReader(hints, 400)
+    }
+    return scannerRef.current
+  }
+
+  const refreshCameraList = async () => {
+    try {
+      const devices = await BrowserMultiFormatReader.listVideoInputDevices()
+      setAvailableCameras(devices)
+    } catch (err) {
+      console.error('Failed to list cameras:', err)
+    }
+  }
 
   // Get pairing parameters from URL
   const tableId = searchParams.get('table')
   const columnName = searchParams.get('column')
   const pairingCode = searchParams.get('code')
+
+  useEffect(() => {
+    if (!tableId) {
+      setTableInfo(null)
+      setWorkspaceId(null)
+      return
+    }
+
+    const loadMetadata = async () => {
+      try {
+        const table = await tablesAPI.get(tableId)
+        setTableInfo(table)
+        setWorkspaceId(table.workspace_id)
+
+        const columnIdParam = searchParams.get('columnId') ?? searchParams.get('column_id')
+        let resolved: TableColumn | undefined
+
+        if (columnIdParam) {
+          resolved = table.columns.find(col => col.id === columnIdParam)
+        }
+
+        if (!resolved && columnName) {
+          resolved = table.columns.find(col => col.name === columnName || col.id === columnName)
+        }
+
+        if (resolved?.id) {
+          setResolvedColumnId(resolved.id)
+        } else if (columnIdParam) {
+          setResolvedColumnId(columnIdParam)
+        }
+
+        if (resolved?.label) {
+          setColumnLabel(resolved.label)
+        } else if (resolved?.name) {
+          setColumnLabel(resolved.name)
+        } else if (columnName) {
+          setColumnLabel(columnName)
+        }
+      } catch (metadataError) {
+        console.error('Failed to load table metadata:', metadataError)
+      }
+    }
+
+    loadMetadata()
+  }, [tableId, columnName, searchParams])
 
   useEffect(() => {
     if (!tableId || !columnName || !pairingCode) {
@@ -144,19 +229,25 @@ function ScanPageContent() {
   const checkCameraPermissions = async () => {
     try {
       const permission = await navigator.permissions.query({ name: 'camera' as PermissionName })
-      setCameraPermission(permission.state as 'granted' | 'denied')
+      if (permission.state === 'granted') {
+        setCameraPermission('granted')
+        await refreshCameraList()
+      } else if (permission.state === 'denied') {
+        setCameraPermission('denied')
+      } else {
+        setCameraPermission('unknown')
+      }
       
       // Listen for permission changes
       permission.onchange = () => {
-        setCameraPermission(permission.state as 'granted' | 'denied')
-        if (permission.state === 'granted') {
-          // Load cameras when permission is granted
-          QrScanner.listCameras(true).then(cameras => {
-            console.log('Available cameras:', cameras)
-            setAvailableCameras(cameras)
-          }).catch(err => {
-            console.error('Failed to list cameras:', err)
-          })
+        const state = permission.state
+        if (state === 'granted') {
+          setCameraPermission('granted')
+          refreshCameraList()
+        } else if (state === 'denied') {
+          setCameraPermission('denied')
+        } else {
+          setCameraPermission('unknown')
         }
       }
     } catch (error) {
@@ -177,12 +268,7 @@ function ScanPageContent() {
       setCameraPermission('granted')
       
       // Load available cameras after permission granted
-      QrScanner.listCameras(true).then(cameras => {
-        console.log('Available cameras:', cameras)
-        setAvailableCameras(cameras)
-      }).catch(err => {
-        console.error('Failed to list cameras:', err)
-      })
+      await refreshCameraList()
     } catch (error) {
       console.error('Camera permission denied:', error)
       setCameraPermission('denied')
@@ -195,14 +281,11 @@ function ScanPageContent() {
     
     // If permission is already granted or unknown, try to list cameras
     if (cameraPermission === 'granted' || cameraPermission === 'unknown') {
-      QrScanner.listCameras(true).then(cameras => {
-        console.log('Available cameras:', cameras)
-        setAvailableCameras(cameras)
-        if (cameras.length > 0 && cameraPermission === 'unknown') {
+      refreshCameraList().then(() => {
+        if (cameraPermission === 'unknown') {
           setCameraPermission('granted')
         }
-      }).catch(err => {
-        console.error('Failed to list cameras:', err)
+      }).catch(() => {
         if (cameraPermission === 'unknown') {
           setCameraPermission('denied')
         }
@@ -216,11 +299,11 @@ function ScanPageContent() {
     }
 
     return () => {
-      if (scannerRef.current) {
-        scannerRef.current.stop()
-        scannerRef.current.destroy()
-        scannerRef.current = null
+      if (scannerControlsRef.current) {
+        scannerControlsRef.current.stop()
+        scannerControlsRef.current = null
       }
+      scannerRef.current?.reset()
     }
   }, [isScanning, connectionStatus, selectedCamera, cameraPermission])
 
@@ -239,33 +322,45 @@ function ScanPageContent() {
     }
 
     try {
-      // Stop existing scanner if any
-      if (scannerRef.current) {
-        scannerRef.current.stop()
-        scannerRef.current.destroy()
+      if (scannerControlsRef.current) {
+        scannerControlsRef.current.stop()
+        scannerControlsRef.current = null
       }
 
-      const scanner = new QrScanner(
-        videoRef.current,
-        (result) => onScanSuccess(result.data),
-        {
-          onDecodeError: (err) => {
-            // Only log actual errors, not normal decode failures
-            const errorName = typeof err === 'string' ? err : err.name || err.toString()
-            if (!errorName.includes('NotFoundException') && !errorName.includes('No QR code found')) {
-              console.warn('Decode error:', err)
+      const reader = ensureCodeReader()
+
+      const constraints: MediaStreamConstraints = {
+        video: selectedCamera === 'environment' || selectedCamera === 'user'
+          ? {
+              facingMode: { ideal: selectedCamera },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
             }
-          },
-          preferredCamera: selectedCamera,
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          returnDetailedScanResult: true,
+          : {
+              deviceId: selectedCamera ? { exact: selectedCamera } : undefined,
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+        audio: false,
+      }
+
+      const controls = await reader.decodeFromConstraints(
+        constraints,
+        videoRef.current,
+  (result: Result | null, error: Exception | null) => {
+          if (result) {
+            const text = result.getText()
+            if (text) {
+              onScanSuccess(text)
+            }
+          } else if (error && !(error instanceof NotFoundException)) {
+            console.warn('Decode error:', error)
+          }
         }
       )
 
-      await scanner.start()
-      scannerRef.current = scanner
-      console.log('QR Scanner initialized successfully')
+      scannerControlsRef.current = controls
+      console.log('Scanner initialized successfully')
     } catch (err) {
       console.error('Failed to initialize scanner:', err)
       setError('Camera access denied or not available. Please allow camera permissions and try again.')
@@ -302,41 +397,40 @@ function ScanPageContent() {
       console.log('🔍 Starting lookup for barcode:', decodedText)
       let foundRows: any[] = []
       
-      if (tableId && columnName) {
+      if (tableId) {
         try {
           // Import API client for lookup
           const { rowsAPI } = await import('@/lib/api/data-tables-client')
           
           // Try to use efficient backend search first
-          try {
-            console.log('🚀 Using backend search endpoint...')
-            const searchResults = await rowsAPI.search(tableId, columnName, decodedText)
-            foundRows = searchResults
-            console.log(`✅ Backend search found ${foundRows.length} matching records`)
-          } catch (searchError) {
-            console.warn('⚠️ Backend search not available, falling back to client-side search:', searchError)
-            
-            // Fallback to client-side search
-            const allRows = await rowsAPI.list(tableId)
-            console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
-            console.log('🔍 Looking in column:', columnName)
-            
-            const matchingRows = allRows.filter(row => {
-              console.log('🔎 Checking row data:', row.data)
-              
-              // Check if the column value matches the barcode
-              const value = row.data[columnName]
-              console.log(`📝 Column "${columnName}" value:`, value)
-              
-              const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
-              if (matches) {
-                console.log('✅ MATCH FOUND!')
+          if (resolvedColumnId) {
+            try {
+              console.log('🚀 Using backend search endpoint...')
+              const searchResults = await rowsAPI.search(tableId, resolvedColumnId, decodedText)
+              foundRows = searchResults
+              console.log(`✅ Backend search found ${foundRows.length} matching records`)
+            } catch (searchError) {
+              console.warn('⚠️ Backend search not available, falling back to client-side search:', searchError)
+            }
+          }
+
+          if (!resolvedColumnId || foundRows.length === 0) {
+            if (columnName) {
+              const allRows = await rowsAPI.list(tableId)
+              console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
+              console.log('🔍 Looking in column:', columnName)
+
+              const matchingRows = allRows.filter(row => {
+                const value = row.data?.[columnName]
+                const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
+                return matches
+              })
+
+              if (matchingRows.length > 0) {
+                console.log(`🎯 Fallback search found ${matchingRows.length} matching records`)
+                foundRows = matchingRows
               }
-              return matches
-            })
-            
-            foundRows = matchingRows
-            console.log(`🎯 Fallback search found ${foundRows.length} matching records`)
+            }
           }
           
         } catch (error) {
@@ -345,33 +439,68 @@ function ScanPageContent() {
       }
       
       // Save scan result
+      const condensedRows = foundRows.map(row => ({
+        id: row.id,
+        data: row.data,
+      }))
+
+      let persistedRecord: ScanHistoryRecord | null = null
+      if (workspaceId && tableId) {
+        try {
+          const matchedRowIds = condensedRows
+            .map(row => row.id)
+            .filter((id): id is string => Boolean(id))
+
+          persistedRecord = await scanHistoryAPI.create({
+            workspace_id: workspaceId,
+            table_id: tableId,
+            column_id: resolvedColumnId,
+            column_name: columnName ?? columnLabel ?? undefined,
+            barcode: decodedText,
+            status: condensedRows.length > 0 ? 'success' : 'failure',
+            matched_row_ids: matchedRowIds,
+            matched_rows: condensedRows,
+            source: 'mobile',
+            metadata: {
+              pairingCode,
+              columnLabel,
+            },
+          })
+        } catch (persistError) {
+          console.error('Failed to persist scan history:', persistError)
+        }
+      }
+
       const scanResult: ScannedItem = {
-        id: Date.now().toString(),
+        id: persistedRecord?.id ?? Date.now().toString(),
+        historyId: persistedRecord?.id,
         barcode: decodedText,
-        timestamp: new Date(),
-        success: foundRows.length > 0,
-        foundRows: foundRows
+        timestamp: persistedRecord ? new Date(persistedRecord.created_at) : new Date(),
+        success: condensedRows.length > 0,
+        status: condensedRows.length > 0 ? 'success' : 'failure',
+        foundRows: condensedRows,
       }
       
       // Add to local scan history for real-time display
       setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
       
-      // Save to localStorage for results page
+      // Save to localStorage for results page (legacy fallback)
       const storageKey = `scan_results_${tableId}_${columnName}`
       const existingResults = JSON.parse(localStorage.getItem(storageKey) || '[]')
       const storageResult = {
         ...scanResult,
         timestamp: scanResult.timestamp.toISOString(),
         column: columnName,
-        tableId
+        tableId,
+        foundRows: condensedRows,
       }
       existingResults.unshift(storageResult)
       localStorage.setItem(storageKey, JSON.stringify(existingResults.slice(0, 100)))
       
       // Show toast notification
-      if (foundRows.length > 0) {
+      if (condensedRows.length > 0) {
         toast.success('Scan successful!', {
-          description: `Found ${foundRows.length} matching record${foundRows.length > 1 ? 's' : ''}`,
+          description: `Found ${condensedRows.length} matching record${condensedRows.length > 1 ? 's' : ''}`,
         })
       } else {
         toast.error('No matches found', {
@@ -397,9 +526,15 @@ function ScanPageContent() {
           event: 'barcode_scanned',
           payload: {
             barcode: decodedText,
-            foundRows: foundRows,
-            timestamp: new Date().toISOString(),
-            deviceType: 'mobile'
+            foundRows: condensedRows,
+            status: scanResult.status,
+            historyId: scanResult.historyId,
+            timestamp: scanResult.timestamp.toISOString(),
+            deviceType: 'mobile',
+            tableId,
+            columnName,
+            columnLabel,
+            scanRecord: persistedRecord,
           }
         })
         
@@ -412,7 +547,12 @@ function ScanPageContent() {
             await resultsChannel.send({
               type: 'broadcast',
               event: 'new_scan_result',
-              payload: storageResult
+              payload: {
+                ...storageResult,
+                status: scanResult.status,
+                foundRows: condensedRows,
+                scanRecord: persistedRecord,
+              }
             })
             console.log('📡 Sent scan result to results channel:', decodedText)
             
@@ -464,11 +604,11 @@ function ScanPageContent() {
       toast.info('Camera started')
     } else {
       toast.info('Camera stopped')
-      if (scannerRef.current) {
-        scannerRef.current.stop()
-        scannerRef.current.destroy()
-        scannerRef.current = null
+      if (scannerControlsRef.current) {
+        scannerControlsRef.current.stop()
+        scannerControlsRef.current = null
       }
+      scannerRef.current?.reset()
     }
   }
 
@@ -488,6 +628,7 @@ function ScanPageContent() {
       barcode: randomBarcode,
       timestamp: new Date(),
       success: isValid,
+      status: isValid ? 'success' : 'failure',
       foundRows: isValid ? [{ id: '1', data: { name: 'Sample Item', category: 'Test' } }] : []
     }
     
@@ -680,7 +821,7 @@ function ScanPageContent() {
                   <option value="user">Front Camera</option>
                   <option value="environment">Back Camera</option>
                   {availableCameras.map((camera, index) => (
-                    <option key={camera.id} value={camera.id}>
+                    <option key={camera.deviceId} value={camera.deviceId}>
                       {camera.label || `Camera ${index + 1}`}
                     </option>
                   ))}

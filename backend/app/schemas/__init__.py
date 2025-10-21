@@ -22,6 +22,7 @@ from .data_tables import (
 )
 from .forms import FormBase, FormCreate, FormFieldSchema, FormRead, FormUpdate
 from .workspaces import WorkspaceRead, WorkspaceSummary
+from .scan_history import ScanHistoryCreate, ScanHistoryRead
 
 __all__ = [
     # Data Tables / Sheets
@@ -52,8 +53,11 @@ __all__ = [
     # Workspaces
     "WorkspaceRead",
     "WorkspaceSummary",
+    # Scan history
+    "ScanHistoryCreate",
+    "ScanHistoryRead",
 ]
 
 
-from .workspaces import WorkspaceRead, WorkspaceSummary
 from .forms import FormRead, FormCreate, FormUpdate
+from .workspaces import WorkspaceRead, WorkspaceSummary

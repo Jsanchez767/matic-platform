@@ -1016,6 +1016,30 @@ CREATE POLICY "Users can delete their own comments" ON table_comments
     FOR DELETE USING (created_by = auth.uid());
 
 -- =====================================================
+-- BARCODE SCAN HISTORY
+-- =====================================================
+
+CREATE TABLE scan_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
+    table_id UUID NOT NULL REFERENCES data_tables(id) ON DELETE CASCADE,
+    column_id UUID REFERENCES table_columns(id) ON DELETE SET NULL,
+    column_name TEXT,
+    barcode TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'success' CHECK (status IN ('success', 'failure')),
+    matched_row_ids UUID[] DEFAULT ARRAY[]::UUID[],
+    matched_rows JSONB NOT NULL DEFAULT '[]'::JSONB,
+    source TEXT NOT NULL DEFAULT 'mobile',
+    metadata JSONB NOT NULL DEFAULT '{}'::JSONB,
+    created_by UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_scan_history_table ON scan_history (table_id, created_at DESC);
+CREATE INDEX idx_scan_history_workspace ON scan_history (workspace_id, created_at DESC);
+CREATE INDEX idx_scan_history_barcode ON scan_history (barcode);
+
+-- =====================================================
 -- TRIGGERS FOR SHEETS/TABLES
 -- =====================================================
 

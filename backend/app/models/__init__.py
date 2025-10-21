@@ -14,3 +14,4 @@ from .data_table import (
     TableAttachment,
     TableComment,
 )
+from .scan_history import ScanHistory
