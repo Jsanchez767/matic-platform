@@ -2,7 +2,8 @@
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, useRef, Suspense } from 'react'
-import { BrowserMultiFormatReader, DecodeHintType, BarcodeFormat, IScannerControls } from '@zxing/browser'
+import { BrowserMultiFormatReader, BarcodeFormat, IScannerControls } from '@zxing/browser'
+import { DecodeHintType } from '@zxing/library'
 import { Exception, NotFoundException, Result } from '@zxing/library'
 import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield } from 'lucide-react'
 import { Button } from '@/ui-components/button'
@@ -71,7 +72,8 @@ function ScanPageContent() {
         BarcodeFormat.UPC_E,
       ])
       hints.set(DecodeHintType.TRY_HARDER, true)
-      scannerRef.current = new BrowserMultiFormatReader(hints, 400)
+      // Use options object for scan options (delay, etc.)
+      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 400 })
     }
     return scannerRef.current
   }
@@ -303,7 +305,7 @@ function ScanPageContent() {
         scannerControlsRef.current.stop()
         scannerControlsRef.current = null
       }
-      scannerRef.current?.reset()
+      // scannerRef.current?.reset() // No reset method in BrowserMultiFormatReader
     }
   }, [isScanning, connectionStatus, selectedCamera, cameraPermission])
 
@@ -347,7 +349,7 @@ function ScanPageContent() {
       const controls = await reader.decodeFromConstraints(
         constraints,
         videoRef.current,
-  (result: Result | null, error: Exception | null) => {
+        (result?: Result, error?: Exception) => {
           if (result) {
             const text = result.getText()
             if (text) {
@@ -608,7 +610,7 @@ function ScanPageContent() {
         scannerControlsRef.current.stop()
         scannerControlsRef.current = null
       }
-      scannerRef.current?.reset()
+      // scannerRef.current?.reset() // No reset method in BrowserMultiFormatReader
     }
   }
 
