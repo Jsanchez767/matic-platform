@@ -3,7 +3,7 @@
  * Use this for read-only table operations (scanner, forms, etc.)
  */
 
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { DataTable, TableColumn } from '@/types/data-tables'
 
 export const tablesSupabase = {
@@ -11,8 +11,6 @@ export const tablesSupabase = {
    * Get a single table with its columns
    */
   async get(tableId: string): Promise<DataTable> {
-    const supabase = createClient()
-    
     const { data, error } = await supabase
       .from('data_tables')
       .select(`
@@ -35,8 +33,6 @@ export const tablesSupabase = {
    * List tables in a workspace
    */
   async list(workspaceId: string): Promise<DataTable[]> {
-    const supabase = createClient()
-    
     const { data, error } = await supabase
       .from('data_tables')
       .select(`
@@ -58,8 +54,6 @@ export const tablesSupabase = {
    * Get column by name
    */
   async getColumnByName(tableId: string, columnName: string): Promise<TableColumn | null> {
-    const supabase = createClient()
-    
     const { data, error } = await supabase
       .from('table_columns')
       .select('*')
