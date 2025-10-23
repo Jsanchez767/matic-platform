@@ -458,24 +458,24 @@ function ScanPageContent() {
       
       if (tableId) {
         try {
-          // Import API client for lookup
-          const { rowsAPI } = await import('@/lib/api/data-tables-client')
+          // Import Supabase Direct client for instant lookup
+          const { rowsSupabase } = await import('@/lib/api/rows-supabase')
           
-          // Try to use efficient backend search first
+          // Use Supabase Direct for barcode matching (instant!)
           if (resolvedColumnId) {
             try {
-              console.log('🚀 Using backend search endpoint...')
-              const searchResults = await rowsAPI.search(tableId, resolvedColumnId, decodedText)
+              console.log('🚀 Using Supabase Direct search...')
+              const searchResults = await rowsSupabase.searchByBarcode(tableId, resolvedColumnId, decodedText)
               foundRows = searchResults
-              console.log(`✅ Backend search found ${foundRows.length} matching records`)
+              console.log(`✅ Supabase search found ${foundRows.length} matching records`)
             } catch (searchError) {
-              console.warn('⚠️ Backend search not available, falling back to client-side search:', searchError)
+              console.warn('⚠️ Supabase search failed, falling back:', searchError)
             }
           }
 
           if (!resolvedColumnId || foundRows.length === 0) {
             if (columnName) {
-              const allRows = await rowsAPI.list(tableId)
+              const allRows = await rowsSupabase.list(tableId, { archived: false })
               console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
               console.log('🔍 Looking in column:', columnName)
 

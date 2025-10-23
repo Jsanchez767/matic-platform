@@ -4,28 +4,7 @@
  */
 
 import { supabase } from '@/lib/supabase'
-
-export interface Workspace {
-  id: string
-  organization_id: string
-  name: string
-  slug: string
-  description?: string
-  icon?: string
-  color?: string
-  is_archived: boolean
-  created_at: string
-  updated_at: string
-  created_by?: string
-}
-
-export interface WorkspaceMember {
-  id: string
-  workspace_id: string
-  user_id: string
-  role: 'owner' | 'admin' | 'member' | 'viewer'
-  created_at: string
-}
+import type { Workspace } from '@/types/workspaces'
 
 export const workspacesSupabase = {
   /**

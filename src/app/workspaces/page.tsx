@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { NavigationLayout } from '@/components/NavigationLayout'
 import { WorkspaceTabProvider } from '@/components/WorkspaceTabProvider'
-import { workspacesAPI } from '@/lib/api/workspaces-client'
+import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
 import { getCurrentUser } from '@/lib/supabase'
 import type { Workspace } from '@/types/workspaces'
 
@@ -32,8 +32,8 @@ export default function WorkspacesPage() {
 
       console.log('Fetching workspaces for user:', user.id)
       
-      // Fetch workspaces from backend API
-      const fetchedWorkspaces = await workspacesAPI.list(user.id)
+      // Fetch workspaces from Supabase Direct (instant!)
+      const fetchedWorkspaces = await workspacesSupabase.list()
       
       console.log('Workspaces loaded:', fetchedWorkspaces)
       setWorkspaces(fetchedWorkspaces)
