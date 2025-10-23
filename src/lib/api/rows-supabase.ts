@@ -69,12 +69,36 @@ export const rowsSupabase = {
   /**
    * Search for rows by barcode in a specific column
    * Used by scanner to match barcodes
+   * @param tableId - The table UUID
+   * @param columnIdOrName - Can be column UUID or column name
+   * @param barcode - The barcode value to search for
    */
   async searchByBarcode(
     tableId: string,
-    columnId: string,
+    columnIdOrName: string,
     barcode: string
   ): Promise<TableRow[]> {
+    // First, try to get the column name if columnIdOrName is a UUID
+    let columnName = columnIdOrName
+    
+    // Check if it looks like a UUID (has dashes)
+    if (columnIdOrName.includes('-')) {
+      try {
+        const { data: column } = await supabase
+          .from('table_columns')
+          .select('name')
+          .eq('id', columnIdOrName)
+          .single()
+        
+        if (column?.name) {
+          columnName = column.name
+          console.log(`🔍 Resolved column ID ${columnIdOrName} to name: ${columnName}`)
+        }
+      } catch (err) {
+        console.warn('Could not resolve column ID, using as-is:', err)
+      }
+    }
+
     const { data, error } = await supabase
       .from('table_rows')
       .select('*')
@@ -86,14 +110,18 @@ export const rowsSupabase = {
       throw new Error(error.message)
     }
 
+    console.log(`🔍 Searching ${data?.length || 0} rows for barcode "${barcode}" in column "${columnName}"`)
+
     // Filter in memory since we need to search JSONB data field
     const matches = (data || []).filter((row: any) => {
-      const value = row.data?.[columnId]
+      const value = row.data?.[columnName]
       if (!value) return false
       
       // Handle different value types
       if (typeof value === 'string') {
-        return value === barcode || value.includes(barcode)
+        const matches = value === barcode || value.includes(barcode)
+        if (matches) console.log(`✅ Found match in row ${row.id}: ${value}`)
+        return matches
       }
       if (Array.isArray(value)) {
         return value.some(v => String(v) === barcode)
@@ -101,6 +129,7 @@ export const rowsSupabase = {
       return String(value) === barcode
     })
 
+    console.log(`🎯 Search complete: ${matches.length} matches found`)
     return matches as TableRow[]
   },
 
