@@ -581,19 +581,6 @@ function ScanPageContent() {
       // Add to local scan history for real-time display
       setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
       
-      // Save to localStorage for results page (legacy fallback)
-      const storageKey = `scan_results_${tableId}_${columnName}`
-      const existingResults = JSON.parse(localStorage.getItem(storageKey) || '[]')
-      const storageResult = {
-        ...scanResult,
-        timestamp: scanResult.timestamp.toISOString(),
-        column: columnName,
-        tableId,
-        foundRows: condensedRows,
-      }
-      existingResults.unshift(storageResult)
-      localStorage.setItem(storageKey, JSON.stringify(existingResults.slice(0, 100)))
-      
       // Show toast notification - always show visual feedback
       if (condensedRows.length > 0) {
         toast.success(`✓ ${decodedText}`, {
@@ -647,7 +634,10 @@ function ScanPageContent() {
               type: 'broadcast',
               event: 'new_scan_result',
               payload: {
-                ...storageResult,
+                ...scanResult,
+                timestamp: scanResult.timestamp.toISOString(),
+                column: columnName,
+                tableId,
                 status: scanResult.status,
                 foundRows: condensedRows,
                 scanRecord: persistedRecord,

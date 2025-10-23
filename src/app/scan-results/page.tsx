@@ -197,42 +197,28 @@ function ScanResultsContent() {
 
   const loadScanResults = async (showLoading = true) => {
     try {
-      // Load from localStorage immediately for instant display
-      const storageKey = `scan_results_${tableId}_${columnName}`
-      const storedResults = localStorage.getItem(storageKey)
-      
-      if (storedResults) {
-        try {
-          const cachedResults = JSON.parse(storedResults).map((result: any) => ({
-            ...result,
-            timestamp: new Date(result.timestamp)
-          }))
-          setScanResults(cachedResults)
-          console.log(`⚡ Instant load: ${cachedResults.length} results from localStorage`)
-          setIsLoading(false) // Hide spinner immediately
-        } catch (parseError) {
-          console.error('Failed to parse localStorage:', parseError)
-        }
-      } else {
-        // No cached data, show loading
-        if (showLoading) {
-          setIsLoading(true)
-        }
+      if (showLoading) {
+        setIsLoading(true)
       }
       
       console.log('🔍 Loading scan results for:', { tableId, columnName })
       
-      // Load scan history from database (in background to update cache)
+      // Load scan history from database (single source of truth)
       if (tableId && columnName) {
         try {
-          console.log('📡 Fetching from API in background...')
+          console.log('📡 Fetching from database with params:', {
+            tableId,
+            columnName,
+            apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+          })
+          
           const scanHistory = await scanHistoryAPI.list({
             tableId: tableId,
             columnName: columnName,
             limit: 100
           })
           
-          console.log(`✅ API returned ${scanHistory.length} records`)
+          console.log(`✅ Database returned ${scanHistory.length} records:`, scanHistory)
           
           const results: ScanResult[] = scanHistory.map(scan => ({
             id: scan.id,
@@ -247,27 +233,23 @@ function ScanResultsContent() {
             metadata: scan.metadata
           }))
           
+          console.log(`📊 Mapped ${results.length} scan results:`, results)
           setScanResults(results)
-          console.log(`📊 Updated with ${results.length} scan results from database`)
-          
-          // Update localStorage cache for next time
-          const storedResults = results.map(r => ({
-            ...r,
-            timestamp: r.timestamp.toISOString()
-          }))
-          localStorage.setItem(storageKey, JSON.stringify(storedResults.slice(0, 100)))
           
         } catch (dbError) {
           console.error('❌ Error loading from database:', dbError)
-          // Don't show error if we already have cached data displayed
-          if (!storedResults) {
-            console.log('⚠️ No cached data available')
-          }
+          console.error('❌ Error details:', {
+            message: dbError instanceof Error ? dbError.message : String(dbError),
+            stack: dbError instanceof Error ? dbError.stack : undefined
+          })
+          throw dbError
         }
+      } else {
+        console.warn('⚠️ Missing tableId or columnName:', { tableId, columnName })
       }
       
     } catch (error) {
-      console.error('Error loading scan results:', error)
+      console.error('❌ Failed to load scan results:', error)
       setScanResults([])
     } finally {
       setIsLoading(false)
