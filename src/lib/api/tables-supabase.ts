@@ -18,12 +18,16 @@ export const tablesSupabase = {
         columns:table_columns!table_columns_table_id_fkey(*)
       `)
       .eq('id', tableId)
-      .order('position', { foreignTable: 'table_columns!table_columns_table_id_fkey', ascending: true })
       .single()
 
     if (error) {
       console.error('Error fetching table:', error)
       throw new Error(error.message)
+    }
+
+    // Sort columns by position on the client side
+    if (data && data.columns) {
+      data.columns.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
     }
 
     return data as DataTable
@@ -51,6 +55,15 @@ export const tablesSupabase = {
     if (error) {
       console.error('Error fetching tables:', error)
       throw new Error(error.message)
+    }
+
+    // Sort columns by position for each table
+    if (data) {
+      data.forEach((table: any) => {
+        if (table.columns) {
+          table.columns.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+        }
+      })
     }
 
     return (data || []) as DataTable[]
