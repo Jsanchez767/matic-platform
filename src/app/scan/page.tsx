@@ -726,6 +726,13 @@ function ScanPageContent() {
   }
 
   const handleToggleScanning = () => {
+    // Check if user has provided their info first
+    if (!userName.trim()) {
+      setShowUserInfoDialog(true)
+      toast.info('Please enter your name to start scanning')
+      return
+    }
+    
     if (!isScanning && cameraPermission === 'denied') {
       toast.error('Camera access is denied. Please click "Grant Access" to allow camera permissions.')
       return
