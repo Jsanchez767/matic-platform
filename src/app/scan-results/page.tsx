@@ -25,6 +25,9 @@ interface ScanResult {
   foundRows: any[]
   column: string
   tableId: string
+  scannedBy?: string
+  scannedByEmail?: string
+  metadata?: any
 }
 
 function ScanResultsContent() {
@@ -211,7 +214,10 @@ function ScanResultsContent() {
             success: scan.status === 'success',
             foundRows: scan.matched_rows || [],
             column: scan.column_name || columnName,
-            tableId: scan.table_id
+            tableId: scan.table_id,
+            scannedBy: scan.metadata?.scannedBy,
+            scannedByEmail: scan.metadata?.scannedByEmail,
+            metadata: scan.metadata
           }))
           
           setScanResults(results)
@@ -405,6 +411,9 @@ function ScanResultsContent() {
                     Scan Time
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scanned By
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Scan Count
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -448,6 +457,22 @@ function ScanResultsContent() {
                           {formatRelativeTime(result.timestamp)}
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-600">
+                      {result.scannedBy ? (
+                        <div className="flex flex-col">
+                          <div className="font-medium text-gray-900">
+                            {result.scannedBy}
+                          </div>
+                          {result.scannedByEmail && (
+                            <div className="text-xs text-gray-500">
+                              {result.scannedByEmail}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Unknown</span>
+                      )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">

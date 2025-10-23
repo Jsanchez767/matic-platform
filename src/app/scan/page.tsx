@@ -5,13 +5,15 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { BrowserMultiFormatReader, BarcodeFormat, IScannerControls } from '@zxing/browser'
 import { DecodeHintType } from '@zxing/library'
 import { Exception, NotFoundException, Result } from '@zxing/library'
-import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield } from 'lucide-react'
+import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield, User, Mail } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
 import { ScrollArea } from '@/ui-components/scroll-area'
 import { Separator } from '@/ui-components/separator'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/ui-components/drawer'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui-components/dialog'
+import { Input } from '@/ui-components/input'
 import { Toaster } from '@/ui-components/sonner'
 import { toast } from 'sonner'
 import { createClient } from '@supabase/supabase-js'
@@ -53,6 +55,9 @@ function ScanPageContent() {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [resolvedColumnId, setResolvedColumnId] = useState<string | null>(null)
   const [columnLabel, setColumnLabel] = useState<string | null>(null)
+  const [showUserInfoDialog, setShowUserInfoDialog] = useState(false)
+  const [userName, setUserName] = useState<string>('')
+  const [userEmail, setUserEmail] = useState<string>('')
   const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
   const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null)
@@ -144,6 +149,21 @@ function ScanPageContent() {
     if (!tableId || !columnName || !pairingCode) {
       setError('Invalid pairing parameters. Please scan the QR code again.')
       return
+    }
+
+    // Check if user info is stored
+    const storedUserInfo = localStorage.getItem('scanner_user_info')
+    if (storedUserInfo) {
+      try {
+        const { name, email } = JSON.parse(storedUserInfo)
+        setUserName(name)
+        setUserEmail(email)
+      } catch (err) {
+        console.error('Failed to parse stored user info:', err)
+      }
+    } else {
+      // Show dialog to collect user info on first use
+      setShowUserInfoDialog(true)
     }
 
     // Connect to Supabase real-time channel for this pairing session
@@ -264,6 +284,13 @@ function ScanPageContent() {
   // Request camera permissions explicitly
   const requestCameraPermissions = async () => {
     setCameraPermission('requesting')
+    
+    // Show toast prompting user to grant permission
+    toast.info('Camera Permission Required', {
+      description: 'Please allow camera access in your browser to start scanning.',
+      duration: 5000,
+    })
+    
     try {
       // Request camera access
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: selectedCamera } })
@@ -272,11 +299,20 @@ function ScanPageContent() {
       stream.getTracks().forEach(track => track.stop())
       setCameraPermission('granted')
       
+      toast.success('Camera access granted!', {
+        description: 'You can now start scanning barcodes.',
+      })
+      
       // Load available cameras after permission granted
       await refreshCameraList()
     } catch (error) {
       console.error('Camera permission denied:', error)
       setCameraPermission('denied')
+      
+      toast.error('Camera access denied', {
+        description: 'Please enable camera permissions in your browser settings.',
+        duration: 7000,
+      })
     }
   }
 
@@ -517,6 +553,9 @@ function ScanPageContent() {
             metadata: {
               pairingCode,
               columnLabel,
+              scannedBy: userName || 'Unknown',
+              scannedByEmail: userEmail || undefined,
+              deviceType: 'mobile',
             },
           })
         } catch (persistError) {
@@ -711,6 +750,25 @@ function ScanPageContent() {
     setScanHistory([])
     toast.success('History cleared')
   }
+  
+  const handleSaveUserInfo = () => {
+    if (!userName.trim()) {
+      toast.error('Please enter your name')
+      return
+    }
+    
+    const userInfo = {
+      name: userName.trim(),
+      email: userEmail.trim()
+    }
+    
+    localStorage.setItem('scanner_user_info', JSON.stringify(userInfo))
+    setShowUserInfoDialog(false)
+    
+    toast.success('Profile saved!', {
+      description: `Scanning as ${userName}`
+    })
+  }
 
   const successCount = scanHistory.filter(item => item.success).length
   const failureCount = scanHistory.filter(item => !item.success).length
@@ -769,6 +827,66 @@ function ScanPageContent() {
   return (
     <div className="scan-page min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       <Toaster />
+      
+      {/* User Info Dialog */}
+      <Dialog open={showUserInfoDialog} onOpenChange={setShowUserInfoDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Welcome Scanner!</DialogTitle>
+            <DialogDescription>
+              Please enter your information so we can track who scanned each item.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <User className="w-4 h-4 mr-2" />
+                Your Name <span className="text-red-500 ml-1">*</span>
+              </label>
+              <Input
+                type="text"
+                placeholder="John Doe"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="mt-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveUserInfo()
+                  }
+                }}
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                <Mail className="w-4 h-4 mr-2" />
+                Email (optional)
+              </label>
+              <Input
+                type="email"
+                placeholder="john@example.com"
+                value={userEmail}
+                onChange={(e) => setUserEmail(e.target.value)}
+                className="mt-1"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveUserInfo()
+                  }
+                }}
+              />
+            </div>
+            
+            <Button 
+              onClick={handleSaveUserInfo} 
+              className="w-full"
+              disabled={!userName.trim()}
+            >
+              Start Scanning
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10 shadow-sm">
