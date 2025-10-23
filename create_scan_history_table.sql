@@ -32,16 +32,7 @@ GRANT ALL ON scan_history TO authenticated;
 GRANT ALL ON scan_history TO service_role;
 
 -- Enable Realtime for scan_history table
-DO $$
-BEGIN
-    -- Check if publication exists and add table
-    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-        -- Remove if already added (to avoid errors)
-        EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS scan_history';
-        -- Add the table
-        EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE scan_history';
-    END IF;
-END $$;
+ALTER PUBLICATION supabase_realtime ADD TABLE scan_history;
 
 -- Verify table was created
 SELECT 
