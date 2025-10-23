@@ -8,7 +8,7 @@ _settings = get_settings()
 
 # Environment-aware database configuration
 if _settings.environment == "production":
-    # Production settings for Supabase Session mode
+    # Production settings for Supabase Transaction pooler (pgBouncer on port 6543)
     engine_kwargs = {
         "pool_size": 1,
         "max_overflow": 0,
@@ -18,6 +18,7 @@ if _settings.environment == "production":
             "ssl": "require",
             "server_settings": {"application_name": "matic-platform"},
             "command_timeout": 5,
+            "statement_cache_size": 0,  # Required for pgBouncer transaction mode
         }
     }
 else:
@@ -30,6 +31,7 @@ else:
         "connect_args": {
             "ssl": "require" if "amazonaws.com" in _settings.database_url or "supabase.co" in _settings.database_url else "prefer",
             "server_settings": {"application_name": "matic-platform"},
+            "statement_cache_size": 0,  # Required for pgBouncer transaction mode
         }
     }
 
