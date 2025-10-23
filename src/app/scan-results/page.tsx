@@ -218,13 +218,13 @@ function ScanResultsContent() {
     }
   }
 
-  // Auto-refresh every 5 seconds to pick up new scans
+  // Auto-refresh every 30 seconds to pick up new scans (less aggressive)
   useEffect(() => {
     if (!tableId || !columnName) return
 
     const interval = setInterval(() => {
       loadScanResults()
-    }, 5000)
+    }, 30000) // 30 seconds instead of 5
 
     return () => clearInterval(interval)
   }, [tableId, columnName])

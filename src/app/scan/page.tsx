@@ -375,14 +375,18 @@ function ScanPageContent() {
       console.log('📱 Mobile scan success:', decodedText)
       
       const now = Date.now()
-      const oneMinuteAgo = now - 60000 // 60 seconds
+      const oneMinuteInMs = 60000 // 60 seconds
       
       // Smart duplicate prevention:
       // 1. Same barcode within 1 minute: skip
       // 2. Different barcode scanned: reset and allow
-      if (lastScannedBarcode === decodedText && lastScanTime > oneMinuteAgo) {
-        console.log('🚫 Skipping duplicate scan within 1 minute:', decodedText)
-        return
+      if (lastScannedBarcode === decodedText) {
+        const timeSinceLastScan = now - lastScanTime
+        if (timeSinceLastScan < oneMinuteInMs) {
+          console.log(`🚫 Skipping duplicate scan (${Math.floor(timeSinceLastScan / 1000)}s ago):`, decodedText)
+          toast.info(`Already scanned! Wait ${Math.ceil((oneMinuteInMs - timeSinceLastScan) / 1000)}s`)
+          return
+        }
       }
       
       // Update tracking
