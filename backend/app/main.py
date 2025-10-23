@@ -13,7 +13,7 @@ settings = get_settings()
 app = FastAPI(
     title="Matic Platform API", 
     debug=settings.debug,
-    # redirect_slashes=True is the default, so we don't need to disable it
+    redirect_slashes=False,  # Disable 307 redirects - use exact paths
 )
 
 # Configure CORS - Allow specific origins
