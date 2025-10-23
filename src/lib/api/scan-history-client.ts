@@ -1,45 +1,45 @@
 /**
  * API client for barcode scan history endpoints
+ * Using Supabase direct connection for simplicity and reliability
  */
 
 import type { ScanHistoryCreate, ScanHistoryRecord } from '@/types/scan-history'
-import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
+import { createClient } from '@supabase/supabase-js'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
-
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  try {
-    const response = await fetchWithRetry(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
-      throw new Error(error.detail || `API Error: ${response.status}`)
-    }
-
-    return response.json()
-  } catch (error) {
-    if (isBackendSleeping(error)) {
-      showBackendSleepingMessage()
-    }
-    throw error
-  }
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export const scanHistoryAPI = {
   /**
    * Record a new scan event
    */
   create: async (data: ScanHistoryCreate): Promise<ScanHistoryRecord> => {
-    return fetchAPI<ScanHistoryRecord>('/scans/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
+    const { data: scan, error } = await supabase
+      .from('scan_history')
+      .insert({
+        workspace_id: data.workspace_id,
+        table_id: data.table_id,
+        column_id: data.column_id,
+        column_name: data.column_name,
+        barcode: data.barcode,
+        status: data.status,
+        matched_row_ids: data.matched_row_ids,
+        matched_rows: data.matched_rows,
+        source: data.source,
+        metadata: data.metadata,
+        created_by: data.created_by,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating scan history:', error)
+      throw new Error(error.message)
+    }
+
+    return scan as ScanHistoryRecord
   },
 
   /**
@@ -53,17 +53,26 @@ export const scanHistoryAPI = {
       limit?: number
     }
   ): Promise<ScanHistoryRecord[]> => {
-    const searchParams = new URLSearchParams({
-      table_id: params.tableId,
-      limit: String(params.limit ?? 100),
-    })
+    let query = supabase
+      .from('scan_history')
+      .select('*')
+      .eq('table_id', params.tableId)
+      .order('created_at', { ascending: false })
+      .limit(params.limit ?? 100)
 
     if (params.columnId) {
-      searchParams.set('column_id', params.columnId)
+      query = query.eq('column_id', params.columnId)
     } else if (params.columnName) {
-      searchParams.set('column_name', params.columnName)
+      query = query.eq('column_name', params.columnName)
     }
 
-    return fetchAPI<ScanHistoryRecord[]>(`/scans/?${searchParams.toString()}`)
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching scan history:', error)
+      throw new Error(error.message)
+    }
+
+    return (data || []) as ScanHistoryRecord[]
   },
 }
