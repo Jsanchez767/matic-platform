@@ -1,7 +1,11 @@
--- Create scan_history table if it doesn't exist
+-- Create scan_history table
 -- Run this in Supabase SQL Editor
 
-CREATE TABLE IF NOT EXISTS scan_history (
+-- Drop table if it exists (WARNING: This will delete all existing scan history data!)
+DROP TABLE IF EXISTS scan_history CASCADE;
+
+-- Create the table
+CREATE TABLE scan_history (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     table_id UUID NOT NULL REFERENCES data_tables(id) ON DELETE CASCADE,
@@ -18,17 +22,32 @@ CREATE TABLE IF NOT EXISTS scan_history (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_scan_history_table ON scan_history (table_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_scan_history_workspace ON scan_history (workspace_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_scan_history_barcode ON scan_history (barcode);
-CREATE INDEX IF NOT EXISTS idx_scan_history_column_name ON scan_history (table_id, column_name, created_at DESC);
-
--- Enable Realtime for scan_history table
-ALTER PUBLICATION supabase_realtime ADD TABLE scan_history;
+CREATE INDEX idx_scan_history_table ON scan_history (table_id, created_at DESC);
+CREATE INDEX idx_scan_history_workspace ON scan_history (workspace_id, created_at DESC);
+CREATE INDEX idx_scan_history_barcode ON scan_history (barcode);
+CREATE INDEX idx_scan_history_column_name ON scan_history (table_id, column_name, created_at DESC);
 
 -- Grant necessary permissions
 GRANT ALL ON scan_history TO authenticated;
 GRANT ALL ON scan_history TO service_role;
 
+-- Enable Realtime for scan_history table
+DO $$
+BEGIN
+    -- Check if publication exists and add table
+    IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+        -- Remove if already added (to avoid errors)
+        EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS scan_history';
+        -- Add the table
+        EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE scan_history';
+    END IF;
+END $$;
+
 -- Verify table was created
-SELECT 'scan_history table created successfully!' as message;
+SELECT 
+    'scan_history table created successfully!' as message,
+    column_name,
+    data_type
+FROM information_schema.columns
+WHERE table_name = 'scan_history'
+ORDER BY ordinal_position;
