@@ -1095,6 +1095,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE table_columns;
 ALTER PUBLICATION supabase_realtime ADD TABLE table_rows;
 ALTER PUBLICATION supabase_realtime ADD TABLE table_views;
 ALTER PUBLICATION supabase_realtime ADD TABLE table_comments;
+ALTER PUBLICATION supabase_realtime ADD TABLE scan_history;
 
 -- =====================================================
 -- COMMENTS FOR SHEETS/TABLES
