@@ -198,14 +198,19 @@ function ScanResultsContent() {
         setIsLoading(true)
       }
       
+      console.log('🔍 Loading scan results for:', { tableId, columnName })
+      
       // Load scan history from database (primary source)
       if (tableId && columnName) {
         try {
+          console.log('📡 Fetching from API...')
           const scanHistory = await scanHistoryAPI.list({
             tableId: tableId,
             columnName: columnName,
             limit: 100
           })
+          
+          console.log(`✅ API returned ${scanHistory.length} records`)
           
           const results: ScanResult[] = scanHistory.map(scan => ({
             id: scan.id,
@@ -232,12 +237,16 @@ function ScanResultsContent() {
           
           return // Successfully loaded from database
         } catch (dbError) {
-          console.error('Error loading from database, falling back to localStorage:', dbError)
+          console.error('❌ Error loading from database:', dbError)
+          console.log('⚠️ Falling back to localStorage...')
         }
       }
       
       // Fallback: load from localStorage if database fails
-      const storedResults = localStorage.getItem(`scan_results_${tableId}_${columnName}`)
+      const storageKey = `scan_results_${tableId}_${columnName}`
+      const storedResults = localStorage.getItem(storageKey)
+      console.log('💾 Checking localStorage:', storageKey, storedResults ? `Found ${JSON.parse(storedResults).length} items` : 'Empty')
+      
       if (storedResults) {
         const results = JSON.parse(storedResults).map((result: any) => ({
           ...result,
@@ -245,6 +254,9 @@ function ScanResultsContent() {
         }))
         setScanResults(results)
         console.log(`📊 Loaded ${results.length} scan results from localStorage (fallback)`)
+      } else {
+        console.log('⚠️ No data in localStorage either')
+        setScanResults([])
       }
       
     } catch (error) {

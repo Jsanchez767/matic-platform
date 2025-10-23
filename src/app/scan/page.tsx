@@ -558,8 +558,13 @@ function ScanPageContent() {
               deviceType: 'mobile',
             },
           })
+          console.log('✅ Scan persisted to database:', persistedRecord.id)
         } catch (persistError) {
-          console.error('Failed to persist scan history:', persistError)
+          console.error('❌ Failed to persist scan history to database:', persistError)
+          toast.error('Database save failed', {
+            description: persistError instanceof Error ? persistError.message : 'Scan saved locally only',
+            duration: 3000,
+          })
         }
       }
 
