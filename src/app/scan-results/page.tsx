@@ -89,7 +89,10 @@ function ScanResultsContent() {
             success: newRecord.status === 'success',
             foundRows: newRecord.matched_rows || [],
             column: newRecord.column_name,
-            tableId: newRecord.table_id
+            tableId: newRecord.table_id,
+            scannedBy: newRecord.metadata?.scannedBy,
+            scannedByEmail: newRecord.metadata?.scannedByEmail,
+            metadata: newRecord.metadata
           }
           
           console.log('✅ Adding new scan result to UI:', newScanResult)
@@ -194,16 +197,35 @@ function ScanResultsContent() {
 
   const loadScanResults = async (showLoading = true) => {
     try {
-      if (showLoading) {
-        setIsLoading(true)
+      // Load from localStorage immediately for instant display
+      const storageKey = `scan_results_${tableId}_${columnName}`
+      const storedResults = localStorage.getItem(storageKey)
+      
+      if (storedResults) {
+        try {
+          const cachedResults = JSON.parse(storedResults).map((result: any) => ({
+            ...result,
+            timestamp: new Date(result.timestamp)
+          }))
+          setScanResults(cachedResults)
+          console.log(`⚡ Instant load: ${cachedResults.length} results from localStorage`)
+          setIsLoading(false) // Hide spinner immediately
+        } catch (parseError) {
+          console.error('Failed to parse localStorage:', parseError)
+        }
+      } else {
+        // No cached data, show loading
+        if (showLoading) {
+          setIsLoading(true)
+        }
       }
       
       console.log('🔍 Loading scan results for:', { tableId, columnName })
       
-      // Load scan history from database (primary source)
+      // Load scan history from database (in background to update cache)
       if (tableId && columnName) {
         try {
-          console.log('📡 Fetching from API...')
+          console.log('📡 Fetching from API in background...')
           const scanHistory = await scanHistoryAPI.list({
             tableId: tableId,
             columnName: columnName,
@@ -226,46 +248,29 @@ function ScanResultsContent() {
           }))
           
           setScanResults(results)
-          console.log(`📊 Loaded ${results.length} scan results from database`)
+          console.log(`📊 Updated with ${results.length} scan results from database`)
           
-          // Sync to localStorage for offline access
+          // Update localStorage cache for next time
           const storedResults = results.map(r => ({
             ...r,
             timestamp: r.timestamp.toISOString()
           }))
-          localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(storedResults.slice(0, 100)))
+          localStorage.setItem(storageKey, JSON.stringify(storedResults.slice(0, 100)))
           
-          return // Successfully loaded from database
         } catch (dbError) {
           console.error('❌ Error loading from database:', dbError)
-          console.log('⚠️ Falling back to localStorage...')
+          // Don't show error if we already have cached data displayed
+          if (!storedResults) {
+            console.log('⚠️ No cached data available')
+          }
         }
-      }
-      
-      // Fallback: load from localStorage if database fails
-      const storageKey = `scan_results_${tableId}_${columnName}`
-      const storedResults = localStorage.getItem(storageKey)
-      console.log('💾 Checking localStorage:', storageKey, storedResults ? `Found ${JSON.parse(storedResults).length} items` : 'Empty')
-      
-      if (storedResults) {
-        const results = JSON.parse(storedResults).map((result: any) => ({
-          ...result,
-          timestamp: new Date(result.timestamp)
-        }))
-        setScanResults(results)
-        console.log(`📊 Loaded ${results.length} scan results from localStorage (fallback)`)
-      } else {
-        console.log('⚠️ No data in localStorage either')
-        setScanResults([])
       }
       
     } catch (error) {
       console.error('Error loading scan results:', error)
       setScanResults([])
     } finally {
-      if (showLoading) {
-        setIsLoading(false)
-      }
+      setIsLoading(false)
     }
   }
 
