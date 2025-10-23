@@ -105,6 +105,7 @@ USING (
   )
 );
 
+-- Policies for table_columns
 CREATE POLICY "Users can view columns in their workspaces"
 ON table_columns FOR SELECT
 USING (
@@ -119,8 +120,61 @@ USING (
   )
 );
 
+CREATE POLICY "Users can create columns in their workspaces"
+ON table_columns FOR INSERT
+WITH CHECK (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+CREATE POLICY "Users can update columns in their workspaces"
+ON table_columns FOR UPDATE
+USING (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+)
+WITH CHECK (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+CREATE POLICY "Users can delete columns in their workspaces"
+ON table_columns FOR DELETE
+USING (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON table_columns TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON data_tables TO authenticated;
-GRANT SELECT ON table_columns TO authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 3. WORKSPACES & MEMBERS (Navigation)

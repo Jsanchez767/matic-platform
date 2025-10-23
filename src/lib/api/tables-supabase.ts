@@ -65,7 +65,7 @@ export const tablesSupabase = {
       .insert(tableData)
       .select(`
         *,
-        columns:table_columns(*)
+        columns:table_columns!table_columns_table_id_fkey(*)
       `)
       .single()
 
@@ -87,7 +87,7 @@ export const tablesSupabase = {
       .eq('id', tableId)
       .select(`
         *,
-        columns:table_columns(*)
+        columns:table_columns!table_columns_table_id_fkey(*)
       `)
       .single()
 
