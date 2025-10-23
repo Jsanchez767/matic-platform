@@ -15,10 +15,10 @@ export const tablesSupabase = {
       .from('data_tables')
       .select(`
         *,
-        columns:table_columns(*)
+        columns:table_columns!table_columns_table_id_fkey(*)
       `)
       .eq('id', tableId)
-      .order('order', { foreignTable: 'table_columns', ascending: true })
+      .order('position', { foreignTable: 'table_columns!table_columns_table_id_fkey', ascending: true })
       .single()
 
     if (error) {
@@ -37,7 +37,7 @@ export const tablesSupabase = {
       .from('data_tables')
       .select(`
         *,
-        columns:table_columns(*)
+        columns:table_columns!table_columns_table_id_fkey(*)
       `)
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
