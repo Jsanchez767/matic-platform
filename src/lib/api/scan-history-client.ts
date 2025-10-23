@@ -36,7 +36,7 @@ export const scanHistoryAPI = {
    * Record a new scan event
    */
   create: async (data: ScanHistoryCreate): Promise<ScanHistoryRecord> => {
-    return fetchAPI<ScanHistoryRecord>('/scans', {
+    return fetchAPI<ScanHistoryRecord>('/scans/', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -64,6 +64,6 @@ export const scanHistoryAPI = {
       searchParams.set('column_name', params.columnName)
     }
 
-    return fetchAPI<ScanHistoryRecord[]>(`/scans?${searchParams.toString()}`)
+    return fetchAPI<ScanHistoryRecord[]>(`/scans/?${searchParams.toString()}`)
   },
 }
