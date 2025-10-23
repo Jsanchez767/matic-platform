@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine } from 'lucide-react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine, BarChart3 } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
@@ -909,6 +909,28 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           >
             <ScanLine className="w-4 h-4" />
             Scan & Lookup
+          </button>
+          
+          <button
+            onClick={() => {
+              // Find a column to use for scan results (prefer 'email' or first text column)
+              const emailColumn = columns.find(col => col.name.toLowerCase() === 'email')
+              const firstColumn = columns.find(col => col.column_type === 'text') || columns[0]
+              const targetColumn = emailColumn || firstColumn
+              
+              if (targetColumn) {
+                // Open scan results in new tab using workspace tab system
+                const scanResultsUrl = `/scan-results?table=${tableId}&column=${targetColumn.name}`
+                window.open(scanResultsUrl, '_blank')
+              } else {
+                alert('No columns available for scanning. Please add a column first.')
+              }
+            }}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            title="View scan history and results"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Scan Results
           </button>
           
           <button
