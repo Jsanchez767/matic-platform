@@ -230,13 +230,25 @@ function ScanResultsContent() {
   }, [tableId, columnName])
 
   const formatTimestamp = (timestamp: Date) => {
+    return timestamp.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    })
+  }
+  
+  const formatRelativeTime = (timestamp: Date) => {
     const now = new Date()
     const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / 60000)
     
     if (diffInMinutes < 1) return 'Just now'
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`
-    return timestamp.toLocaleDateString()
+    return `${Math.floor(diffInMinutes / 1440)}d ago`
   }
 
   const exportResults = () => {
@@ -362,7 +374,10 @@ function ScanResultsContent() {
                     Barcode
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Time
+                    Scan Time
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Scan Count
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Found Records
@@ -395,10 +410,33 @@ function ScanResultsContent() {
                         {result.barcode}
                       </code>
                     </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                    <td className="px-4 py-4 text-sm text-gray-600">
+                      <div className="flex flex-col">
+                        <div className="flex items-center font-medium text-gray-900">
+                          <Calendar className="w-3 h-3 mr-1" />
+                          {formatTimestamp(result.timestamp)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {formatRelativeTime(result.timestamp)}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {formatTimestamp(result.timestamp)}
+                        {result.foundRows.length > 0 && result.foundRows[0].data?.scan_count ? (
+                          <>
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              {result.foundRows[0].data.scan_count}x
+                            </Badge>
+                            {result.foundRows[0].data?.last_scanned_at && (
+                              <div className="ml-2 text-xs text-gray-500">
+                                Last: {formatRelativeTime(new Date(result.foundRows[0].data.last_scanned_at))}
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
