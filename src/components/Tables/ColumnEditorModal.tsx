@@ -71,8 +71,8 @@ export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode, wor
   const loadAvailableTables = async () => {
     try {
       setLoadingTables(true)
-      const { tablesAPI } = await import('@/lib/api/data-tables-client')
-      const tables = await tablesAPI.list(workspaceId)
+      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      const tables = await tablesSupabase.list(workspaceId)
       // Filter out the current table
       setAvailableTables(tables.filter(t => t.id !== currentTableId))
     } catch (error) {
