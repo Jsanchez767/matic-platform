@@ -123,8 +123,12 @@ GRANT SELECT ON table_columns TO authenticated;
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 
+-- Drop ALL old policies to prevent conflicts
 DROP POLICY IF EXISTS "Users can view their workspaces" ON workspaces;
 DROP POLICY IF EXISTS "Users can view workspace members" ON workspace_members;
+DROP POLICY IF EXISTS "Users can view workspace members in their workspaces" ON workspace_members;
+DROP POLICY IF EXISTS "Users can view their own memberships" ON workspace_members;
+DROP POLICY IF EXISTS "Workspace admins can manage members" ON workspace_members;
 
 -- Simple policy for workspace_members - no recursion
 CREATE POLICY "Users can view workspace members"
