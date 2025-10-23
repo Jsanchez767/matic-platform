@@ -42,11 +42,17 @@ GRANT SELECT, INSERT ON scan_history TO authenticated;
 ALTER TABLE data_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE table_columns ENABLE ROW LEVEL SECURITY;
 
+-- Drop ALL old policies (including duplicates and old names)
 DROP POLICY IF EXISTS "Users can view tables in their workspaces" ON data_tables;
 DROP POLICY IF EXISTS "Users can create tables in their workspaces" ON data_tables;
 DROP POLICY IF EXISTS "Users can update tables in their workspaces" ON data_tables;
 DROP POLICY IF EXISTS "Users can delete tables in their workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can view tables in accessible workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can create tables in editable workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can update tables in editable workspaces" ON data_tables;
 DROP POLICY IF EXISTS "Users can view columns in their workspaces" ON table_columns;
+DROP POLICY IF EXISTS "Users can view columns in accessible tables" ON table_columns;
+DROP POLICY IF EXISTS "Users can manage columns in editable tables" ON table_columns;
 
 -- SELECT policy
 CREATE POLICY "Users can view tables in their workspaces"
@@ -155,10 +161,13 @@ GRANT SELECT ON workspace_members TO authenticated;
 
 ALTER TABLE table_rows ENABLE ROW LEVEL SECURITY;
 
+-- Drop ALL old policies (including duplicates and old names)
 DROP POLICY IF EXISTS "Users can view rows in their workspace tables" ON table_rows;
 DROP POLICY IF EXISTS "Users can create rows in their workspace tables" ON table_rows;
 DROP POLICY IF EXISTS "Users can update rows in their workspace tables" ON table_rows;
 DROP POLICY IF EXISTS "Users can delete rows in their workspace tables" ON table_rows;
+DROP POLICY IF EXISTS "Users can view rows in accessible tables" ON table_rows;
+DROP POLICY IF EXISTS "Users can manage rows in editable tables" ON table_rows;
 
 -- SELECT policy
 CREATE POLICY "Users can view rows in their workspace tables"
