@@ -52,37 +52,22 @@ function ScanPageContent() {
   const [showUserInfoDialog, setShowUserInfoDialog] = useState(false)
   const [userName, setUserName] = useState<string>('')
   const [userEmail, setUserEmail] = useState<string>('')
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
   const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null)
   const isProcessingScanRef = useRef<boolean>(false)
   
-  // Check authentication on mount
+  // Check for user info in localStorage (guest scanner mode)
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { getCurrentUser } = await import('@/lib/supabase')
-        const user = await getCurrentUser()
-        
-        if (!user) {
-          console.warn('⚠️ No authenticated user - redirecting to login')
-          toast.error('Please sign in to use the scanner')
-          router.push('/login?redirect=/scan' + (searchParams.toString() ? `?${searchParams.toString()}` : ''))
-          return
-        }
-        
-        console.log('✅ User authenticated:', user.id)
-        setIsCheckingAuth(false)
-      } catch (error) {
-        console.error('❌ Auth check failed:', error)
-        toast.error('Authentication error')
-        router.push('/login')
-      }
-    }
+    const savedName = localStorage.getItem('scanner_user_name')
+    const savedEmail = localStorage.getItem('scanner_user_email')
     
-    checkAuth()
-  }, [router, searchParams])
+    if (savedName && savedEmail) {
+      setUserName(savedName)
+      setUserEmail(savedEmail)
+      console.log('📱 Loaded guest scanner info:', { name: savedName, email: savedEmail })
+    }
+  }, [])
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
@@ -524,12 +509,23 @@ function ScanPageContent() {
         data: row.data,
       }))
 
-      // Get current user first (needed for both row update and scan history)
+      // Try to get authenticated user, fallback to guest system user
       const { getCurrentUser } = await import('@/lib/supabase')
+      const { GUEST_SCANNER_SYSTEM_USER_ID, getGuestScannerInfo } = await import('@/lib/guest-scanner')
       const user = await getCurrentUser()
+      const guestInfo = getGuestScannerInfo()
+      
+      // Use authenticated user ID if available, otherwise use system guest user ID
+      const userId = user?.id || GUEST_SCANNER_SYSTEM_USER_ID
+      
+      console.log('👤 Scanner user context:', {
+        authenticated: !!user,
+        userId,
+        guestInfo: guestInfo ? { name: guestInfo.name, email: guestInfo.email } : null
+      })
       
       // Update matched rows with scan count and timestamp
-      if (condensedRows.length > 0 && tableId && user?.id) {
+      if (condensedRows.length > 0 && tableId) {
         try {
           const { rowsSupabase } = await import('@/lib/api/rows-supabase')
           
@@ -545,7 +541,7 @@ function ScanPageContent() {
               try {
                 await rowsSupabase.update(tableId, row.id, { 
                   data: updatedData,
-                  updated_by: user.id // Use current user ID (foreign key to auth.users)
+                  updated_by: userId // Use authenticated user or guest system user
                 })
                 console.log(`✅ Updated row ${row.id} scan count to ${currentScanCount + 1}`)
               } catch (updateError) {
@@ -572,7 +568,8 @@ function ScanPageContent() {
             column_id: resolvedColumnId,
             column_name: columnName,
             barcode: decodedText,
-            user_id: user?.id
+            user_id: userId,
+            guest_info: guestInfo
           })
 
           persistedRecord = await scanHistoryAPI.create({
@@ -588,11 +585,12 @@ function ScanPageContent() {
             metadata: {
               pairingCode,
               columnLabel,
-              scannedBy: userName || 'Unknown',
-              scannedByEmail: userEmail || undefined,
+              scannedBy: guestInfo?.name || userName || 'Unknown',
+              scannedByEmail: guestInfo?.email || userEmail || undefined,
               deviceType: 'mobile',
+              isGuest: !user // Flag to indicate guest vs authenticated scan
             },
-            created_by: user?.id
+            created_by: userId // Use authenticated user or guest system user
           })
           console.log('✅ Scan persisted to database:', persistedRecord.id)
         } catch (persistError) {
@@ -796,17 +794,17 @@ function ScanPageContent() {
       return
     }
     
-    const userInfo = {
-      name: userName.trim(),
-      email: userEmail.trim()
-    }
+    // Save to localStorage for guest scanner mode
+    localStorage.setItem('scanner_user_name', userName.trim())
+    localStorage.setItem('scanner_user_email', userEmail.trim() || 'anonymous@guest.scanner')
     
-    localStorage.setItem('scanner_user_info', JSON.stringify(userInfo))
     setShowUserInfoDialog(false)
     
     toast.success('Profile saved!', {
       description: `Scanning as ${userName}`
     })
+    
+    console.log('💾 Saved guest scanner info:', { name: userName.trim(), email: userEmail.trim() || 'anonymous@guest.scanner' })
     
     // Start scanning after user info is saved
     if (connectionStatus === 'connected') {
@@ -884,23 +882,6 @@ function ScanPageContent() {
     )
   }
 
-  // Show loading state while checking authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4 p-8">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <Shield className="w-12 h-12 text-blue-500 animate-pulse" />
-            <h2 className="text-xl font-semibold">Checking Authentication...</h2>
-            <p className="text-sm text-gray-600">
-              Verifying your access to the scanner
-            </p>
-          </div>
-        </Card>
-      </div>
-    )
-  }
-
   return (
     <div className="scan-page min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col">
       <Toaster />
@@ -909,9 +890,10 @@ function ScanPageContent() {
       <Dialog open={showUserInfoDialog} onOpenChange={setShowUserInfoDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Welcome Scanner!</DialogTitle>
+            <DialogTitle>Guest Scanner Access</DialogTitle>
             <DialogDescription>
-              Please enter your information so we can track who scanned each item.
+              No account needed! Just enter your name so we can track who scanned each item. 
+              Your info will be saved on this device.
             </DialogDescription>
           </DialogHeader>
           
@@ -927,6 +909,7 @@ function ScanPageContent() {
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
                 className="mt-1"
+                autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleSaveUserInfo()
