@@ -55,6 +55,8 @@ function ScanPageContent() {
   const [columnLabel, setColumnLabel] = useState<string | null>(null)
   const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
+  const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null)
+  const isProcessingScanRef = useRef<boolean>(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
@@ -372,38 +374,51 @@ function ScanPageContent() {
   }
 
   const onScanSuccess = async (decodedText: string) => {
-      console.log('📱 Mobile scan success:', decodedText)
+      console.log('📱 Mobile scan callback fired:', decodedText)
       
       const now = Date.now()
       const oneMinuteInMs = 60000 // 60 seconds
       
-      // Smart duplicate prevention:
-      // 1. Same barcode within 1 minute: skip
-      // 2. Different barcode scanned: reset and allow
-      if (lastScannedBarcode === decodedText) {
-        const timeSinceLastScan = now - lastScanTime
-        if (timeSinceLastScan < oneMinuteInMs) {
+      // Check if we're already processing a scan
+      if (isProcessingScanRef.current) {
+        console.log('🚫 Already processing a scan, skipping...')
+        return
+      }
+      
+      // Smart duplicate prevention using ref (synchronous check)
+      if (lastScanRef.current) {
+        const { barcode: lastBarcode, timestamp: lastTime } = lastScanRef.current
+        const timeSinceLastScan = now - lastTime
+        
+        if (lastBarcode === decodedText && timeSinceLastScan < oneMinuteInMs) {
           console.log(`🚫 Skipping duplicate scan (${Math.floor(timeSinceLastScan / 1000)}s ago):`, decodedText)
           toast.info(`Already scanned! Wait ${Math.ceil((oneMinuteInMs - timeSinceLastScan) / 1000)}s`)
           return
         }
       }
       
-      // Update tracking
+      // Mark as processing to prevent concurrent executions
+      isProcessingScanRef.current = true
+      
+      // Update tracking (both ref and state)
+      lastScanRef.current = { barcode: decodedText, timestamp: now }
       setLastScannedBarcode(decodedText)
       setLastScanTime(now)
       
-      // Trigger haptic feedback
-      if ('vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200])
-      }
+      console.log('✅ Processing new scan:', decodedText)
       
-      // Play success sound
-      playSuccessSound()
-      
-      // Perform lookup to find matching records
-      console.log('🔍 Starting lookup for barcode:', decodedText)
-      let foundRows: any[] = []
+      try {
+        // Trigger haptic feedback
+        if ('vibrate' in navigator) {
+          navigator.vibrate([200, 100, 200])
+        }
+        
+        // Play success sound
+        playSuccessSound()
+        
+        // Perform lookup to find matching records
+        console.log('🔍 Starting lookup for barcode:', decodedText)
+        let foundRows: any[] = []
       
       if (tableId) {
         try {
@@ -600,6 +615,15 @@ function ScanPageContent() {
             }, 1000)
           }
         })
+      }
+      } catch (error) {
+        console.error('Error processing scan:', error)
+        toast.error('Scan processing failed', {
+          description: error instanceof Error ? error.message : 'Unknown error'
+        })
+      } finally {
+        // Always reset processing flag
+        isProcessingScanRef.current = false
       }
     }
 
