@@ -77,6 +77,13 @@ ON scan_history FOR INSERT
 TO anon
 WITH CHECK (true);
 
+-- Allow anonymous users to view scan history (needed for scan results page)
+DROP POLICY IF EXISTS "Guest scanner can view scan history" ON scan_history;
+CREATE POLICY "Guest scanner can view scan history"
+ON scan_history FOR SELECT
+TO anon
+USING (true);
+
 -- Allow anonymous users to view workspaces (needed for scanner pairing)
 DROP POLICY IF EXISTS "Guest scanner can view workspaces" ON workspaces;
 CREATE POLICY "Guest scanner can view workspaces"
@@ -88,7 +95,7 @@ USING (true);
 GRANT SELECT ON data_tables TO anon;
 GRANT SELECT ON table_columns TO anon;
 GRANT SELECT, UPDATE ON table_rows TO anon;
-GRANT INSERT ON scan_history TO anon;
+GRANT SELECT, INSERT ON scan_history TO anon;
 GRANT SELECT ON workspaces TO anon;
 
 -- ============================================================================
