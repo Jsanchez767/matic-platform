@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, Table2, MoreVertical, Edit, Trash2, Copy, Archive } from 'lucide-react'
 import { useTabContext } from '../WorkspaceTabProvider'
 import { CreateTableModal, TableFormData } from './CreateTableModal'
-import { tablesAPI } from '@/lib/api/data-tables-client'
+import { tablesSupabase } from '@/lib/api/tables-supabase'
 import type { DataTable } from '@/types/data-tables'
 
 interface TablesListPageProps {
@@ -26,7 +26,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const loadTables = async () => {
     try {
       setLoading(true)
-      const data = await tablesAPI.list(workspaceId)
+      const data = await tablesSupabase.list(workspaceId)
       setTables(data)
     } catch (error) {
       console.error('Error loading tables:', error)
@@ -43,7 +43,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     try {
       console.log('Creating table with data:', data)
       
-      const newTable = await tablesAPI.create(data as any)
+      const newTable = await tablesSupabase.create(data as any)
       console.log('Table created:', newTable)
       
       // Reload tables list
@@ -94,7 +94,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     }
     
     try {
-      await tablesAPI.delete(tableId)
+      await tablesSupabase.delete(tableId)
       await loadTables()
     } catch (error) {
       console.error('Error deleting table:', error)

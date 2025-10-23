@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { workspacesAPI } from '@/lib/api/workspaces-client'
 import { Loader2 } from 'lucide-react'
 
 export default function SignUpPage() {

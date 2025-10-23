@@ -43,10 +43,54 @@ ALTER TABLE data_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE table_columns ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view tables in their workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can create tables in their workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can update tables in their workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can delete tables in their workspaces" ON data_tables;
 DROP POLICY IF EXISTS "Users can view columns in their workspaces" ON table_columns;
 
+-- SELECT policy
 CREATE POLICY "Users can view tables in their workspaces"
 ON data_tables FOR SELECT
+USING (
+  workspace_id IN (
+    SELECT workspace_id 
+    FROM workspace_members 
+    WHERE user_id = auth.uid()
+  )
+);
+
+-- INSERT policy
+CREATE POLICY "Users can create tables in their workspaces"
+ON data_tables FOR INSERT
+WITH CHECK (
+  workspace_id IN (
+    SELECT workspace_id 
+    FROM workspace_members 
+    WHERE user_id = auth.uid()
+  )
+);
+
+-- UPDATE policy
+CREATE POLICY "Users can update tables in their workspaces"
+ON data_tables FOR UPDATE
+USING (
+  workspace_id IN (
+    SELECT workspace_id 
+    FROM workspace_members 
+    WHERE user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  workspace_id IN (
+    SELECT workspace_id 
+    FROM workspace_members 
+    WHERE user_id = auth.uid()
+  )
+);
+
+-- DELETE policy (actually soft delete via UPDATE)
+CREATE POLICY "Users can delete tables in their workspaces"
+ON data_tables FOR UPDATE
 USING (
   workspace_id IN (
     SELECT workspace_id 
@@ -69,7 +113,7 @@ USING (
   )
 );
 
-GRANT SELECT ON data_tables TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON data_tables TO authenticated;
 GRANT SELECT ON table_columns TO authenticated;
 
 -- ----------------------------------------------------------------------------
@@ -117,7 +161,11 @@ GRANT SELECT ON workspace_members TO authenticated;
 ALTER TABLE table_rows ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view rows in their workspace tables" ON table_rows;
+DROP POLICY IF EXISTS "Users can create rows in their workspace tables" ON table_rows;
+DROP POLICY IF EXISTS "Users can update rows in their workspace tables" ON table_rows;
+DROP POLICY IF EXISTS "Users can delete rows in their workspace tables" ON table_rows;
 
+-- SELECT policy
 CREATE POLICY "Users can view rows in their workspace tables"
 ON table_rows FOR SELECT
 USING (
@@ -132,7 +180,63 @@ USING (
   )
 );
 
-GRANT SELECT ON table_rows TO authenticated;
+-- INSERT policy
+CREATE POLICY "Users can create rows in their workspace tables"
+ON table_rows FOR INSERT
+WITH CHECK (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+-- UPDATE policy
+CREATE POLICY "Users can update rows in their workspace tables"
+ON table_rows FOR UPDATE
+USING (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+)
+WITH CHECK (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+-- DELETE policy (soft delete via UPDATE)
+CREATE POLICY "Users can delete rows in their workspace tables"
+ON table_rows FOR UPDATE
+USING (
+  table_id IN (
+    SELECT id 
+    FROM data_tables 
+    WHERE workspace_id IN (
+      SELECT workspace_id 
+      FROM workspace_members 
+      WHERE user_id = auth.uid()
+    )
+  )
+);
+
+GRANT SELECT, INSERT, UPDATE ON table_rows TO authenticated;
 
 -- ============================================================================
 -- VERIFICATION QUERIES (Optional - uncomment to test)

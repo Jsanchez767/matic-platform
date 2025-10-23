@@ -1,10 +1,10 @@
 /**
- * Supabase Direct API for reading table metadata
- * Use this for read-only table operations (scanner, forms, etc.)
+ * Supabase Direct API for table operations
+ * Handles both reads and writes with RLS security
  */
 
 import { supabase } from '@/lib/supabase'
-import type { DataTable, TableColumn } from '@/types/data-tables'
+import type { DataTable, TableColumn, DataTableCreate, DataTableUpdate } from '@/types/data-tables'
 
 export const tablesSupabase = {
   /**
@@ -32,8 +32,8 @@ export const tablesSupabase = {
   /**
    * List tables in a workspace
    */
-  async list(workspaceId: string): Promise<DataTable[]> {
-    const { data, error } = await supabase
+  async list(workspaceId: string, includeArchived = false): Promise<DataTable[]> {
+    let query = supabase
       .from('data_tables')
       .select(`
         *,
@@ -42,12 +42,78 @@ export const tablesSupabase = {
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
 
+    if (!includeArchived) {
+      query = query.eq('is_archived', false)
+    }
+
+    const { data, error } = await query
+
     if (error) {
       console.error('Error fetching tables:', error)
       throw new Error(error.message)
     }
 
     return (data || []) as DataTable[]
+  },
+
+  /**
+   * Create a new table
+   */
+  async create(tableData: DataTableCreate): Promise<DataTable> {
+    const { data, error } = await supabase
+      .from('data_tables')
+      .insert(tableData)
+      .select(`
+        *,
+        columns:table_columns(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating table:', error)
+      throw new Error(error.message)
+    }
+
+    return data as DataTable
+  },
+
+  /**
+   * Update a table
+   */
+  async update(tableId: string, updates: DataTableUpdate): Promise<DataTable> {
+    const { data, error } = await supabase
+      .from('data_tables')
+      .update(updates)
+      .eq('id', tableId)
+      .select(`
+        *,
+        columns:table_columns(*)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating table:', error)
+      throw new Error(error.message)
+    }
+
+    return data as DataTable
+  },
+
+  /**
+   * Delete a table (soft delete - set is_archived)
+   */
+  async delete(tableId: string): Promise<{ message: string }> {
+    const { error } = await supabase
+      .from('data_tables')
+      .update({ is_archived: true })
+      .eq('id', tableId)
+
+    if (error) {
+      console.error('Error deleting table:', error)
+      throw new Error(error.message)
+    }
+
+    return { message: 'Table archived successfully' }
   },
 
   /**

@@ -5,7 +5,8 @@ import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Cal
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
-import { tablesAPI, rowsAPI } from '@/lib/api/data-tables-client'
+import { tablesSupabase } from '@/lib/api/tables-supabase'
+import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
 import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
 import type { TableRow } from '@/types/data-tables'
@@ -132,11 +133,11 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       setLoading(true)
       
-      const tableData = await tablesAPI.get(tableId)
+      const tableData = await tablesSupabase.get(tableId)
       setTableName(tableData.name)
       setColumns(tableData.columns as any || [])
       
-      const rowsData = await rowsAPI.list(tableId)
+      const rowsData = await rowsSupabase.list(tableId)
       setRows(rowsData as any)
     } catch (error) {
       console.error('Error loading table data:', error)
@@ -162,7 +163,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     }
 
     try {
-      await tablesAPI.update(tableId, { name: tempTableName })
+      await tablesSupabase.update(tableId, { name: tempTableName })
       setTableName(tempTableName)
       setIsEditingTableName(false)
     } catch (error) {
@@ -180,9 +181,9 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: true }))
     
     try {
-      const records = await rowsAPI.list(linkedTableId)
+      const records = await rowsSupabase.list(linkedTableId)
       // Convert TableRow[] to Row[] format
-      const convertedRecords: Row[] = records.map(record => ({
+      const convertedRecords: Row[] = records.map((record: TableRow) => ({
         id: record.id || '',
         data: record.data || {},
         position: record.position || 0

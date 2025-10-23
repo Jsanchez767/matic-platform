@@ -506,7 +506,7 @@ function ScanPageContent() {
       // Update matched rows with scan count and timestamp
       if (condensedRows.length > 0 && tableId) {
         try {
-          const { rowsAPI } = await import('@/lib/api/data-tables-client')
+          const { rowsSupabase } = await import('@/lib/api/rows-supabase')
           
           for (const row of condensedRows) {
             if (row.id) {
@@ -518,7 +518,7 @@ function ScanPageContent() {
               }
               
               try {
-                await rowsAPI.update(tableId, row.id, { 
+                await rowsSupabase.update(tableId, row.id, { 
                   data: updatedData,
                   updated_by: workspaceId || 'system' // Use workspace_id or 'system' as fallback
                 })

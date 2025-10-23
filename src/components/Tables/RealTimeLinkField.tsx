@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Search, X, Plus, Link2 } from 'lucide-react'
-import { rowsAPI } from '@/lib/api/data-tables-client'
+import { rowsSupabase } from '@/lib/api/rows-supabase'
 
 interface LinkedRecord {
   id: string
@@ -62,10 +62,10 @@ export function RealTimeLinkField({
     
     try {
       console.log('🎯 Loading linked records for display mode')
-      const allRecords = await rowsAPI.list(linkedTableId)
-      const linkedRecordsData = allRecords.filter(record => value.includes(record.id!))
+      const allRecords = await rowsSupabase.list(linkedTableId)
+      const linkedRecordsData = allRecords.filter((record: any) => value.includes(record.id!))
       
-      const formattedRecords: LinkedRecord[] = linkedRecordsData.map(record => ({
+      const formattedRecords: LinkedRecord[] = linkedRecordsData.map((record: any) => ({
         id: record.id!,
         display_name: getRecordDisplayName(record),
         data: record.data
@@ -102,10 +102,10 @@ export function RealTimeLinkField({
       console.log('🔄 Loading all records from linked table (one time only)')
       
       // Fetch all records from the linked table ONCE
-      const allRecords = await rowsAPI.list(linkedTableId)
+      const allRecords = await rowsSupabase.list(linkedTableId)
       
       // Convert to LinkedRecord format with display names
-      const formattedRecords: LinkedRecord[] = allRecords.map(record => ({
+      const formattedRecords: LinkedRecord[] = allRecords.map((record: any) => ({
         id: record.id!,
         display_name: getRecordDisplayName(record),
         data: record.data

@@ -1,22 +1,10 @@
 /**
  * Supabase Direct API for table row operations
- * Used for barcode matching, row lookups, and data queries
+ * Handles reads and writes with RLS security
  */
 
 import { supabase } from '@/lib/supabase'
-
-export interface TableRow {
-  id: string
-  table_id: string
-  data: Record<string, any>
-  metadata_?: Record<string, any>
-  is_archived: boolean
-  position?: number
-  created_by?: string
-  updated_by?: string
-  created_at: string
-  updated_at: string
-}
+import type { TableRow, TableRowCreate, TableRowUpdate } from '@/types/data-tables'
 
 export const rowsSupabase = {
   /**
@@ -171,5 +159,64 @@ export const rowsSupabase = {
     })
 
     return matches as TableRow[]
+  },
+
+  /**
+   * Create a new row
+   */
+  async create(tableId: string, rowData: TableRowCreate): Promise<TableRow> {
+    const { data, error } = await supabase
+      .from('table_rows')
+      .insert({
+        ...rowData,
+        table_id: tableId
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating row:', error)
+      throw new Error(error.message)
+    }
+
+    return data as TableRow
+  },
+
+  /**
+   * Update a row
+   */
+  async update(tableId: string, rowId: string, updates: TableRowUpdate): Promise<TableRow> {
+    const { data, error } = await supabase
+      .from('table_rows')
+      .update(updates)
+      .eq('id', rowId)
+      .eq('table_id', tableId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating row:', error)
+      throw new Error(error.message)
+    }
+
+    return data as TableRow
+  },
+
+  /**
+   * Delete a row (soft delete - set is_archived)
+   */
+  async delete(tableId: string, rowId: string): Promise<{ message: string }> {
+    const { error } = await supabase
+      .from('table_rows')
+      .update({ is_archived: true })
+      .eq('id', rowId)
+      .eq('table_id', tableId)
+
+    if (error) {
+      console.error('Error deleting row:', error)
+      throw new Error(error.message)
+    }
+
+    return { message: 'Row archived successfully' }
   },
 }

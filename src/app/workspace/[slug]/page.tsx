@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { NavigationLayout } from '@/components/NavigationLayout'
 import { WorkspaceTabProvider } from '@/components/WorkspaceTabProvider'
 import { TabContentRouter } from '@/components/TabContentRouter'
-import { workspacesAPI } from '@/lib/api/workspaces-client'
+import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
 import type { Workspace } from '@/types/workspaces'
 
 export default function WorkspacePage() {
@@ -24,7 +24,7 @@ export default function WorkspacePage() {
       setLoading(true)
       // TODO: Get organization_id from user context
       const orgId = 'default' // Placeholder
-      const data = await workspacesAPI.getBySlug(orgId, slug)
+      const data = await workspacesSupabase.getBySlug(slug, orgId)
       setWorkspace(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load workspace')

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { rowsAPI } from '@/lib/api/data-tables-client'
+import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { v4 as uuidv4 } from 'uuid'
 
 // Supabase client for real-time communications
@@ -247,15 +247,15 @@ export function useBarcodeScanning(
       let matchingRow = null
       
       try {
-        // Try to use backend search endpoint for efficient lookup
-        const matchingRows = await rowsAPI.search(tableId, selectedColumnId, barcode)
+        // Use Supabase Direct search for efficient lookup
+        const matchingRows = await rowsSupabase.searchByColumnName(tableId, columnName, barcode)
         matchingRow = matchingRows.length > 0 ? matchingRows[0] : null
-        console.log(`✅ Backend search found ${matchingRows.length} matches`)
-      } catch (backendError) {
-        console.warn('⚠️ Backend search not available, falling back to client-side search:', backendError)
+        console.log(`✅ Supabase search found ${matchingRows.length} matches`)
+      } catch (searchError) {
+        console.warn('⚠️ Supabase search failed, falling back to client-side search:', searchError)
         
-        // Fallback to client-side search if backend endpoint doesn't exist
-        const allRows = await rowsAPI.list(tableId)
+        // Fallback to client-side search if search endpoint fails
+        const allRows = await rowsSupabase.list(tableId)
         console.log(`📊 Total rows fetched: ${allRows.length}`)
         console.log(`🔍 Looking for barcode "${barcode}" in column "${columnName}"`)
         

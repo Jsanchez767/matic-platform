@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getCurrentUser } from '@/lib/supabase'
-import { workspacesAPI } from '@/lib/api/workspaces-client'
+import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
 import { useRouter } from 'next/navigation'
 import type { Workspace as APIWorkspace } from '@/types/workspaces'
 
@@ -35,10 +35,10 @@ export function useWorkspaceDiscovery() {
 
   const fetchWorkspaces = async (userId: string) => {
     try {
-      console.log('🔍 Fetching workspaces from API for user:', userId)
+      console.log('🔍 Fetching workspaces from Supabase for user:', userId)
       
-      // Fetch from FastAPI backend
-      const apiWorkspaces = await workspacesAPI.list(userId)
+      // Fetch from Supabase Direct (uses auth context internally)
+      const apiWorkspaces = await workspacesSupabase.list()
       
       // Convert API response to hook format
       const formattedWorkspaces: Workspace[] = apiWorkspaces.map((workspace: APIWorkspace) => ({
