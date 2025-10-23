@@ -16,17 +16,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/ui-components/input'
 import { Toaster } from '@/ui-components/sonner'
 import { toast } from 'sonner'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { scanHistoryAPI } from '@/lib/api/scan-history-client'
 import type { DataTable, TableColumn } from '@/types/data-tables'
 import type { ScanHistoryRecord } from '@/types/scan-history'
-
-// Supabase client for real-time communication
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface ScannedItem {
   id: string
