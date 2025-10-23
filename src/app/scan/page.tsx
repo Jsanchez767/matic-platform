@@ -80,8 +80,8 @@ function ScanPageContent() {
         BarcodeFormat.UPC_E,
       ])
       hints.set(DecodeHintType.TRY_HARDER, true)
-      // Use options object for scan options (delay, etc.)
-      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 400 })
+      // Increase delay between scan attempts for better performance
+      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 1000 })
     }
     return scannerRef.current
   }
@@ -185,7 +185,7 @@ function ScanPageContent() {
         if (hasDesktop) {
           console.log('🖥️ Desktop found in presence')
           setConnectionStatus('connected')
-          setIsScanning(true)
+          // Don't auto-start scanning - wait for user to enter info
         }
       })
 
@@ -194,7 +194,7 @@ function ScanPageContent() {
         const isDesktop = newPresences.some((p: any) => p.deviceInfo?.type === 'desktop')
         if (isDesktop) {
           setConnectionStatus('connected')
-          setIsScanning(true)
+          // Don't auto-start scanning - wait for user to enter info
         }
       })
 
@@ -594,16 +594,18 @@ function ScanPageContent() {
       existingResults.unshift(storageResult)
       localStorage.setItem(storageKey, JSON.stringify(existingResults.slice(0, 100)))
       
-      // Show toast notification
+      // Show toast notification - always show visual feedback
       if (condensedRows.length > 0) {
-        toast.success('Scan successful!', {
+        toast.success(`✓ ${decodedText}`, {
           description: `Found ${condensedRows.length} matching record${condensedRows.length > 1 ? 's' : ''}`,
+          duration: 2000,
         })
       } else {
-        toast.error('No matches found', {
+        toast.warning(`⚠ ${decodedText}`, {
           description: 'Barcode not found in database',
+          duration: 3000,
           action: {
-            label: 'Create New Record',
+            label: 'Create New',
             onClick: () => {
               // Navigate to create new record with pre-filled barcode
               if (tableId && columnName) {
@@ -773,6 +775,27 @@ function ScanPageContent() {
     toast.success('Profile saved!', {
       description: `Scanning as ${userName}`
     })
+    
+    // Start scanning after user info is saved
+    if (connectionStatus === 'connected') {
+      // Request camera permission and start scanning
+      if (cameraPermission === 'unknown') {
+        requestCameraPermissions().then(() => {
+          setIsScanning(true)
+        })
+      } else if (cameraPermission === 'granted') {
+        setIsScanning(true)
+      } else {
+        // Permission denied, prompt user
+        toast.error('Camera permission required', {
+          description: 'Please allow camera access to start scanning',
+          action: {
+            label: 'Grant Access',
+            onClick: () => requestCameraPermissions().then(() => setIsScanning(true))
+          }
+        })
+      }
+    }
   }
 
   const successCount = scanHistory.filter(item => item.success).length
