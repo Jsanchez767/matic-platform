@@ -8,6 +8,7 @@ import { Input } from '@/ui-components/input'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
 import { rowsAPI, tablesAPI } from '@/lib/api/data-tables-client'
+import { scanHistoryAPI } from '@/lib/api/scan-history-client'
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase client for real-time communication
@@ -163,7 +164,42 @@ function ScanResultsContent() {
     try {
       setIsLoading(true)
       
-      // First, load scan results from localStorage for immediate display
+      // Load scan history from database (primary source)
+      if (tableId && columnName) {
+        try {
+          const scanHistory = await scanHistoryAPI.list({
+            tableId: tableId,
+            columnName: columnName,
+            limit: 100
+          })
+          
+          const results: ScanResult[] = scanHistory.map(scan => ({
+            id: scan.id,
+            barcode: scan.barcode,
+            timestamp: new Date(scan.created_at),
+            success: scan.status === 'success',
+            foundRows: scan.matched_rows || [],
+            column: scan.column_name || columnName,
+            tableId: scan.table_id
+          }))
+          
+          setScanResults(results)
+          console.log(`📊 Loaded ${results.length} scan results from database`)
+          
+          // Sync to localStorage for offline access
+          const storedResults = results.map(r => ({
+            ...r,
+            timestamp: r.timestamp.toISOString()
+          }))
+          localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(storedResults.slice(0, 100)))
+          
+          return // Successfully loaded from database
+        } catch (dbError) {
+          console.error('Error loading from database, falling back to localStorage:', dbError)
+        }
+      }
+      
+      // Fallback: load from localStorage if database fails
       const storedResults = localStorage.getItem(`scan_results_${tableId}_${columnName}`)
       if (storedResults) {
         const results = JSON.parse(storedResults).map((result: any) => ({
@@ -171,12 +207,8 @@ function ScanResultsContent() {
           timestamp: new Date(result.timestamp)
         }))
         setScanResults(results)
-        console.log(`📊 Loaded ${results.length} scan results from localStorage`)
+        console.log(`📊 Loaded ${results.length} scan results from localStorage (fallback)`)
       }
-      
-      // TODO: In the future, we could also load scan history from the database
-      // This would allow scan results to persist across devices and sessions
-      // const scanHistory = await scanHistoryAPI.list(tableId, columnName)
       
     } catch (error) {
       console.error('Error loading scan results:', error)
