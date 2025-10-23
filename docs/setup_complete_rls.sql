@@ -126,17 +126,10 @@ ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view their workspaces" ON workspaces;
 DROP POLICY IF EXISTS "Users can view workspace members" ON workspace_members;
 
--- Policy for workspace_members - MUST come first to avoid recursion
+-- Simple policy for workspace_members - no recursion
 CREATE POLICY "Users can view workspace members"
 ON workspace_members FOR SELECT
-USING (
-  user_id = auth.uid() OR
-  workspace_id IN (
-    SELECT wm.workspace_id 
-    FROM workspace_members wm 
-    WHERE wm.user_id = auth.uid()
-  )
-);
+USING (user_id = auth.uid());
 
 -- Policy for workspaces - references workspace_members
 CREATE POLICY "Users can view their workspaces"
