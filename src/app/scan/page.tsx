@@ -44,6 +44,7 @@ function ScanPageContent() {
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting')
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null)
+  const [lastScanTime, setLastScanTime] = useState<number>(0)
   const [selectedCamera, setSelectedCamera] = useState('environment')
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([])
@@ -373,19 +374,20 @@ function ScanPageContent() {
   const onScanSuccess = async (decodedText: string) => {
       console.log('📱 Mobile scan success:', decodedText)
       
-      // Prevent duplicate scanning of the same barcode
-      if (lastScannedBarcode === decodedText) {
-        console.log('🚫 Skipping duplicate scan:', decodedText)
+      const now = Date.now()
+      const oneMinuteAgo = now - 60000 // 60 seconds
+      
+      // Smart duplicate prevention:
+      // 1. Same barcode within 1 minute: skip
+      // 2. Different barcode scanned: reset and allow
+      if (lastScannedBarcode === decodedText && lastScanTime > oneMinuteAgo) {
+        console.log('🚫 Skipping duplicate scan within 1 minute:', decodedText)
         return
       }
       
-      // Update last scanned barcode to prevent duplicates
+      // Update tracking
       setLastScannedBarcode(decodedText)
-      
-      // Clear the duplicate prevention after 3 seconds
-      setTimeout(() => {
-        setLastScannedBarcode(null)
-      }, 3000)
+      setLastScanTime(now)
       
       // Trigger haptic feedback
       if ('vibrate' in navigator) {
@@ -445,6 +447,36 @@ function ScanPageContent() {
         id: row.id,
         data: row.data,
       }))
+
+      // Update matched rows with scan count and timestamp
+      if (condensedRows.length > 0 && tableId) {
+        try {
+          const { rowsAPI } = await import('@/lib/api/data-tables-client')
+          
+          for (const row of condensedRows) {
+            if (row.id) {
+              const currentScanCount = parseInt(row.data?.scan_count || '0', 10)
+              const updatedData = {
+                ...row.data,
+                scan_count: currentScanCount + 1,
+                last_scanned_at: new Date().toISOString(),
+              }
+              
+              try {
+                await rowsAPI.update(tableId, row.id, { 
+                  data: updatedData,
+                  updated_by: workspaceId || 'system' // Use workspace_id or 'system' as fallback
+                })
+                console.log(`✅ Updated row ${row.id} scan count to ${currentScanCount + 1}`)
+              } catch (updateError) {
+                console.error(`Failed to update row ${row.id}:`, updateError)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error updating scan counts:', error)
+        }
+      }
 
       let persistedRecord: ScanHistoryRecord | null = null
       if (workspaceId && tableId) {
@@ -774,8 +806,7 @@ function ScanPageContent() {
               ref={videoRef}
               className="absolute inset-0 w-full h-full object-cover"
               style={{ 
-                display: isScanning ? 'block' : 'none',
-                transform: 'scaleX(-1)' // Mirror for front camera
+                display: isScanning ? 'block' : 'none'
               }}
               playsInline
               muted
