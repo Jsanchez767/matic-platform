@@ -530,9 +530,22 @@ function ScanPageContent() {
       let persistedRecord: ScanHistoryRecord | null = null
       if (workspaceId && tableId) {
         try {
+          // Get current user for created_by field
+          const { getCurrentUser } = await import('@/lib/supabase')
+          const user = await getCurrentUser()
+          
           const matchedRowIds = condensedRows
             .map(row => row.id)
             .filter((id): id is string => Boolean(id))
+
+          console.log('📝 Creating scan history record...', {
+            workspace_id: workspaceId,
+            table_id: tableId,
+            column_id: resolvedColumnId,
+            column_name: columnName,
+            barcode: decodedText,
+            user_id: user?.id
+          })
 
           persistedRecord = await scanHistoryAPI.create({
             workspace_id: workspaceId,
@@ -551,10 +564,17 @@ function ScanPageContent() {
               scannedByEmail: userEmail || undefined,
               deviceType: 'mobile',
             },
+            created_by: user?.id
           })
           console.log('✅ Scan persisted to database:', persistedRecord.id)
         } catch (persistError) {
           console.error('❌ Failed to persist scan history to database:', persistError)
+          console.error('❌ Error details:', {
+            message: persistError instanceof Error ? persistError.message : String(persistError),
+            workspaceId,
+            tableId,
+            barcode: decodedText
+          })
           toast.error('Database save failed', {
             description: persistError instanceof Error ? persistError.message : 'Scan saved locally only',
             duration: 3000,
