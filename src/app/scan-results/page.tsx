@@ -7,7 +7,7 @@ import { Button } from '@/ui-components/button'
 import { Input } from '@/ui-components/input'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
-import { rowsAPI, tablesAPI } from '@/lib/api/data-tables-client'
+import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { scanHistoryAPI } from '@/lib/api/scan-history-client'
 import { createClient } from '@supabase/supabase-js'
 
@@ -170,7 +170,7 @@ function ScanResultsContent() {
       if (!tableId) return
       
       // Fetch table schema from FastAPI backend
-      const tableData = await tablesAPI.get(tableId)
+      const tableData = await tablesSupabase.get(tableId)
       if (tableData && tableData.columns) {
         setTableColumns(tableData.columns)
         console.log(`📊 Loaded ${tableData.columns.length} table columns from backend`)

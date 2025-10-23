@@ -17,7 +17,7 @@ import { Input } from '@/ui-components/input'
 import { Toaster } from '@/ui-components/sonner'
 import { toast } from 'sonner'
 import { createClient } from '@supabase/supabase-js'
-import { tablesAPI } from '@/lib/api/data-tables-client'
+import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { scanHistoryAPI } from '@/lib/api/scan-history-client'
 import type { DataTable, TableColumn } from '@/types/data-tables'
 import type { ScanHistoryRecord } from '@/types/scan-history'
@@ -109,7 +109,7 @@ function ScanPageContent() {
 
     const loadMetadata = async () => {
       try {
-        const table = await tablesAPI.get(tableId)
+        const table = await tablesSupabase.get(tableId)
         setTableInfo(table)
         setWorkspaceId(table.workspace_id)
 
