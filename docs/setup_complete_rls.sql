@@ -124,9 +124,21 @@ ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view their workspaces" ON workspaces;
-DROP POLICY IF EXISTS "Users can view workspace members in their workspaces" ON workspace_members;
-DROP POLICY IF EXISTS "Users can view their own memberships" ON workspace_members;
+DROP POLICY IF EXISTS "Users can view workspace members" ON workspace_members;
 
+-- Policy for workspace_members - MUST come first to avoid recursion
+CREATE POLICY "Users can view workspace members"
+ON workspace_members FOR SELECT
+USING (
+  user_id = auth.uid() OR
+  workspace_id IN (
+    SELECT wm.workspace_id 
+    FROM workspace_members wm 
+    WHERE wm.user_id = auth.uid()
+  )
+);
+
+-- Policy for workspaces - references workspace_members
 CREATE POLICY "Users can view their workspaces"
 ON workspaces FOR SELECT
 USING (
@@ -136,20 +148,6 @@ USING (
     WHERE user_id = auth.uid()
   )
 );
-
-CREATE POLICY "Users can view workspace members in their workspaces"
-ON workspace_members FOR SELECT
-USING (
-  workspace_id IN (
-    SELECT workspace_id 
-    FROM workspace_members 
-    WHERE user_id = auth.uid()
-  )
-);
-
-CREATE POLICY "Users can view their own memberships"
-ON workspace_members FOR SELECT
-USING (user_id = auth.uid());
 
 GRANT SELECT ON workspaces TO authenticated;
 GRANT SELECT ON workspace_members TO authenticated;
