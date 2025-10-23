@@ -156,6 +156,38 @@ GRANT SELECT ON workspaces TO authenticated;
 GRANT SELECT ON workspace_members TO authenticated;
 
 -- ----------------------------------------------------------------------------
+-- 3.5. ORGANIZATIONS & MEMBERS (Organization Navigation)
+-- ----------------------------------------------------------------------------
+
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE organization_members ENABLE ROW LEVEL SECURITY;
+
+-- Drop ALL old policies to prevent conflicts
+DROP POLICY IF EXISTS "Users can view their organizations" ON organizations;
+DROP POLICY IF EXISTS "Users can update organizations they admin" ON organizations;
+DROP POLICY IF EXISTS "Members can view organization members" ON organization_members;
+DROP POLICY IF EXISTS "Admins can manage organization members" ON organization_members;
+
+-- Simple policy for organization_members - no recursion
+CREATE POLICY "Members can view organization members"
+ON organization_members FOR SELECT
+USING (user_id = auth.uid());
+
+-- Policy for organizations - references organization_members
+CREATE POLICY "Users can view their organizations"
+ON organizations FOR SELECT
+USING (
+  id IN (
+    SELECT organization_id 
+    FROM organization_members 
+    WHERE user_id = auth.uid()
+  )
+);
+
+GRANT SELECT ON organizations TO authenticated;
+GRANT SELECT ON organization_members TO authenticated;
+
+-- ----------------------------------------------------------------------------
 -- 4. TABLE ROWS (Barcode Matching & Data Queries)
 -- ----------------------------------------------------------------------------
 
