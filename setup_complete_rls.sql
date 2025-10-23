@@ -9,6 +9,10 @@
 
 ALTER TABLE scan_history ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (safe to run multiple times)
+DROP POLICY IF EXISTS "Users can view scan history from their workspaces" ON scan_history;
+DROP POLICY IF EXISTS "Users can create scan history in their workspaces" ON scan_history;
+
 CREATE POLICY "Users can view scan history from their workspaces"
 ON scan_history FOR SELECT
 USING (
@@ -37,6 +41,9 @@ GRANT SELECT, INSERT ON scan_history TO authenticated;
 
 ALTER TABLE data_tables ENABLE ROW LEVEL SECURITY;
 ALTER TABLE table_columns ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view tables in their workspaces" ON data_tables;
+DROP POLICY IF EXISTS "Users can view columns in their workspaces" ON table_columns;
 
 CREATE POLICY "Users can view tables in their workspaces"
 ON data_tables FOR SELECT
@@ -72,6 +79,10 @@ GRANT SELECT ON table_columns TO authenticated;
 ALTER TABLE workspaces ENABLE ROW LEVEL SECURITY;
 ALTER TABLE workspace_members ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their workspaces" ON workspaces;
+DROP POLICY IF EXISTS "Users can view workspace members in their workspaces" ON workspace_members;
+DROP POLICY IF EXISTS "Users can view their own memberships" ON workspace_members;
+
 CREATE POLICY "Users can view their workspaces"
 ON workspaces FOR SELECT
 USING (
@@ -104,6 +115,8 @@ GRANT SELECT ON workspace_members TO authenticated;
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE table_rows ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view rows in their workspace tables" ON table_rows;
 
 CREATE POLICY "Users can view rows in their workspace tables"
 ON table_rows FOR SELECT
