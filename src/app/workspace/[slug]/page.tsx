@@ -22,9 +22,7 @@ export default function WorkspacePage() {
   async function loadWorkspace() {
     try {
       setLoading(true)
-      // TODO: Get organization_id from user context
-      const orgId = 'default' // Placeholder
-      const data = await workspacesSupabase.getBySlug(slug, orgId)
+      const data = await workspacesSupabase.getBySlug(slug)
       setWorkspace(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load workspace')

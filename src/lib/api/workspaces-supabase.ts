@@ -51,14 +51,13 @@ export const workspacesSupabase = {
   },
 
   /**
-   * Get workspace by slug
+   * Get workspace by slug (user must have access via RLS)
    */
-  async getBySlug(slug: string, organizationId: string): Promise<Workspace> {
+  async getBySlug(slug: string): Promise<Workspace> {
     const { data, error } = await supabase
       .from('workspaces')
       .select('*')
       .eq('slug', slug)
-      .eq('organization_id', organizationId)
       .single()
 
     if (error) {
