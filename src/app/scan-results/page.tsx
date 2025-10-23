@@ -63,14 +63,56 @@ function ScanResultsContent() {
     
     const channel = supabase.channel(channelName)
     
-    // Listen for new scans from mobile devices
+    // Listen for INSERT events on scan_history table
+    channel.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'scan_history',
+        filter: `table_id=eq.${tableId}`
+      },
+      (payload: any) => {
+        console.log('🆕 New scan_history record detected:', payload.new)
+        
+        const newRecord = payload.new
+        
+        // Only add if it matches our column
+        if (newRecord.column_name === columnName) {
+          const newScanResult: ScanResult = {
+            id: newRecord.id,
+            barcode: newRecord.barcode,
+            timestamp: new Date(newRecord.created_at),
+            success: newRecord.status === 'success',
+            foundRows: newRecord.matched_rows || [],
+            column: newRecord.column_name,
+            tableId: newRecord.table_id
+          }
+          
+          console.log('✅ Adding new scan result to UI:', newScanResult)
+          setScanResults(prev => {
+            // Check if this scan already exists to avoid duplicates
+            const exists = prev.some(existing => existing.id === newScanResult.id)
+            
+            if (exists) {
+              console.log('⚠️ Duplicate scan detected, skipping')
+              return prev
+            }
+            
+            return [newScanResult, ...prev]
+          })
+        }
+      }
+    )
+    
+    // Also listen for broadcast events from mobile devices (for instant feedback)
     channel.on('broadcast', { event: 'barcode_scanned' }, ({ payload }) => {
-      console.log('📱 Received new scan via real-time:', payload)
+      console.log('📱 Received scan broadcast from mobile:', payload)
       
       if (payload.tableId === tableId && payload.column === columnName) {
         // Use the complete scan result data from mobile
         const newScanResult: ScanResult = {
-          id: payload.scanResult?.id || Date.now().toString(),
+          id: payload.scanResult?.id || `temp_${Date.now()}`,
           barcode: payload.barcode,
           timestamp: new Date(payload.timestamp),
           success: payload.foundRows && payload.foundRows.length > 0,
@@ -79,7 +121,7 @@ function ScanResultsContent() {
           tableId: tableId
         }
         
-        console.log('✅ Adding real-time scan result:', newScanResult)
+        console.log('✅ Adding broadcast scan result:', newScanResult)
         setScanResults(prev => {
           // Check if this scan already exists to avoid duplicates
           const exists = prev.some(existing => 
@@ -88,30 +130,17 @@ function ScanResultsContent() {
           )
           
           if (exists) {
-            console.log('⚠️ Duplicate scan detected, skipping')
+            console.log('⚠️ Duplicate broadcast scan detected, skipping')
             return prev
           }
           
           return [newScanResult, ...prev]
         })
-        
-        // Also update localStorage for persistence
-        const existingResults = JSON.parse(localStorage.getItem(`scan_results_${tableId}_${columnName}`) || '[]')
-        const isDuplicate = existingResults.some((existing: any) => 
-          existing.barcode === newScanResult.barcode && 
-          Math.abs(new Date(existing.timestamp).getTime() - new Date(newScanResult.timestamp).getTime()) < 5000
-        )
-        
-        if (!isDuplicate) {
-          existingResults.unshift(newScanResult)
-          localStorage.setItem(`scan_results_${tableId}_${columnName}`, JSON.stringify(existingResults.slice(0, 100)))
-          console.log('💾 Saved scan result to localStorage')
-        }
       }
     })
 
     channel.subscribe((status) => {
-      console.log('📺 Scan results real-time subscription status:', status)
+      console.log('📺 Real-time subscription status:', status)
     })
     
     channelRef.current = channel
@@ -160,9 +189,11 @@ function ScanResultsContent() {
     }
   }
 
-  const loadScanResults = async () => {
+  const loadScanResults = async (showLoading = true) => {
     try {
-      setIsLoading(true)
+      if (showLoading) {
+        setIsLoading(true)
+      }
       
       // Load scan history from database (primary source)
       if (tableId && columnName) {
@@ -214,20 +245,11 @@ function ScanResultsContent() {
       console.error('Error loading scan results:', error)
       setScanResults([])
     } finally {
-      setIsLoading(false)
+      if (showLoading) {
+        setIsLoading(false)
+      }
     }
   }
-
-  // Auto-refresh every 30 seconds to pick up new scans (less aggressive)
-  useEffect(() => {
-    if (!tableId || !columnName) return
-
-    const interval = setInterval(() => {
-      loadScanResults()
-    }, 30000) // 30 seconds instead of 5
-
-    return () => clearInterval(interval)
-  }, [tableId, columnName])
 
   const formatTimestamp = (timestamp: Date) => {
     return timestamp.toLocaleString('en-US', {
@@ -301,7 +323,13 @@ function ScanResultsContent() {
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Scan Results</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold text-gray-900">Scan Results</h1>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
+                  Live
+                </Badge>
+              </div>
               <p className="text-sm text-gray-600">
                 Column: <span className="font-medium">{columnName}</span>
               </p>
@@ -309,7 +337,7 @@ function ScanResultsContent() {
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm" onClick={loadScanResults}>
+            <Button variant="outline" size="sm" onClick={() => loadScanResults(true)}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
