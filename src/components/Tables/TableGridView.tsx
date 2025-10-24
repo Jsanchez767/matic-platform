@@ -893,17 +893,17 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
               className={`w-3 h-3 rounded-full ${
                 connectionStatus === 'connected' ? 'bg-green-500' : 
                 connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                connectionStatus === 'error' ? 'bg-red-500' : 'bg-green-500'
               }`}
             />
             <span className="font-medium">
-              {connectionStatus === 'connected' ? 'Live' : 
+              {connectionStatus === 'connected' ? 'Live (WebSocket)' : 
                connectionStatus === 'connecting' ? 'Connecting...' :
-               connectionStatus === 'error' ? 'Offline' : 'Offline'}
+               connectionStatus === 'error' ? 'Connection Error' : 'Live (Supabase)'}
             </span>
-            {connectionStatus === 'error' && (
-              <span className="text-xs text-gray-400" title="Real-time updates may be limited on free hosting">
-                (Limited)
+            {connectionStatus === 'disconnected' && (
+              <span className="text-xs text-gray-400" title="Using Supabase Realtime for live updates">
+                (DB Sync)
               </span>
             )}
           </div>

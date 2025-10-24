@@ -17,11 +17,12 @@ app = FastAPI(
     redirect_slashes=False,  # Disable 307 redirects - use exact paths
 )
 
-# Configure CORS - Production origins only
-# For local development, set NEXT_PUBLIC_API_URL to http://localhost:8000/api in .env.local
+# Configure CORS - Production + local development origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001", 
         "https://maticsapp.com",
         "https://www.maticsapp.com",
         "https://matic-platform-git-main-jesus-sanchezs-projects-9cb2de52.vercel.app",

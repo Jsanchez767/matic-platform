@@ -66,24 +66,27 @@ export function useTableRealtime(
       ws.onclose = (event) => {
         console.log(`WebSocket closed for table ${tableId}:`, event.code, event.reason)
         wsRef.current = null
-        setConnectionStatus('disconnected')
         
-        // Only attempt reconnection for unexpected closures (not 403 Forbidden)
-        if (event.code !== 1000 && event.code !== 403) {
+        // Normal closure or WebSocket not supported - show as disconnected (not error)
+        if (event.code === 1000 || event.code === 1006) {
+          setConnectionStatus('disconnected')
+        } else if (event.code === 403) {
+          console.warn('WebSocket connection forbidden (403). Using Supabase Realtime instead.')
+          setConnectionStatus('disconnected') // Don't show as error - Supabase Realtime handles updates
+        } else {
+          // Unexpected closure - mark as error and try to reconnect
           setConnectionStatus('error')
           reconnectTimeoutRef.current = setTimeout(() => {
             console.log('Attempting to reconnect...')
             connect()
-          }, 5000) // Increased to 5 seconds for production stability
-        } else if (event.code === 403) {
-          console.warn('WebSocket connection forbidden (403). This may be due to hosting limitations. Real-time updates disabled.')
-          setConnectionStatus('error')
+          }, 5000)
         }
       }
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        setConnectionStatus('error')
+        console.error('WebSocket error (this is expected on Render free tier):', error)
+        // Don't set to error - fall back to Supabase Realtime
+        setConnectionStatus('disconnected')
       }
     } catch (error) {
       console.error('Failed to create WebSocket connection:', error)
