@@ -423,7 +423,7 @@ async def search_rows(
 @router.post("/{table_id}/rows", response_model=TableRowSchema)
 async def create_row(
     table_id: UUID,
-    row: TableRowCreate,
+    row_data: TableRowCreate,
     session: AsyncSession = Depends(get_session),
 ):
     """Create a new row."""
