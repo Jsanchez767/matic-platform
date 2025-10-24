@@ -13,7 +13,11 @@ import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@
 import type { TableRow } from '@/types/data-tables'
 
 // @ts-ignore - Next.js injects env vars at build time
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+// API Configuration - Always use production backend on Render
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
+if (!API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local')
+}
 
 interface Column {
   id: string

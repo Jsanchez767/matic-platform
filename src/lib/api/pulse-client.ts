@@ -5,7 +5,11 @@
 
 import { getSessionToken } from '@/lib/supabase';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// API Configuration - Always use production backend on Render
+const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
+if (!API_BASE) {
+  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local');
+}
 
 // ============================================================================
 // TYPES (matching backend schemas)
