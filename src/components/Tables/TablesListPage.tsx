@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Search, Table2, MoreVertical, Edit, Trash2, Copy, Archive } from 'lucide-react'
+import { Plus, Search, Table2, MoreVertical, Edit, Trash2, Copy, Archive, Upload } from 'lucide-react'
 import { useTabContext } from '../WorkspaceTabProvider'
 import { CreateTableModal, TableFormData } from './CreateTableModal'
+import { CSVImportModal } from './CSVImportModal'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import type { DataTable } from '@/types/data-tables'
 
@@ -17,6 +18,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false)
   const { tabManager } = useTabContext()
 
   useEffect(() => {
@@ -37,6 +39,100 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
 
   const handleNewTable = () => {
     setIsCreateModalOpen(true)
+  }
+
+  const handleImportCSV = () => {
+    setIsImportModalOpen(true)
+  }
+
+  const handleCSVImport = async (data: { columns: any[]; rows: Record<string, any>[] }) => {
+    try {
+      // Get actual user ID from Supabase
+      const { getCurrentUser } = await import('@/lib/supabase')
+      const user = await getCurrentUser()
+      
+      if (!user) {
+        alert('You must be logged in to import data')
+        return
+      }
+
+      // Create table name from file or use default
+      const tableName = `Imported Table ${new Date().toLocaleDateString()}`
+      const slug = tableName.toLowerCase().replace(/\s+/g, '-')
+
+      // Map CSV columns to table columns
+      const tableColumns = data.columns.map((col, i) => ({
+        name: col.name,
+        label: col.label,
+        column_type: col.type,
+        position: i,
+      }))
+
+      // Create the table
+      const tableData: TableFormData = {
+        name: tableName,
+        slug,
+        description: `Imported from CSV with ${data.rows.length} rows`,
+        icon: 'table',
+        color: '#10B981',
+        workspace_id: workspaceId,
+        created_by: user.id,
+        columns: tableColumns,
+      }
+
+      const newTable = await tablesSupabase.create(tableData as any)
+      console.log('Table created:', newTable)
+
+      // Import rows using bulk create endpoint
+      if (data.rows.length > 0) {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
+        if (!API_BASE_URL) {
+          throw new Error('NEXT_PUBLIC_API_URL is not configured')
+        }
+
+        // Transform CSV rows to match table structure
+        const transformedRows = data.rows.map(row => {
+          const rowData: Record<string, any> = {}
+          data.columns.forEach(col => {
+            rowData[col.name] = row[col.label]
+          })
+          return rowData
+        })
+
+        const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rows: transformedRows,
+            created_by: user.id,
+          }),
+        })
+
+        if (!response.ok) {
+          console.error('Failed to import rows')
+        }
+      }
+
+      // Reload tables list
+      await loadTables()
+
+      // Open the new table in a tab
+      if (tabManager) {
+        tabManager.addTab({
+          id: newTable.id,
+          type: 'table',
+          title: newTable.name,
+          icon: 'table',
+          workspaceId: workspaceId,
+          url: `/workspace/${workspaceId}/table/${newTable.id}`,
+        })
+      }
+
+      setIsImportModalOpen(false)
+    } catch (error) {
+      console.error('Error importing CSV:', error)
+      alert(`Failed to import CSV: ${error}`)
+    }
   }
 
   const handleCreateTable = async (data: TableFormData) => {
@@ -129,13 +225,22 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
               {tables.length} {tables.length === 1 ? 'table' : 'tables'}
             </p>
           </div>
-          <button
-            onClick={handleNewTable}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Table</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleImportCSV}
+              className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import CSV</span>
+            </button>
+            <button
+              onClick={handleNewTable}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Table</span>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -270,6 +375,13 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateTable}
         workspaceId={workspaceId}
+      />
+
+      {/* CSV Import Modal */}
+      <CSVImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleCSVImport}
       />
     </div>
   )
