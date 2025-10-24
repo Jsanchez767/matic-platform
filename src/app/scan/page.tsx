@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { BrowserMultiFormatReader, BarcodeFormat, IScannerControls } from '@zxing/browser'
 import { DecodeHintType } from '@zxing/library'
 import { Exception, NotFoundException, Result } from '@zxing/library'
-import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield, User, Mail } from 'lucide-react'
+import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield, User, Mail, Activity } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { scanHistoryAPI } from '@/lib/api/scan-history-client'
+import { pulseClient } from '@/lib/api/pulse-client'
 import type { DataTable, TableColumn } from '@/types/data-tables'
 import type { ScanHistoryRecord } from '@/types/scan-history'
 
@@ -105,6 +106,10 @@ function ScanPageContent() {
   const tableId = searchParams.get('table')
   const columnName = searchParams.get('column')
   const pairingCode = searchParams.get('code')
+  const pulseTableId = searchParams.get('pulse') // Pulse mode detection
+  const scanMode = searchParams.get('mode') // 'pulse' or undefined (regular mode)
+  
+  const isPulseMode = scanMode === 'pulse' && pulseTableId
 
   useEffect(() => {
     if (!tableId) {
@@ -621,27 +626,68 @@ function ScanPageContent() {
       // Add to local scan history for real-time display
       setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
       
-      // Show toast notification - always show visual feedback
-      if (condensedRows.length > 0) {
-        toast.success(`✓ ${decodedText}`, {
-          description: `Found ${condensedRows.length} matching record${condensedRows.length > 1 ? 's' : ''}`,
-          duration: 2000,
-        })
+      // ============================================================================
+      // PULSE MODE: Create check-in event
+      // ============================================================================
+      if (isPulseMode && pulseTableId && condensedRows.length > 0) {
+        try {
+          const matchedRow = condensedRows[0] // Use first matched row
+          console.log('🟢 PULSE MODE: Creating check-in for row:', matchedRow.id)
+          
+          const checkInData = {
+            pulse_table_id: pulseTableId,
+            table_id: tableId!,
+            row_id: matchedRow.id!,
+            barcode_scanned: decodedText,
+            scanner_user_name: guestInfo?.name || userName || 'Mobile Scanner',
+            scanner_user_email: guestInfo?.email || userEmail || undefined,
+            scanner_device_id: navigator.userAgent || undefined,
+            row_data: matchedRow.data,
+            is_walk_in: false, // Can add logic to detect walk-ins
+            notes: undefined
+          }
+          
+          const checkIn = await pulseClient.createCheckIn(checkInData)
+          console.log('✅ Pulse check-in created:', checkIn.id)
+          
+          // Show Pulse-specific success message
+          toast.success(`✓ Checked In!`, {
+            description: `${guestInfo?.name || userName || 'Attendee'} • ${decodedText}`,
+            duration: 3000,
+          })
+          
+          // Continue to regular flow...
+          
+        } catch (pulseError) {
+          console.error('❌ Pulse check-in failed:', pulseError)
+          toast.error('Check-in failed', {
+            description: pulseError instanceof Error ? pulseError.message : 'Please try again',
+            duration: 3000,
+          })
+        }
       } else {
-        toast.warning(`⚠ ${decodedText}`, {
-          description: 'Barcode not found in database',
-          duration: 3000,
-          action: {
-            label: 'Create New',
-            onClick: () => {
-              // Navigate to create new record with pre-filled barcode
-              if (tableId && columnName) {
-                const createUrl = `/workspace/table/${tableId}?action=create&${columnName}=${encodeURIComponent(decodedText)}`
-                window.open(createUrl, '_blank')
+        // Regular scanner mode - show normal toast notifications
+        if (condensedRows.length > 0) {
+          toast.success(`✓ ${decodedText}`, {
+            description: `Found ${condensedRows.length} matching record${condensedRows.length > 1 ? 's' : ''}`,
+            duration: 2000,
+          })
+        } else {
+          toast.warning(`⚠ ${decodedText}`, {
+            description: 'Barcode not found in database',
+            duration: 3000,
+            action: {
+              label: 'Create New',
+              onClick: () => {
+                // Navigate to create new record with pre-filled barcode
+                if (tableId && columnName) {
+                  const createUrl = `/workspace/table/${tableId}?action=create&${columnName}=${encodeURIComponent(decodedText)}`
+                  window.open(createUrl, '_blank')
+                }
               }
             }
-          }
-        })
+          })
+        }
       }
 
       // Broadcast to desktop via Supabase real-time
@@ -968,6 +1014,12 @@ function ScanPageContent() {
           </Button>
           
           <div className="flex items-center gap-2">
+            {isPulseMode && (
+              <Badge className="bg-green-600 text-white border-0">
+                <Activity className="w-3 h-3 mr-1" />
+                Pulse Mode
+              </Badge>
+            )}
             <Badge variant="outline" className={`${
               connectionStatus === 'connected' 
                 ? 'bg-green-50 text-green-700 border-green-200' 

@@ -5,6 +5,7 @@ import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Cal
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
+import { EnablePulseButton } from '@/components/Pulse/EnablePulseButton'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
@@ -932,6 +933,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             <BarChart3 className="w-4 h-4" />
             Scan Results
           </button>
+          
+          <EnablePulseButton tableId={tableId} workspaceId={workspaceId} />
           
           <button
             onClick={handleAddRow}
