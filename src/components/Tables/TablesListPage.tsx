@@ -6,7 +6,14 @@ import { useTabContext } from '../WorkspaceTabProvider'
 import { CreateTableModal, TableFormData } from './CreateTableModal'
 import { CSVImportModal } from './CSVImportModal'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
+import { supabase, getSessionToken } from '@/lib/supabase'
 import type { DataTable } from '@/types/data-tables'
+
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
+if (!API_BASE_URL) {
+  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local')
+}
 
 interface TablesListPageProps {
   workspaceId: string
@@ -45,90 +52,110 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     setIsImportModalOpen(true)
   }
 
-  const handleCSVImport = async (data: { columns: any[]; rows: Record<string, any>[] }) => {
+    const handleCSVImport = async (data: { headers: string[]; rows: string[][]; mappings: { name: string; type: string; included: boolean }[] }) => {
     try {
-      // Get actual user ID from Supabase
-      const { getCurrentUser } = await import('@/lib/supabase')
-      const user = await getCurrentUser()
-      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         alert('You must be logged in to import data')
         return
       }
 
-      // Create table name from file or use default
+      // Create table name
       const tableName = `Imported Table ${new Date().toLocaleDateString()}`
-      const slug = tableName.toLowerCase().replace(/\s+/g, '-')
+      
+      // Map column types from CSV import to table column types
+      const typeMapping: Record<string, string> = {
+        'single_line_text': 'text',
+        'long_text': 'text',
+        'number': 'number',
+        'email': 'email',
+        'phone': 'phone',
+        'url': 'url',
+        'date': 'date',
+        'date_time': 'datetime',
+        'checkbox': 'checkbox',
+        'single_select': 'select',
+        'multiple_select': 'multiselect',
+        'currency': 'currency',
+        'percent': 'number',
+        'rating': 'rating',
+        'attachment': 'attachment',
+        'link_to_table': 'lookup'
+      }
 
       // Map CSV columns to table columns
-      const tableColumns = data.columns.map((col, i) => ({
-        name: col.name,
-        label: col.label,
-        column_type: col.type,
-        position: i,
+      const tableColumns = data.mappings.map((mapping, index) => ({
+        name: mapping.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+        label: mapping.name,
+        column_type: (typeMapping[mapping.type] || 'text') as any,
+        position: index,
+        is_visible: true,
+        is_primary: false,
+        width: 150,
+        settings: {}
       }))
 
-      // Create the table
-      const tableData: TableFormData = {
-        name: tableName,
-        slug,
-        description: `Imported from CSV with ${data.rows.length} rows`,
-        icon: 'table',
-        color: '#10B981',
+      // Create the table via Supabase
+      const newTable = await tablesSupabase.create({
         workspace_id: workspaceId,
-        created_by: user.id,
+        name: tableName,
+        slug: tableName.toLowerCase().replace(/\s+/g, '-'),
         columns: tableColumns,
-      }
+        created_by: user.id
+      })
 
-      const newTable = await tablesSupabase.create(tableData as any)
       console.log('Table created:', newTable)
 
-      // Import rows using bulk create endpoint
-      if (data.rows.length > 0) {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
-        if (!API_BASE_URL) {
-          throw new Error('NEXT_PUBLIC_API_URL is not configured')
-        }
-
-        // Transform CSV rows to match table structure
-        const transformedRows = data.rows.map(row => {
-          const rowData: Record<string, any> = {}
-          data.columns.forEach(col => {
-            rowData[col.name] = row[col.label]
-          })
-          return rowData
+      // Transform CSV rows to match table structure
+      const transformedRows = data.rows.map((row, index) => {
+        const rowData: Record<string, any> = {}
+        data.headers.forEach((header, headerIndex) => {
+          const mapping = data.mappings[headerIndex]
+          const columnName = mapping.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')
+          rowData[columnName] = row[headerIndex] || null
         })
-
-        const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rows: transformedRows,
-            created_by: user.id,
-          }),
-        })
-
-        if (!response.ok) {
-          console.error('Failed to import rows')
+        return {
+          data: rowData,
+          position: index,
+          created_by: user.id
         }
+      })
+
+      // Bulk insert rows via FastAPI
+      const token = await getSessionToken()
+      const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({
+          rows: transformedRows.map(r => r.data),
+          created_by: user.id
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to import rows')
       }
+
+      console.log('Rows imported successfully')
 
       // Reload tables list
       await loadTables()
 
-      // Open the new table in a tab
-      if (tabManager) {
-        tabManager.addTab({
-          id: newTable.id,
-          type: 'table',
-          title: newTable.name,
-          icon: 'table',
-          workspaceId: workspaceId,
-          url: `/workspace/${workspaceId}/table/${newTable.id}`,
-        })
-      }
-
+      // Close modal
       setIsImportModalOpen(false)
+
+      // Open the new table in a tab
+      tabManager?.addTab({
+        title: newTable.name,
+        type: 'table',
+        url: `/w/${workspaceId}/tables/${newTable.id}`,
+        workspaceId,
+        metadata: { tableId: newTable.id }
+      })
     } catch (error) {
       console.error('Error importing CSV:', error)
       alert(`Failed to import CSV: ${error}`)
@@ -379,9 +406,9 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
 
       {/* CSV Import Modal */}
       <CSVImportModal
-        isOpen={isImportModalOpen}
+        open={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onImport={handleCSVImport}
+        onComplete={handleCSVImport}
       />
     </div>
   )
