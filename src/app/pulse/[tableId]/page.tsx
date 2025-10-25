@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Activity, Users, UserCheck, TrendingUp, Clock, Smartphone, Settings as SettingsIcon, QrCode, Loader2, ArrowLeft } from "lucide-react";
+import { Activity, Users, UserCheck, TrendingUp, Clock, Smartphone, Settings as SettingsIcon, QrCode, Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Card } from "@/ui-components/card";
 import { pulseClient, PulseDashboardStats, PulseEnabledTable, PulseScannerSession } from "@/lib/api/pulse-client";
@@ -11,6 +11,7 @@ import { PulseSettingsModal } from "@/components/Pulse/PulseSettingsModal";
 import { supabase } from "@/lib/supabase";
 import { tablesSupabase } from "@/lib/api/tables-supabase";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function PulseDashboard() {
   const params = useParams();
@@ -24,6 +25,7 @@ export default function PulseDashboard() {
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [checkInPopup, setCheckInPopup] = useState<any | null>(null);
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
@@ -72,8 +74,24 @@ export default function PulseDashboard() {
             loadStats();
             loadSessions();
             
-            // Show toast notification
+            // Show popup notification if enabled
             const checkIn = payload.new as any;
+            if (config?.settings?.show_popup) {
+              setCheckInPopup({
+                name: checkIn.row_data?.name || checkIn.scanner_user_name || 'Guest',
+                email: checkIn.row_data?.email || '',
+                barcode: checkIn.barcode_scanned,
+                timestamp: new Date(),
+                isWalkIn: checkIn.is_walk_in || false,
+              });
+              
+              // Auto-close after 5 seconds
+              setTimeout(() => {
+                setCheckInPopup(null);
+              }, 5000);
+            }
+            
+            // Show toast notification
             toast.success('New Check-in!', {
               description: `${checkIn.scanner_user_name || 'Guest'} • ${checkIn.barcode_scanned}`,
               duration: 3000,
@@ -526,6 +544,76 @@ export default function PulseDashboard() {
           }}
         />
       )}
+
+      {/* Check-in Popup Notification */}
+      <AnimatePresence>
+        {checkInPopup && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed top-4 right-4 z-50 max-w-sm w-full"
+          >
+            <Card className={`p-4 shadow-2xl border-2 ${
+              checkInPopup.isWalkIn 
+                ? 'border-orange-500 bg-orange-50' 
+                : 'border-green-500 bg-green-50'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-full ${
+                  checkInPopup.isWalkIn 
+                    ? 'bg-orange-100' 
+                    : 'bg-green-100'
+                }`}>
+                  {checkInPopup.isWalkIn ? (
+                    <Users className={`h-6 w-6 ${
+                      checkInPopup.isWalkIn 
+                        ? 'text-orange-600' 
+                        : 'text-green-600'
+                    }`} />
+                  ) : (
+                    <CheckCircle2 className="h-6 w-6 text-green-600" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className={`font-bold text-lg ${
+                      checkInPopup.isWalkIn 
+                        ? 'text-orange-900' 
+                        : 'text-green-900'
+                    }`}>
+                      {checkInPopup.isWalkIn ? 'Walk-in Added!' : 'Checked In!'}
+                    </h4>
+                    <button
+                      onClick={() => setCheckInPopup(null)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <XCircle className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <p className="text-gray-900 font-medium mb-1">
+                    {checkInPopup.name}
+                  </p>
+                  {checkInPopup.email && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      {checkInPopup.email}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-gray-500 font-mono">
+                      ID: {checkInPopup.barcode}
+                    </p>
+                    <p className="text-xs text-gray-400">
+                      {checkInPopup.timestamp.toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

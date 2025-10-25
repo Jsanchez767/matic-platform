@@ -83,6 +83,10 @@ function ScanPageContent() {
     studentId: '',
   })
   
+  // Scanner session management
+  const [scannerSessionId, setScannerSessionId] = useState<string | null>(null)
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
   const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
   const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null)
@@ -355,6 +359,61 @@ function ScanPageContent() {
       }
     }
   }, [tableId, columnName, pairingCode])
+
+  // Scanner session management for Pulse mode
+  useEffect(() => {
+    if (!isPulseMode || !pulseConfig || !pulseTableId || !pairingCode || !userName) {
+      return
+    }
+
+    const createSession = async () => {
+      try {
+        console.log('📱 Creating scanner session...')
+        const session = await pulseClient.createScannerSession({
+          pulse_table_id: pulseTableId,
+          pairing_code: pairingCode,
+          scanner_name: userName,
+          scanner_email: userEmail || undefined,
+          device_id: `scanner_${Date.now()}`,
+        })
+        
+        setScannerSessionId(session.id)
+        console.log('✅ Scanner session created:', session.id)
+        
+        // Setup heartbeat to keep session active
+        heartbeatIntervalRef.current = setInterval(async () => {
+          try {
+            await pulseClient.updateScannerSession(session.id, {
+              is_active: true,
+              last_scan_at: new Date().toISOString(),
+            })
+            console.log('💓 Scanner session heartbeat sent')
+          } catch (error) {
+            console.error('Failed to send heartbeat:', error)
+          }
+        }, 30000) // Every 30 seconds
+      } catch (error) {
+        console.error('Failed to create scanner session:', error)
+        toast.error('Failed to register scanner session')
+      }
+    }
+
+    createSession()
+
+    return () => {
+      // Cleanup: mark session as inactive
+      if (scannerSessionId) {
+        pulseClient.updateScannerSession(scannerSessionId, {
+          is_active: false,
+        }).catch(err => console.error('Failed to end session:', err))
+      }
+      
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current)
+        heartbeatIntervalRef.current = null
+      }
+    }
+  }, [isPulseMode, pulseConfig, pulseTableId, pairingCode, userName, userEmail])
 
   // Check camera permissions on mount
   const checkCameraPermissions = async () => {
@@ -780,6 +839,19 @@ function ScanPageContent() {
           
           const checkIn = await pulseClient.createCheckIn(checkInData)
           console.log('✅ Pulse check-in created:', checkIn.id)
+          
+          // Update scanner session scan count
+          if (scannerSessionId) {
+            try {
+              await pulseClient.updateScannerSession(scannerSessionId, {
+                total_scans: (scanHistory.filter(s => s.success).length + 1),
+                last_scan_at: new Date().toISOString(),
+              })
+              console.log('📊 Scanner session updated with scan count')
+            } catch (sessionError) {
+              console.warn('Failed to update scanner session:', sessionError)
+            }
+          }
           
           // Don't show toast - the modal is the primary feedback
           
@@ -1657,13 +1729,91 @@ function ScanPageContent() {
                       </button>
                     </div>
                     
-                    <form onSubmit={(e) => {
+                    <form onSubmit={async (e) => {
                       e.preventDefault();
-                      // Handle walk-in submission
-                      toast.success('Walk-in added successfully!');
-                      setShowWalkInForm(false);
-                      setScanResult(null);
-                      setWalkInForm({ name: '', email: '', studentId: '' });
+                      
+                      if (!isPulseMode || !pulseTableId || !tableId) {
+                        toast.error('Walk-ins are only available in Pulse mode');
+                        return;
+                      }
+                      
+                      try {
+                        // 1. Create new row in data table with walk-in data
+                        console.log('📝 Creating walk-in row in table:', tableId);
+                        const { rowsSupabase } = await import('@/lib/api/rows-supabase');
+                        
+                        // Build row data based on table columns
+                        const rowData: Record<string, any> = {};
+                        
+                        // Map form fields to table columns (basic mapping)
+                        if (tableInfo?.columns) {
+                          const nameCol = tableInfo.columns.find(c => 
+                            c.name.toLowerCase().includes('name') || c.label?.toLowerCase().includes('name')
+                          );
+                          const emailCol = tableInfo.columns.find(c => 
+                            c.name.toLowerCase().includes('email') || c.label?.toLowerCase().includes('email')
+                          );
+                          const idCol = tableInfo.columns.find(c => 
+                            c.id === resolvedColumnId || 
+                            c.name.toLowerCase().includes('id') || 
+                            c.label?.toLowerCase().includes('id')
+                          );
+                          
+                          if (nameCol) rowData[nameCol.name] = walkInForm.name;
+                          if (emailCol) rowData[emailCol.name] = walkInForm.email;
+                          if (idCol) rowData[idCol.name] = walkInForm.studentId;
+                        }
+                        
+                        const newRow = await rowsSupabase.create(tableId, {
+                          data: rowData,
+                        });
+                        
+                        console.log('✅ Walk-in row created:', newRow.id);
+                        
+                        // 2. Create check-in record
+                        const checkInData = {
+                          pulse_table_id: pulseTableId,
+                          table_id: tableId,
+                          row_id: newRow.id,
+                          barcode_scanned: walkInForm.studentId,
+                          scanner_user_name: userName || 'Mobile Scanner',
+                          scanner_user_email: userEmail || undefined,
+                          scanner_device_id: navigator.userAgent || undefined,
+                          row_data: rowData,
+                          is_walk_in: true,
+                          notes: 'Walk-in guest',
+                        };
+                        
+                        const checkIn = await pulseClient.createCheckIn(checkInData);
+                        console.log('✅ Walk-in check-in created:', checkIn.id);
+                        
+                        // 3. Update scanner session
+                        if (scannerSessionId) {
+                          await pulseClient.updateScannerSession(scannerSessionId, {
+                            total_scans: (scanHistory.filter(s => s.success).length + 1),
+                            last_scan_at: new Date().toISOString(),
+                          });
+                        }
+                        
+                        // 4. Show success and close form
+                        toast.success('Walk-in added successfully!', {
+                          description: `${walkInForm.name} has been checked in`,
+                        });
+                        
+                        setShowWalkInForm(false);
+                        setScanResult(null);
+                        setWalkInForm({ name: '', email: '', studentId: '' });
+                        
+                        // Show flash
+                        setShowFlash('green');
+                        setTimeout(() => setShowFlash(null), 500);
+                        
+                      } catch (error) {
+                        console.error('❌ Failed to add walk-in:', error);
+                        toast.error('Failed to add walk-in', {
+                          description: error instanceof Error ? error.message : 'Please try again',
+                        });
+                      }
                     }} className="p-6 space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
