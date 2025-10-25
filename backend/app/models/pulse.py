@@ -58,7 +58,7 @@ class PulseEnabledTable(Base):
     # Audit
     created_at: Mapped[datetime] = mapped_column(server_default=text("NOW()"))
     updated_at: Mapped[datetime] = mapped_column(server_default=text("NOW()"))
-    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("auth.users.id"))
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))  # No FK to auth.users
     
     # Relationships
     check_ins: Mapped[list["PulseCheckIn"]] = relationship("PulseCheckIn", back_populates="pulse_table", cascade="all, delete-orphan")
@@ -96,7 +96,7 @@ class PulseCheckIn(Base):
     
     # Audit
     created_at: Mapped[datetime] = mapped_column(server_default=text("NOW()"))
-    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("auth.users.id"))
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))  # No FK to auth.users
     
     # Relationships
     pulse_table: Mapped["PulseEnabledTable"] = relationship("PulseEnabledTable", back_populates="check_ins")
