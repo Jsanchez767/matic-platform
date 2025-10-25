@@ -741,17 +741,21 @@ function ScanPageContent() {
       setShowFlash(success ? 'green' : 'red');
       setTimeout(() => setShowFlash(null), 500);
       
-      // Set scan result for modal
+      // Set scan result for modal - this will show the check-in popup
+      console.log('🎯 Setting scan result for modal:', { success, barcode: decodedText, hasRow: !!condensedRows[0] });
       setScanResult({
         found: success,
         barcode: decodedText,
         row: condensedRows[0],
       });
       
-      // Auto-continue if enabled
+      // Auto-continue only if continuous scan is enabled AND successful
       if (settings.continuousScan && success) {
-        setTimeout(() => setScanResult(null), 1500);
+        console.log('⏱️ Continuous scan enabled - modal will auto-close in 2s');
+        // Auto-close modal after 2 seconds in continuous mode
+        setTimeout(() => setScanResult(null), 2000);
       }
+      // Otherwise, modal stays open until user closes it manually
       
       // ============================================================================
       // PULSE MODE: Create check-in event
@@ -777,13 +781,7 @@ function ScanPageContent() {
           const checkIn = await pulseClient.createCheckIn(checkInData)
           console.log('✅ Pulse check-in created:', checkIn.id)
           
-          // Show Pulse-specific success message
-          toast.success(`✓ Checked In!`, {
-            description: `${guestInfo?.name || userName || 'Attendee'} • ${decodedText}`,
-            duration: 3000,
-          })
-          
-          // Continue to regular flow...
+          // Don't show toast - the modal is the primary feedback
           
         } catch (pulseError) {
           console.error('❌ Pulse check-in failed:', pulseError)
@@ -792,30 +790,8 @@ function ScanPageContent() {
             duration: 3000,
           })
         }
-      } else {
-        // Regular scanner mode - show normal toast notifications
-        if (condensedRows.length > 0) {
-          toast.success(`✓ ${decodedText}`, {
-            description: `Found ${condensedRows.length} matching record${condensedRows.length > 1 ? 's' : ''}`,
-            duration: 2000,
-          })
-        } else {
-          toast.warning(`⚠ ${decodedText}`, {
-            description: 'Barcode not found in database',
-            duration: 3000,
-            action: {
-              label: 'Create New',
-              onClick: () => {
-                // Navigate to create new record with pre-filled barcode
-                if (tableId && columnName) {
-                  const createUrl = `/workspace/table/${tableId}?action=create&${columnName}=${encodeURIComponent(decodedText)}`
-                  window.open(createUrl, '_blank')
-                }
-              }
-            }
-          })
-        }
       }
+      // Note: Modal handles all visual feedback now, no need for extra toasts
 
       // Broadcast to desktop via Supabase real-time
       if (channelRef.current) {
@@ -1654,15 +1630,22 @@ function ScanPageContent() {
       </Dialog>
       
       {/* Scan Result Modal */}
-      <Dialog open={scanResult !== null} onOpenChange={(open) => !open && setScanResult(null)}>
-        <DialogContent className="p-0 max-w-sm border-0 bg-transparent shadow-none">
+      <Dialog open={scanResult !== null} onOpenChange={(open) => {
+        if (!open) {
+          setScanResult(null);
+          setShowWalkInForm(false);
+        }
+      }}>
+        <DialogContent className="p-0 max-w-sm border-0 bg-transparent shadow-none overflow-visible">
           <AnimatePresence mode="wait">
             {scanResult && (
               <motion.div
+                key="scan-result"
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.2 }}
+                className="w-full"
               >
                 {scanResult.found ? (
                   /* RSVP Confirmed - Green */
