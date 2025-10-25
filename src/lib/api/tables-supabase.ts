@@ -76,10 +76,24 @@ export const tablesSupabase = {
     // Extract columns from table data
     const { columns, ...tableFields } = tableData as any
     
-    // Step 1: Create the table
+    // Step 1: Create the table (only table fields, no columns)
+    const tablePayload = {
+      workspace_id: tableFields.workspace_id,
+      name: tableFields.name,
+      slug: tableFields.slug,
+      description: tableFields.description || null,
+      icon: tableFields.icon || '📊',
+      color: tableFields.color || '#3B82F6',
+      settings: tableFields.settings || {},
+      import_source: tableFields.import_source || null,
+      import_metadata: tableFields.import_metadata || null,
+      is_archived: tableFields.is_archived || false,
+      created_by: tableFields.created_by,
+    }
+
     const { data: table, error: tableError } = await supabase
       .from('data_tables')
-      .insert(tableFields)
+      .insert(tablePayload)
       .select('*')
       .single()
 
@@ -91,8 +105,22 @@ export const tablesSupabase = {
     // Step 2: Create columns if provided
     if (columns && columns.length > 0) {
       const columnsWithTableId = columns.map((col: any) => ({
-        ...col,
-        table_id: table.id
+        table_id: table.id,
+        name: col.name,
+        label: col.label,
+        description: col.description || null,
+        column_type: col.column_type,
+        settings: col.settings || {},
+        validation: col.validation || null,
+        formula: col.formula || null,
+        formula_dependencies: col.formula_dependencies || null,
+        linked_table_id: col.linked_table_id || null,
+        linked_column_id: col.linked_column_id || null,
+        rollup_function: col.rollup_function || null,
+        position: col.position,
+        width: col.width,
+        is_visible: col.is_visible,
+        is_primary: col.is_primary,
       }))
 
       const { error: columnsError } = await supabase
