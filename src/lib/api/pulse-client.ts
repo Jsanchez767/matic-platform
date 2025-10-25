@@ -23,6 +23,11 @@ export interface PulseSettings {
   scan_mode: 'rapid' | 'verification' | 'manual';
   offline_mode: boolean;
   guest_scanning_enabled: boolean;
+  show_photos: boolean;
+  show_notes: boolean;
+  auto_scroll: boolean;
+  alert_on_duplicate: boolean;
+  alert_on_non_rsvp: boolean;
 }
 
 export interface PulseEnabledTableCreate {

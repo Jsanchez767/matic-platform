@@ -7,15 +7,23 @@ import { Dialog, DialogContent } from '@/ui-components/dialog'
 import { BarcodeScanner } from './BarcodeScanner'
 import { ScanResults } from './ScanResults'
 import { useBarcodeScanning } from '@/hooks/useBarcodeScanning'
-import type { TableColumn, TableRow } from '@/types/data-tables'
+import { pulseClient } from '@/lib/api/pulse-client'
+import { rowsSupabase } from '@/lib/api/rows-supabase'
+import { ScanResultPopup } from '../Pulse/ScanResultPopup'
+import { WalkInModal, type WalkInData } from '../Pulse/WalkInModal'
+import { toast } from 'sonner'
+import type { TableColumn, TableRow, TableRowCreate } from '@/types/data-tables'
 
 interface BarcodeScanModalProps {
   isOpen: boolean
   onClose: () => void
   tableId: string
+  workspaceId?: string
   columns: TableColumn[]
   onRowSelect?: (row: TableRow) => void
   onScanSuccess?: (result: { row: TableRow; barcode: string; columnName: string }) => void
+  pulseEnabled?: boolean
+  pulseTableId?: string
 }
 
 type Step = 'column-selection' | 'scanning'
@@ -29,18 +37,44 @@ interface ScanResult {
   errorMessage?: string
 }
 
+interface PulseScanState {
+  showPopup: boolean
+  success: boolean
+  rowData?: Record<string, any>
+  barcodeValue: string
+  checkInTime: Date
+  isDuplicate: boolean
+  checkInCount: number
+}
+
 export function BarcodeScanModal({ 
   isOpen, 
   onClose, 
-  tableId, 
+  tableId,
+  workspaceId,
   columns,
   onRowSelect,
-  onScanSuccess
+  onScanSuccess,
+  pulseEnabled = false,
+  pulseTableId
 }: BarcodeScanModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('column-selection')
   const [selectedColumn, setSelectedColumn] = useState<TableColumn | null>(null)
   const [scanResults, setScanResults] = useState<ScanResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  
+  // Pulse check-in state
+  const [pulseScanState, setPulseScanState] = useState<PulseScanState>({
+    showPopup: false,
+    success: false,
+    barcodeValue: '',
+    checkInTime: new Date(),
+    isDuplicate: false,
+    checkInCount: 1
+  })
+  const [showWalkInModal, setShowWalkInModal] = useState(false)
+  const [lastScannedBarcode, setLastScannedBarcode] = useState<string>('')
+  const [pulseSettings, setPulseSettings] = useState<any>(null)
 
   const {
     isScanning,
@@ -51,6 +85,27 @@ export function BarcodeScanModal({
     stopScanning,
     lookupBarcode
   } = useBarcodeScanning(tableId, selectedColumn?.name, selectedColumn?.id)
+
+  // Load Pulse settings if enabled
+  useEffect(() => {
+    if (pulseEnabled && pulseTableId) {
+      pulseClient.getPulseConfig(pulseTableId)
+        .then(config => {
+          setPulseSettings(config.settings)
+          // Auto-select check-in column if configured
+          if (config.check_in_column_id) {
+            const column = columns.find(c => c.id === config.check_in_column_id)
+            if (column) {
+              setSelectedColumn(column)
+              setCurrentStep('scanning')
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Error loading Pulse config:', err)
+        })
+    }
+  }, [pulseEnabled, pulseTableId, columns])
 
   // Filter columns that are suitable for barcode lookup
   const suitableColumns = columns.filter(column => {
@@ -68,24 +123,198 @@ export function BarcodeScanModal({
     }
   }, [isOpen])
 
-  // Watch for scan results from the hook and redirect to scan-results page
+  // Watch for scan results from the hook
   useEffect(() => {
     if (hookScanResults.length > 0 && currentStep === 'scanning' && selectedColumn) {
-      // Close modal and redirect to scan-results page
+      // If Pulse is enabled, handle check-in
+      if (pulseEnabled && pulseTableId) {
+        const scanResult = hookScanResults[hookScanResults.length - 1]
+        handlePulseCheckIn(scanResult.barcode)
+      } else {
+        // Regular mode: close modal and redirect to scan-results page
+        onClose()
+        const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
+        window.open(resultsUrl, '_blank')
+      }
+    }
+  }, [hookScanResults, currentStep, selectedColumn, onClose, tableId, pulseEnabled, pulseTableId])
+
+  // Handle Pulse check-in
+  const handlePulseCheckIn = async (barcode: string) => {
+    if (!selectedColumn || !selectedColumn.id || !pulseTableId) return
+
+    console.log('🔵 Pulse check-in started for barcode:', barcode)
+    setLastScannedBarcode(barcode)
+
+    try {
+      // Search for the row with this barcode
+      const rows = await rowsSupabase.searchByBarcode(tableId, selectedColumn.id, barcode)
+
+      if (rows.length > 0) {
+        // Found RSVP - create check-in
+        const row = rows[0]
+        if (!row.id) {
+          throw new Error('Row ID is missing')
+        }
+
+        console.log('✅ Found RSVP row:', row.id)
+
+        // Create check-in record
+        const checkIn = await pulseClient.createCheckIn({
+          pulse_table_id: pulseTableId,
+          table_id: tableId,
+          row_id: row.id,
+          barcode_scanned: barcode,
+          row_data: row.data,
+          is_walk_in: false
+        })
+
+        console.log('✅ Check-in created:', checkIn)
+
+        // Show success popup
+        setPulseScanState({
+          showPopup: true,
+          success: true,
+          rowData: row.data,
+          barcodeValue: barcode,
+          checkInTime: new Date(checkIn.check_in_time),
+          isDuplicate: checkIn.check_in_count > 1,
+          checkInCount: checkIn.check_in_count
+        })
+
+        // Play sound if enabled
+        if (pulseSettings?.play_sound) {
+          playCheckInSound(true)
+        }
+
+        // Show toast notification
+        if (checkIn.check_in_count > 1) {
+          toast.warning(`Already checked in (${checkIn.check_in_count} times)`)
+        } else {
+          toast.success('Check-in successful!')
+        }
+      } else {
+        // Not found - show error popup
+        console.log('❌ Barcode not found in RSVP list')
+
+        setPulseScanState({
+          showPopup: true,
+          success: false,
+          barcodeValue: barcode,
+          checkInTime: new Date(),
+          isDuplicate: false,
+          checkInCount: 0
+        })
+
+        // Play error sound if enabled
+        if (pulseSettings?.play_sound) {
+          playCheckInSound(false)
+        }
+
+        // Show toast notification
+        if (pulseSettings?.allow_duplicate_scans !== false) {
+          toast.error('Not on RSVP list', {
+            description: 'Add as walk-in to check them in'
+          })
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error during check-in:', error)
+      toast.error('Check-in failed', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
+  }
+
+  // Play check-in sound
+  const playCheckInSound = (success: boolean) => {
+    try {
+      const audio = new Audio(success ? '/sounds/success.mp3' : '/sounds/error.mp3')
+      audio.volume = 0.5
+      audio.play().catch(err => console.warn('Could not play sound:', err))
+    } catch (err) {
+      console.warn('Sound playback not supported:', err)
+    }
+  }
+
+  // Handle walk-in submission
+  const handleWalkInSubmit = async (walkInData: WalkInData) => {
+    if (!pulseTableId) return
+
+    console.log('🟠 Creating walk-in:', walkInData)
+
+    try {
+      // Create a new row in the table
+      const rowData: Record<string, any> = {
+        is_walk_in: true
+      }
+
+      // Map walk-in data to table columns (using common field names)
+      if (walkInData.name) rowData.Name = walkInData.name
+      if (walkInData.email) rowData.Email = walkInData.email
+      if (walkInData.phone) rowData.Phone = walkInData.phone
+      if (walkInData.group) rowData.School = walkInData.group
+      if (walkInData.notes) rowData.Notes = walkInData.notes
+      if (walkInData.barcode && selectedColumn) {
+        rowData[selectedColumn.name] = walkInData.barcode
+      }
+
+      const newRow = await rowsSupabase.create(tableId, {
+        data: rowData
+      } as TableRowCreate)
+
+      if (!newRow.id) {
+        throw new Error('Failed to create row: missing ID')
+      }
+
+      console.log('✅ Walk-in row created:', newRow.id)
+
+      // Create check-in record
+      const checkIn = await pulseClient.createCheckIn({
+        pulse_table_id: pulseTableId,
+        table_id: tableId,
+        row_id: newRow.id,
+        barcode_scanned: walkInData.barcode || lastScannedBarcode,
+        row_data: rowData,
+        is_walk_in: true,
+        notes: walkInData.notes
+      })
+
+      console.log('✅ Walk-in check-in created:', checkIn)
+
+      // Show success popup
+      setPulseScanState({
+        showPopup: true,
+        success: true,
+        rowData: rowData,
+        barcodeValue: walkInData.barcode || lastScannedBarcode,
+        checkInTime: new Date(checkIn.check_in_time),
+        isDuplicate: false,
+        checkInCount: 1
+      })
+
+      toast.success('Walk-in added and checked in!')
+    } catch (error) {
+      console.error('❌ Error creating walk-in:', error)
+      toast.error('Failed to add walk-in', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
+  }
+
+  // Handle successful barcode scan - now handles both regular and Pulse modes
+  const handleScanSuccess = async (barcode: string) => {
+    if (!selectedColumn) return
+    
+    if (pulseEnabled && pulseTableId) {
+      // Pulse mode: handle check-in
+      await handlePulseCheckIn(barcode)
+    } else {
+      // Regular mode: close modal and redirect to scan-results page
       onClose()
       const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
       window.open(resultsUrl, '_blank')
     }
-  }, [hookScanResults, currentStep, selectedColumn, onClose, tableId])
-
-  // Handle successful barcode scan - now redirects to scan-results page
-  const handleScanSuccess = async (barcode: string) => {
-    if (!selectedColumn) return
-    
-    // Close modal and redirect to scan-results page
-    onClose()
-    const resultsUrl = `/scan-results?table=${tableId}&column=${selectedColumn.name}`
-    window.open(resultsUrl, '_blank')
   }
 
   const handleColumnSelect = (column: TableColumn) => {
@@ -199,17 +428,52 @@ export function BarcodeScanModal({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="scan-lookup-modal max-w-md max-h-[80vh] overflow-y-auto">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Scan & Lookup</h2>
-        </div>
-        
-        <div className="py-4">
-          {getStepIndicator()}
-          {renderStepContent()}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="scan-lookup-modal max-w-md max-h-[80vh] overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold">
+              {pulseEnabled ? 'Pulse Check-In Scanner' : 'Scan & Lookup'}
+            </h2>
+            {pulseEnabled && (
+              <p className="text-sm text-gray-600 mt-1">
+                Scan barcodes to check in attendees
+              </p>
+            )}
+          </div>
+          
+          <div className="py-4">
+            {!pulseEnabled && getStepIndicator()}
+            {renderStepContent()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pulse Check-in Result Popup */}
+      {pulseEnabled && (
+        <ScanResultPopup
+          open={pulseScanState.showPopup}
+          onClose={() => setPulseScanState(prev => ({ ...prev, showPopup: false }))}
+          success={pulseScanState.success}
+          rowData={pulseScanState.rowData}
+          barcodeValue={pulseScanState.barcodeValue}
+          checkInTime={pulseScanState.checkInTime}
+          isDuplicate={pulseScanState.isDuplicate}
+          checkInCount={pulseScanState.checkInCount}
+          onAddWalkIn={() => setShowWalkInModal(true)}
+          autoCloseSeconds={3}
+        />
+      )}
+
+      {/* Walk-In Modal */}
+      {pulseEnabled && (
+        <WalkInModal
+          open={showWalkInModal}
+          onOpenChange={setShowWalkInModal}
+          onSubmit={handleWalkInSubmit}
+          barcodeValue={lastScannedBarcode}
+        />
+      )}
+    </>
   )
 }

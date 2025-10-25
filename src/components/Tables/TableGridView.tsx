@@ -6,6 +6,7 @@ import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
 import { EnablePulseButton } from '@/components/Pulse/EnablePulseButton'
+import { pulseClient, type PulseEnabledTable } from '@/lib/api/pulse-client'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
@@ -77,6 +78,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     barcode: string
     position: { x: number; y: number }
   } | null>(null)
+  const [pulseConfig, setPulseConfig] = useState<PulseEnabledTable | null>(null)
+  const [isPulseEnabled, setIsPulseEnabled] = useState(false)
   
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -123,7 +126,27 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
   useEffect(() => {
     loadTableData()
+    loadPulseConfig()
   }, [tableId])
+
+  // Load Pulse configuration
+  const loadPulseConfig = async () => {
+    try {
+      const config = await pulseClient.getPulseConfig(tableId)
+      if (config && config.enabled) {
+        setPulseConfig(config)
+        setIsPulseEnabled(true)
+        console.log('✅ Pulse enabled for this table:', config)
+      } else {
+        setPulseConfig(null)
+        setIsPulseEnabled(false)
+      }
+    } catch (error) {
+      // Pulse not enabled - that's ok
+      setPulseConfig(null)
+      setIsPulseEnabled(false)
+    }
+  }
 
   // Preload linked records when columns change
   useEffect(() => {
@@ -1097,6 +1120,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         isOpen={isBarcodeScanModalOpen}
         onClose={() => setIsBarcodeScanModalOpen(false)}
         tableId={tableId}
+        workspaceId={workspaceId}
         columns={columns.map(col => ({
           id: col.id,
           name: col.name,
@@ -1111,6 +1135,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         }))}
         onRowSelect={handleBarcodeRowSelect}
         onScanSuccess={handleScanSuccess}
+        pulseEnabled={isPulseEnabled}
+        pulseTableId={pulseConfig?.id}
       />
     </div>
   )

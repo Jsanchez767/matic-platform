@@ -140,6 +140,112 @@ export function PulseSettingsModal({
                   />
                 </button>
               </div>
+
+              {/* Show Photos */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Show Student Photos</p>
+                  <p className="text-xs text-gray-600">Display profile photos in check-in popup and table</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting('show_photos')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.show_photos ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.show_photos ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Show RSVP Notes */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Show RSVP Notes</p>
+                  <p className="text-xs text-gray-600">Display notes/comments in check-in popup</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting('show_notes')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.show_notes ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.show_notes ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Auto-scroll */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Auto-Scroll to Latest</p>
+                  <p className="text-xs text-gray-600">Auto-scroll dashboard to show latest check-in</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting('auto_scroll')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.auto_scroll ? 'bg-green-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.auto_scroll ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Alert Settings */}
+          <div>
+            <h4 className="font-semibold text-sm text-gray-900 mb-3">Alerts</h4>
+            <div className="space-y-3">
+              {/* Alert on Duplicate */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Alert on Duplicate Scan</p>
+                  <p className="text-xs text-gray-600">Show warning when same person scans multiple times</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting('alert_on_duplicate')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.alert_on_duplicate ? 'bg-orange-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.alert_on_duplicate ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Alert on Non-RSVP */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Alert on Non-RSVP Scan</p>
+                  <p className="text-xs text-gray-600">Show alert when scanned barcode not on RSVP list</p>
+                </div>
+                <button
+                  onClick={() => toggleSetting('alert_on_non_rsvp')}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    settings.alert_on_non_rsvp ? 'bg-red-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      settings.alert_on_non_rsvp ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
 
