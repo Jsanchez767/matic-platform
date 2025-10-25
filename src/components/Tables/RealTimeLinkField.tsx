@@ -242,7 +242,7 @@ export function RealTimeLinkField({
           </div>
           
           {/* Available records from linked table */}
-          <div className="max-h-64 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto">
             {loading ? (
               <div className="text-center py-8 text-gray-400 text-sm">
                 Loading records...

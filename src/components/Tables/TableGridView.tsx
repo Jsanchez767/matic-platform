@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine, BarChart3, Filter, Download, MoreHorizontal } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
@@ -17,6 +17,7 @@ import { Badge } from '@/ui-components/badge'
 import { Input } from '@/ui-components/input'
 import { Button } from '@/ui-components/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
+import { toast } from 'sonner'
 
 // @ts-ignore - Next.js injects env vars at build time
 // API Configuration - Always use production backend on Render
@@ -72,6 +73,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [currentView, setCurrentView] = useState<'grid' | 'kanban' | 'calendar' | 'gallery' | 'list'>('grid')
   const [showViewMenu, setShowViewMenu] = useState(false)
   const [multiselectSearch, setMultiselectSearch] = useState<string>('')
+  const [searchTerm, setSearchTerm] = useState<string>('')
   const [isEditingTableName, setIsEditingTableName] = useState(false)
   const [tempTableName, setTempTableName] = useState('')
   const [linkedRecords, setLinkedRecords] = useState<{ [tableId: string]: Row[] }>({})
@@ -152,6 +154,36 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       setIsPulseEnabled(false)
     }
   }
+
+  // Filter rows based on search term
+  const filteredRows = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return rows
+    }
+
+    const lowerSearch = searchTerm.toLowerCase()
+    return rows.filter(row => {
+      // Search across all visible columns
+      return columns.some(column => {
+        if (!column.is_visible) return false
+        
+        const value = row.data[column.name]
+        if (value == null) return false
+
+        // Convert value to searchable string
+        let searchableValue = ''
+        if (Array.isArray(value)) {
+          searchableValue = value.join(' ')
+        } else if (typeof value === 'object') {
+          searchableValue = JSON.stringify(value)
+        } else {
+          searchableValue = String(value)
+        }
+
+        return searchableValue.toLowerCase().includes(lowerSearch)
+      })
+    })
+  }, [rows, searchTerm, columns])
 
   // Preload linked records when columns change
   useEffect(() => {
@@ -278,6 +310,14 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       console.error('Error adding row:', error)
       alert(`Error adding row: ${error}`)
     }
+  }
+
+  const handleExport = () => {
+    toast.info('Export feature coming soon! You will be able to export to CSV, Excel, and PDF.')
+  }
+
+  const handleFilter = () => {
+    toast.info('Filter feature coming soon! You will be able to filter by any field.')
   }
 
   const handleCellEdit = async (rowId: string, columnName: string, value: any) => {
@@ -888,7 +928,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExport}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -911,14 +951,24 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             <Input
               placeholder={`Search ${tableName.toLowerCase()}...`}
               className="pl-9 h-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <Grid3x3 className="h-4 w-4 mr-2" />
-                Grid view
+                {(() => {
+                  const currentViewOption = VIEW_OPTIONS.find(v => v.value === currentView)
+                  const Icon = currentViewOption?.icon || Grid3x3
+                  return (
+                    <>
+                      <Icon className="h-4 w-4 mr-2" />
+                      {currentViewOption?.label || 'Grid view'}
+                    </>
+                  )
+                })()}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -937,7 +987,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleFilter}>
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
@@ -996,7 +1046,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
               </TableRowComponent>
             </TableHeader>
             <TableBody>
-              {rows.map((row, rowIndex) => {
+              {filteredRows.map((row, rowIndex) => {
                 const isHighlighted = highlightedRows.has(row.id)
                 return (
                   <TableRowComponent 
@@ -1062,7 +1112,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
         {/* Footer Info */}
         <div className="mt-4 text-sm text-gray-500">
-          Showing {rows.length} {rows.length === 1 ? 'row' : 'rows'}
+          Showing {filteredRows.length} {filteredRows.length === 1 ? 'row' : 'rows'}
+          {searchTerm && ` (filtered from ${rows.length} total)`}
         </div>
       </div>
 
