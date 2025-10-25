@@ -339,54 +339,43 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         table_id: tableId,
         row_id: rowId,
         data: updatedData,
-        updated_by: null, // Will be filled by backend
-        optimistic: true // Mark as optimistic update
+        updated_by: null,
+        optimistic: true
       })
 
+      // Update via Supabase (not API)
+      console.log('Updating cell via Supabase:', { rowId, columnName, value })
+      
       // Get current user ID
       const { getCurrentUser } = await import('@/lib/supabase')
       const user = await getCurrentUser()
       
       if (!user) {
         console.error('No user found')
-        // Revert optimistic update
-        setRows(prevRows => 
-          prevRows.map(r => r.id === rowId ? row : r)
-        )
-        alert('You must be logged in to edit cells')
+        toast.error('You must be logged in to edit cells')
         return
       }
-
-      console.log('Updating cell:', { rowId, columnName, value, userId: user.id })
       
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          data: updatedData,
-          updated_by: user.id
-        }),
+      await rowsSupabase.update(tableId, rowId, { 
+        data: updatedData,
+        updated_by: user.id
       })
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        console.error('Failed to update cell:', response.status, errorData)
-        
-        // Revert optimistic update on error
+      console.log('Cell updated successfully via Supabase')
+      // Note: We don't update local state here since optimistic update already did it
+      // The Supabase Realtime will broadcast the update to all clients
+    } catch (error) {
+      console.error('Error updating cell:', error)
+      
+      // Revert optimistic update on error
+      const row = rows.find(r => r.id === rowId)
+      if (row) {
         setRows(prevRows => 
           prevRows.map(r => r.id === rowId ? row : r)
         )
-        
-        alert(`Failed to update cell: ${JSON.stringify(errorData)}`)
-        return
       }
       
-      console.log('Cell updated successfully')
-      // Note: We don't update local state here since optimistic update already did it
-      // The WebSocket will broadcast the authoritative update from the server
-    } catch (error) {
-      console.error('Error updating cell:', error)
-      alert(`Error updating cell: ${error}`)
+      toast.error(`Failed to update cell: ${error}`)
     }
   }
 
