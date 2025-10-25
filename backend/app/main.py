@@ -12,7 +12,7 @@ settings = get_settings()
 
 app = FastAPI(
     title="Matic Platform API", 
-    version="1.0.1",  # Bumped version to force Render redeploy
+    version="1.0.2",  # Bumped version to trigger Render redeploy with Pulse endpoints
     debug=settings.debug,
     redirect_slashes=False,  # Disable 307 redirects - use exact paths
 )
