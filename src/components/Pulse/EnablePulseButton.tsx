@@ -41,12 +41,15 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
   };
 
   const handleEnablePulse = async () => {
+    console.log('🔵 Enable Pulse clicked', { tableId, workspaceId });
     setIsEnabling(true);
     try {
-      await pulseClient.enablePulse({
+      console.log('📤 Sending enablePulse request...');
+      const result = await pulseClient.enablePulse({
         table_id: tableId,
         workspace_id: workspaceId,
       });
+      console.log('✅ Pulse enabled successfully:', result);
       
       toast.success("Pulse enabled! Opening dashboard...");
       setIsPulseEnabled(true);
@@ -55,7 +58,12 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
       // Redirect to Pulse dashboard
       router.push(`/pulse/${tableId}`);
     } catch (error: any) {
-      console.error("Error enabling Pulse:", error);
+      console.error("❌ Error enabling Pulse:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
       toast.error(error.message || "Failed to enable Pulse");
     } finally {
       setIsEnabling(false);
@@ -142,13 +150,19 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setShowEnableDialog(false)}
+              onClick={() => {
+                console.log('Cancel button clicked');
+                setShowEnableDialog(false);
+              }}
               disabled={isEnabling}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleEnablePulse}
+              onClick={() => {
+                console.log('🟢 Enable Pulse button clicked');
+                handleEnablePulse();
+              }}
               disabled={isEnabling}
               className="bg-green-600 hover:bg-green-700 text-white"
             >
