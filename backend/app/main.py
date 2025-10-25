@@ -8,6 +8,7 @@ from app.db.session import engine
 from app.models.base import Base
 from app.routers import api_router
 
+# Force Render redeploy - Pulse endpoints added in routers/__init__.py
 settings = get_settings()
 
 app = FastAPI(

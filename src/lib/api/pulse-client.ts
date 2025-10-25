@@ -141,21 +141,51 @@ class PulseClient {
    */
   async enablePulse(config: PulseEnabledTableCreate): Promise<PulseEnabledTable> {
     const token = await getSessionToken();
-    const response = await fetch(`${API_BASE}/pulse`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify(config),
+    
+    console.log('🔵 Calling enablePulse API:', {
+      url: `${API_BASE}/pulse`,
+      config,
+      hasToken: !!token
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || 'Failed to enable Pulse');
-    }
+    try {
+      const response = await fetch(`${API_BASE}/pulse`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(config),
+      });
 
-    return response.json();
+      console.log('📥 Pulse API response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ 
+          detail: `HTTP ${response.status}: ${response.statusText}` 
+        }));
+        throw new Error(error.detail || 'Failed to enable Pulse');
+      }
+
+      return response.json();
+    } catch (error: any) {
+      console.error('❌ Pulse API error:', error);
+      
+      // Check if it's a network error
+      if (error.message === 'Failed to fetch' || error instanceof TypeError) {
+        throw new Error(
+          `Cannot connect to backend at ${API_BASE}. ` +
+          `The Pulse endpoints may not be deployed yet. ` +
+          `Please wait 2-3 minutes for Render to deploy the latest changes, then try again.`
+        );
+      }
+      
+      throw error;
+    }
   }
 
   /**
