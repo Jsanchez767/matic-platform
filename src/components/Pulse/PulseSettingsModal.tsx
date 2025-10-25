@@ -394,6 +394,54 @@ export function PulseSettingsModal({
                   </p>
                 )}
               </div>
+
+              {/* Walk-in Form Fields */}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-1">Walk-In Form Fields</p>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select which columns to collect when adding walk-in guests
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {columns
+                    .filter(col => ['text', 'email', 'phone', 'number', 'url'].includes(col.column_type))
+                    .map(col => {
+                      const isSelected = settings.walkin_fields?.includes(col.id) || false;
+                      return (
+                        <label
+                          key={col.id}
+                          className="flex items-center gap-2 p-2 hover:bg-blue-100 rounded cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const newFields = e.target.checked
+                                ? [...(settings.walkin_fields || []), col.id]
+                                : (settings.walkin_fields || []).filter(id => id !== col.id);
+                              setSettings(prev => ({
+                                ...prev,
+                                walkin_fields: newFields
+                              }));
+                            }}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-900">{col.label || col.name}</span>
+                          <span className="text-xs text-gray-500 capitalize">({col.column_type})</span>
+                        </label>
+                      );
+                    })}
+                </div>
+                {(!settings.walkin_fields || settings.walkin_fields.length === 0) && (
+                  <p className="text-xs text-orange-600 mt-2">
+                    ⚠️ No fields selected - walk-in form will use default fields
+                  </p>
+                )}
+                {settings.walkin_fields && settings.walkin_fields.length > 0 && (
+                  <p className="text-xs text-blue-600 mt-2">
+                    ✓ {settings.walkin_fields.length} field{settings.walkin_fields.length !== 1 ? 's' : ''} selected for walk-in form
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

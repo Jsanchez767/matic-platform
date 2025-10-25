@@ -77,11 +77,7 @@ function ScanPageContent() {
     row?: any;
   } | null>(null)
   const [showWalkInForm, setShowWalkInForm] = useState(false)
-  const [walkInForm, setWalkInForm] = useState({
-    name: '',
-    email: '',
-    studentId: '',
-  })
+  const [walkInForm, setWalkInForm] = useState<Record<string, any>>({})
   
   // Scanner session management
   const [scannerSessionId, setScannerSessionId] = useState<string | null>(null)
@@ -1745,8 +1741,19 @@ function ScanPageContent() {
                         // Build row data based on table columns
                         const rowData: Record<string, any> = {};
                         
-                        // Map form fields to table columns (basic mapping)
-                        if (tableInfo?.columns) {
+                        // Use selected walk-in fields from Pulse config
+                        const selectedFields = pulseConfig?.settings?.walkin_fields || [];
+                        
+                        if (selectedFields.length > 0 && tableInfo?.columns) {
+                          // Use configured fields
+                          selectedFields.forEach((fieldId: string) => {
+                            const column = tableInfo.columns.find(c => c.id === fieldId);
+                            if (column && walkInForm[fieldId]) {
+                              rowData[column.name] = walkInForm[fieldId];
+                            }
+                          });
+                        } else if (tableInfo?.columns) {
+                          // Fallback to automatic mapping
                           const nameCol = tableInfo.columns.find(c => 
                             c.name.toLowerCase().includes('name') || c.label?.toLowerCase().includes('name')
                           );
@@ -1759,9 +1766,9 @@ function ScanPageContent() {
                             c.label?.toLowerCase().includes('id')
                           );
                           
-                          if (nameCol) rowData[nameCol.name] = walkInForm.name;
-                          if (emailCol) rowData[emailCol.name] = walkInForm.email;
-                          if (idCol) rowData[idCol.name] = walkInForm.studentId;
+                          if (nameCol?.id && walkInForm[nameCol.id]) rowData[nameCol.name] = walkInForm[nameCol.id];
+                          if (emailCol?.id && walkInForm[emailCol.id]) rowData[emailCol.name] = walkInForm[emailCol.id];
+                          if (idCol?.id && walkInForm[idCol.id]) rowData[idCol.name] = walkInForm[idCol.id];
                         }
                         
                         const newRow = await rowsSupabase.create(tableId, {
@@ -1781,7 +1788,7 @@ function ScanPageContent() {
                           pulse_table_id: pulseTableId,
                           table_id: tableId,
                           row_id: newRow.id,
-                          barcode_scanned: walkInForm.studentId,
+                          barcode_scanned: walkInForm[resolvedColumnId!] || 'WALK-IN',
                           scanner_user_name: userName || 'Mobile Scanner',
                           scanner_user_email: userEmail || undefined,
                           scanner_device_id: navigator.userAgent || undefined,
@@ -1801,14 +1808,17 @@ function ScanPageContent() {
                           });
                         }
                         
+                        // Get first field value for success message
+                        const firstFieldValue = Object.values(walkInForm)[0] || 'Guest';
+                        
                         // 4. Show success and close form
                         toast.success('Walk-in added successfully!', {
-                          description: `${walkInForm.name} has been checked in`,
+                          description: `${firstFieldValue} has been checked in`,
                         });
                         
                         setShowWalkInForm(false);
                         setScanResult(null);
-                        setWalkInForm({ name: '', email: '', studentId: '' });
+                        setWalkInForm({});
                         
                         // Show flash
                         setShowFlash('green');
@@ -1821,40 +1831,70 @@ function ScanPageContent() {
                         });
                       }
                     }} className="p-6 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input
-                          id="name"
-                          type="text"
-                          placeholder="Enter student name"
-                          value={walkInForm.name}
-                          onChange={(e) => setWalkInForm(prev => ({ ...prev, name: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="student@school.edu"
-                          value={walkInForm.email}
-                          onChange={(e) => setWalkInForm(prev => ({ ...prev, email: e.target.value }))}
-                          required
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="studentId">Student ID</Label>
-                        <Input
-                          id="studentId"
-                          type="text"
-                          value={walkInForm.studentId}
-                          onChange={(e) => setWalkInForm(prev => ({ ...prev, studentId: e.target.value }))}
-                          required
-                        />
-                      </div>
+                      {/* Dynamic form fields based on Pulse config */}
+                      {(() => {
+                        const selectedFields = pulseConfig?.settings?.walkin_fields || [];
+                        
+                        // If no fields configured, show default fields
+                        if (selectedFields.length === 0 || !tableInfo?.columns) {
+                          const nameCol = tableInfo?.columns.find(c => 
+                            c.name.toLowerCase().includes('name') || c.label?.toLowerCase().includes('name')
+                          );
+                          const emailCol = tableInfo?.columns.find(c => 
+                            c.name.toLowerCase().includes('email') || c.label?.toLowerCase().includes('email')
+                          );
+                          const idCol = tableInfo?.columns.find(c => 
+                            c.id === resolvedColumnId || 
+                            c.name.toLowerCase().includes('id') || 
+                            c.label?.toLowerCase().includes('id')
+                          );
+                          
+                          const defaultFields = [nameCol, emailCol, idCol].filter(Boolean);
+                          
+                          return defaultFields.map((col: any) => (
+                            <div key={col.id} className="space-y-2">
+                              <Label htmlFor={col.id}>{col.label || col.name}</Label>
+                              <Input
+                                id={col.id}
+                                type={col.column_type === 'email' ? 'email' : 'text'}
+                                placeholder={`Enter ${(col.label || col.name).toLowerCase()}`}
+                                value={walkInForm[col.id] || ''}
+                                onChange={(e) => setWalkInForm(prev => ({ ...prev, [col.id]: e.target.value }))}
+                                required
+                              />
+                            </div>
+                          ));
+                        }
+                        
+                        // Render configured fields
+                        return selectedFields.map((fieldId: string) => {
+                          const column = tableInfo?.columns.find(c => c.id === fieldId);
+                          if (!column || !column.id) return null;
+                          
+                          const inputType = 
+                            column.column_type === 'email' ? 'email' :
+                            column.column_type === 'phone' ? 'tel' :
+                            column.column_type === 'url' ? 'url' :
+                            column.column_type === 'number' ? 'number' :
+                            'text';
+                          
+                          const colId = column.id;
+                          
+                          return (
+                            <div key={colId} className="space-y-2">
+                              <Label htmlFor={colId}>{column.label || column.name}</Label>
+                              <Input
+                                id={colId}
+                                type={inputType}
+                                placeholder={`Enter ${(column.label || column.name).toLowerCase()}`}
+                                value={walkInForm[colId] || ''}
+                                onChange={(e) => setWalkInForm(prev => ({ ...prev, [colId]: e.target.value }))}
+                                required
+                              />
+                            </div>
+                          );
+                        });
+                      })()}
                       
                       <div className="flex gap-2 pt-2">
                         <Button

@@ -28,6 +28,7 @@ export interface PulseSettings {
   auto_scroll: boolean;
   alert_on_duplicate: boolean;
   alert_on_non_rsvp: boolean;
+  walkin_fields?: string[]; // Column IDs to collect in walk-in form
 }
 
 export interface PulseEnabledTableCreate {
