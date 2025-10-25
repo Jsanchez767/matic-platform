@@ -1765,12 +1765,18 @@ function ScanPageContent() {
                         }
                         
                         const newRow = await rowsSupabase.create(tableId, {
+                          table_id: tableId,
                           data: rowData,
+                          created_by: userName || 'Walk-in Scanner',
                         });
                         
                         console.log('✅ Walk-in row created:', newRow.id);
                         
                         // 2. Create check-in record
+                        if (!newRow.id) {
+                          throw new Error('Failed to create walk-in row: no ID returned');
+                        }
+                        
                         const checkInData = {
                           pulse_table_id: pulseTableId,
                           table_id: tableId,
