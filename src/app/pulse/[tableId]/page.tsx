@@ -9,6 +9,7 @@ import { pulseClient, PulseDashboardStats, PulseEnabledTable, PulseScannerSessio
 import { PulseQRPairingModal } from "@/components/Pulse/PulseQRPairingModal";
 import { PulseSettingsModal } from "@/components/Pulse/PulseSettingsModal";
 import { supabase } from "@/lib/supabase";
+import { tablesSupabase } from "@/lib/api/tables-supabase";
 import { toast } from "sonner";
 
 export default function PulseDashboard() {
@@ -19,6 +20,7 @@ export default function PulseDashboard() {
   const [config, setConfig] = useState<PulseEnabledTable | null>(null);
   const [stats, setStats] = useState<PulseDashboardStats | null>(null);
   const [sessions, setSessions] = useState<PulseScannerSession[]>([]);
+  const [columns, setColumns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -104,6 +106,7 @@ export default function PulseDashboard() {
         loadConfig(),
         loadStats(),
         loadSessions(),
+        loadColumns(),
       ]);
     } catch (error) {
       console.error("Error loading dashboard:", error);
@@ -126,6 +129,17 @@ export default function PulseDashboard() {
   const loadSessions = async () => {
     const data = await pulseClient.getScannerSessions(tableId, true);
     setSessions(data);
+  };
+
+  const loadColumns = async () => {
+    try {
+      const table = await tablesSupabase.get(tableId);
+      if (table?.columns) {
+        setColumns(table.columns);
+      }
+    } catch (error) {
+      console.error("Error loading columns:", error);
+    }
   };
 
   const formatTime = (dateString?: string) => {
@@ -468,6 +482,7 @@ export default function PulseDashboard() {
           onOpenChange={setShowSettings}
           tableId={tableId}
           currentConfig={config}
+          columns={columns}
           onSaved={() => {
             loadConfig(); // Reload config to show updated settings
             toast.success("Settings updated successfully!");

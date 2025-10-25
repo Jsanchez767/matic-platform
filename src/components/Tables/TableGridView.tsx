@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine, BarChart3, Filter, Download, MoreHorizontal } from 'lucide-react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, BarChart3, Filter, Download, MoreHorizontal } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
-import { BarcodeScanModal } from './BarcodeScanModal'
 import { EnablePulseButton } from '@/components/Pulse/EnablePulseButton'
 import { pulseSupabase } from '@/lib/api/pulse-supabase'
 import type { PulseEnabledTable } from '@/lib/api/pulse-client'
@@ -79,7 +78,6 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const [tempTableName, setTempTableName] = useState('')
   const [linkedRecords, setLinkedRecords] = useState<{ [tableId: string]: Row[] }>({})
   const [loadingLinkedRecords, setLoadingLinkedRecords] = useState<{ [tableId: string]: boolean }>({})
-  const [isBarcodeScanModalOpen, setIsBarcodeScanModalOpen] = useState(false)
   const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set())
   const [scanResultPopover, setScanResultPopover] = useState<{
     rowId: string
@@ -494,54 +492,6 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     }
   }
 
-  // Barcode scanning handlers
-  const handleBarcodeRowSelect = (row: TableRow) => {
-    console.log('Barcode scan selected row:', row)
-    
-    // Highlight the found row
-    if (row.id) {
-      setSelectedCell({ rowId: row.id, columnId: columns[0]?.id || '' })
-    }
-    
-    // Close the modal
-    setIsBarcodeScanModalOpen(false)
-  }
-
-  const handleScanSuccess = (result: { row: TableRow; barcode: string; columnName: string }) => {
-    console.log('🎯 Barcode scan success:', result)
-    
-    const rowId = result.row.id
-    if (!rowId) return
-    
-    // Add the row to highlighted set
-    setHighlightedRows(prev => new Set([...prev, rowId]))
-    
-    // Show success popover (you can implement this later)
-    // For now, just highlight and select the row
-    setSelectedCell({ 
-      rowId: rowId, 
-      columnId: columns.find(col => col.name === result.columnName)?.id || columns[0]?.id || '' 
-    })
-    
-    // Auto-clear highlight after 5 seconds
-    setTimeout(() => {
-      setHighlightedRows(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(rowId)
-        return newSet
-      })
-    }, 5000)
-    
-    // Broadcast the scan result to other users (for collaborative highlighting)
-    broadcastUpdate({
-      type: 'scan_highlight',
-      rowId: rowId,
-      barcode: result.barcode,
-      columnName: result.columnName,
-      timestamp: new Date().toISOString()
-    })
-  }
-
   const renderCell = (row: Row, column: Column) => {
     const value = row.data[column.name]
     const isEditing = editingCell?.rowId === row.id && editingCell?.columnId === column.id
@@ -922,14 +872,6 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setIsBarcodeScanModalOpen(true)}
-            >
-              <ScanLine className="h-4 w-4 mr-2" />
-              Scan & Lookup
-            </Button>
             <EnablePulseButton tableId={tableId} workspaceId={workspaceId} />
           </div>
         </div>
@@ -1118,29 +1060,6 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         mode={editingColumn ? 'edit' : 'create'}
         workspaceId={workspaceId}
         currentTableId={tableId}
-      />
-
-      <BarcodeScanModal
-        isOpen={isBarcodeScanModalOpen}
-        onClose={() => setIsBarcodeScanModalOpen(false)}
-        tableId={tableId}
-        workspaceId={workspaceId}
-        columns={columns.map(col => ({
-          id: col.id,
-          name: col.name,
-          label: col.label,
-          column_type: col.column_type as any, // Cast to satisfy type
-          is_visible: col.is_visible,
-          position: col.position,
-          width: col.width,
-          is_primary: false, // Add missing required field
-          linked_table_id: col.linked_table_id,
-          settings: col.settings
-        }))}
-        onRowSelect={handleBarcodeRowSelect}
-        onScanSuccess={handleScanSuccess}
-        pulseEnabled={isPulseEnabled}
-        pulseTableId={pulseConfig?.id}
       />
     </div>
   )

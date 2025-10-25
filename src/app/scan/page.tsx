@@ -50,6 +50,7 @@ function ScanPageContent() {
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [resolvedColumnId, setResolvedColumnId] = useState<string | null>(null)
   const [columnLabel, setColumnLabel] = useState<string | null>(null)
+  const [pulseConfig, setPulseConfig] = useState<any>(null)
   const [showUserInfoDialog, setShowUserInfoDialog] = useState(false)
   const [userName, setUserName] = useState<string>('')
   const [userEmail, setUserEmail] = useState<string>('')
@@ -124,29 +125,55 @@ function ScanPageContent() {
         setTableInfo(table)
         setWorkspaceId(table.workspace_id)
 
-        const columnIdParam = searchParams.get('columnId') ?? searchParams.get('column_id')
-        let resolved: TableColumn | undefined
-
-        if (columnIdParam) {
-          resolved = table.columns.find(col => col.id === columnIdParam)
+        // Load Pulse config if in Pulse mode
+        if (isPulseMode && pulseTableId) {
+          try {
+            const { pulseSupabase } = await import('@/lib/api/pulse-supabase')
+            const config = await pulseSupabase.getPulseConfig(tableId)
+            setPulseConfig(config)
+            
+            // Use barcode_column_id from Pulse config
+            if (config && config.barcode_column_id) {
+              setResolvedColumnId(config.barcode_column_id)
+              const barcodeColumn = table.columns.find(col => col.id === config.barcode_column_id)
+              if (barcodeColumn) {
+                setColumnLabel(barcodeColumn.label || barcodeColumn.name)
+              }
+              console.log('🟢 Pulse mode: Using barcode column', config.barcode_column_id)
+            } else {
+              console.warn('⚠️ Pulse config has no barcode_column_id set')
+            }
+          } catch (pulseError) {
+            console.error('Failed to load Pulse config:', pulseError)
+          }
         }
 
-        if (!resolved && columnName) {
-          resolved = table.columns.find(col => col.name === columnName || col.id === columnName)
-        }
+        // Regular mode column resolution
+        if (!isPulseMode) {
+          const columnIdParam = searchParams.get('columnId') ?? searchParams.get('column_id')
+          let resolved: TableColumn | undefined
 
-        if (resolved?.id) {
-          setResolvedColumnId(resolved.id)
-        } else if (columnIdParam) {
-          setResolvedColumnId(columnIdParam)
-        }
+          if (columnIdParam) {
+            resolved = table.columns.find(col => col.id === columnIdParam)
+          }
 
-        if (resolved?.label) {
-          setColumnLabel(resolved.label)
-        } else if (resolved?.name) {
-          setColumnLabel(resolved.name)
-        } else if (columnName) {
-          setColumnLabel(columnName)
+          if (!resolved && columnName) {
+            resolved = table.columns.find(col => col.name === columnName || col.id === columnName)
+          }
+
+          if (resolved?.id) {
+            setResolvedColumnId(resolved.id)
+          } else if (columnIdParam) {
+            setResolvedColumnId(columnIdParam)
+          }
+
+          if (resolved?.label) {
+            setColumnLabel(resolved.label)
+          } else if (resolved?.name) {
+            setColumnLabel(resolved.name)
+          } else if (columnName) {
+            setColumnLabel(columnName)
+          }
         }
       } catch (metadataError) {
         console.error('Failed to load table metadata:', metadataError)
@@ -154,7 +181,7 @@ function ScanPageContent() {
     }
 
     loadMetadata()
-  }, [tableId, columnName, searchParams])
+  }, [tableId, columnName, searchParams, isPulseMode, pulseTableId])
 
   useEffect(() => {
     // Pulse mode only needs tableId, pulseTableId, and pairingCode

@@ -38,6 +38,7 @@ export const pulseSupabase = {
         table_id: config.table_id,
         workspace_id: config.workspace_id,
         check_in_column_id: config.check_in_column_id,
+        barcode_column_id: config.barcode_column_id,
         display_columns: config.display_columns,
         settings: config.settings || {
           show_popup: true,
@@ -101,6 +102,7 @@ export const pulseSupabase = {
       .update({
         enabled: updates.enabled,
         check_in_column_id: updates.check_in_column_id,
+        barcode_column_id: updates.barcode_column_id,
         display_columns: updates.display_columns,
         settings: updates.settings,
         updated_at: new Date().toISOString(),

@@ -34,6 +34,7 @@ export interface PulseEnabledTableCreate {
   table_id: string;
   workspace_id: string;
   check_in_column_id?: string;
+  barcode_column_id?: string;
   display_columns?: string[];
   settings?: PulseSettings;
 }
@@ -41,6 +42,7 @@ export interface PulseEnabledTableCreate {
 export interface PulseEnabledTableUpdate {
   enabled?: boolean;
   check_in_column_id?: string;
+  barcode_column_id?: string;
   display_columns?: string[];
   settings?: PulseSettings;
 }
@@ -51,6 +53,7 @@ export interface PulseEnabledTable {
   workspace_id: string;
   enabled: boolean;
   check_in_column_id?: string;
+  barcode_column_id?: string;
   display_columns?: string[];
   settings: PulseSettings;
   total_rsvps: number;

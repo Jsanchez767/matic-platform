@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/ui-components/button";
 import { Settings as SettingsIcon, Save, Loader2 } from "lucide-react";
 import { pulseClient, PulseEnabledTable, PulseSettings } from "@/lib/api/pulse-client";
+import { pulseSupabase } from "@/lib/api/pulse-supabase";
 import { toast } from "sonner";
 
 interface PulseSettingsModalProps {
@@ -12,6 +13,7 @@ interface PulseSettingsModalProps {
   onOpenChange: (open: boolean) => void;
   tableId: string;
   currentConfig: PulseEnabledTable;
+  columns: any[];
   onSaved: () => void;
 }
 
@@ -20,22 +22,28 @@ export function PulseSettingsModal({
   onOpenChange,
   tableId,
   currentConfig,
+  columns,
   onSaved
 }: PulseSettingsModalProps) {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<PulseSettings>(currentConfig.settings);
+  const [barcodeColumnId, setBarcodeColumnId] = useState<string | undefined>(currentConfig.barcode_column_id);
 
   // Reset settings when modal opens
   useEffect(() => {
     if (open) {
       setSettings(currentConfig.settings);
+      setBarcodeColumnId(currentConfig.barcode_column_id);
     }
   }, [open, currentConfig]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await pulseClient.updatePulseConfig(tableId, { settings });
+      await pulseSupabase.updatePulseConfig(tableId, { 
+        settings,
+        barcode_column_id: barcodeColumnId 
+      });
       toast.success("Settings saved successfully!");
       onSaved();
       onOpenChange(false);
@@ -360,6 +368,31 @@ export function PulseSettingsModal({
                     }`}
                   />
                 </button>
+              </div>
+
+              {/* Barcode Column Selector */}
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm font-medium text-gray-900 mb-1">Barcode Column</p>
+                <p className="text-xs text-gray-600 mb-3">Column containing barcode values to match when scanning</p>
+                <select
+                  value={barcodeColumnId || ''}
+                  onChange={(e) => setBarcodeColumnId(e.target.value || undefined)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select a column...</option>
+                  {columns
+                    .filter(col => ['text', 'number', 'email', 'phone', 'url'].includes(col.column_type))
+                    .map(col => (
+                      <option key={col.id} value={col.id}>
+                        {col.label || col.name}
+                      </option>
+                    ))}
+                </select>
+                {barcodeColumnId && (
+                  <p className="text-xs text-green-600 mt-2">
+                    ✓ Scanner will lookup rows by matching barcode to this column
+                  </p>
+                )}
               </div>
             </div>
           </div>
