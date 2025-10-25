@@ -182,8 +182,14 @@ export default function PulseDashboard() {
   };
 
   const loadSessions = async () => {
-    const data = await pulseClient.getScannerSessions(tableId, true);
-    setSessions(data);
+    try {
+      console.log('📱 Loading scanner sessions for table:', tableId);
+      const data = await pulseClient.getScannerSessions(tableId, true);
+      console.log('📱 Scanner sessions loaded:', data.length, 'active sessions', data);
+      setSessions(data);
+    } catch (error) {
+      console.error('Failed to load scanner sessions:', error);
+    }
   };
 
   const loadColumns = async () => {

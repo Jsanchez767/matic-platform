@@ -358,13 +358,28 @@ function ScanPageContent() {
 
   // Scanner session management for Pulse mode
   useEffect(() => {
+    console.log('🔵 Scanner session effect triggered', {
+      isPulseMode,
+      hasPulseConfig: !!pulseConfig,
+      pulseTableId,
+      pairingCode,
+      userName
+    });
+    
     if (!isPulseMode || !pulseConfig || !pulseTableId || !pairingCode || !userName) {
+      console.log('⚠️ Scanner session not created - missing requirements');
       return
     }
 
     const createSession = async () => {
       try {
-        console.log('📱 Creating scanner session...')
+        console.log('📱 Creating scanner session with:', {
+          pulse_table_id: pulseTableId,
+          pairing_code: pairingCode,
+          scanner_name: userName,
+          scanner_email: userEmail || 'none',
+        });
+        
         const session = await pulseClient.createScannerSession({
           pulse_table_id: pulseTableId,
           pairing_code: pairingCode,
@@ -374,7 +389,11 @@ function ScanPageContent() {
         })
         
         setScannerSessionId(session.id)
-        console.log('✅ Scanner session created:', session.id)
+        console.log('✅ Scanner session created successfully:', session);
+        toast.success('Scanner registered!', {
+          description: 'Your scanner is now active',
+          duration: 2000,
+        });
         
         // Setup heartbeat to keep session active
         heartbeatIntervalRef.current = setInterval(async () => {
@@ -1784,11 +1803,41 @@ function ScanPageContent() {
                           throw new Error('Failed to create walk-in row: no ID returned');
                         }
                         
+                        // Find the barcode/ID field value for check-in
+                        let barcodeValue = 'WALK-IN';
+                        const walkinFields = pulseConfig?.settings?.walkin_fields || [];
+                        
+                        if (walkinFields.length > 0 && tableInfo?.columns) {
+                          // Try to find an ID-like field in the selected fields
+                          const idField = walkinFields.find((fieldId: string) => {
+                            const column = tableInfo.columns.find(c => c.id === fieldId);
+                            return column && (
+                              column.id === resolvedColumnId ||
+                              column.name.toLowerCase().includes('id') ||
+                              column.label?.toLowerCase().includes('id') ||
+                              column.name.toLowerCase().includes('barcode') ||
+                              column.label?.toLowerCase().includes('barcode')
+                            );
+                          });
+                          
+                          if (idField && walkInForm[idField]) {
+                            barcodeValue = walkInForm[idField];
+                          }
+                        } else if (resolvedColumnId && walkInForm[resolvedColumnId]) {
+                          // Use the configured barcode column if available
+                          barcodeValue = walkInForm[resolvedColumnId];
+                        }
+                        
+                        // Fallback: use timestamp-based ID if no valid barcode field found
+                        if (barcodeValue === 'WALK-IN' || !barcodeValue) {
+                          barcodeValue = `WALK-IN-${Date.now()}`;
+                        }
+                        
                         const checkInData = {
                           pulse_table_id: pulseTableId,
                           table_id: tableId,
                           row_id: newRow.id,
-                          barcode_scanned: walkInForm[resolvedColumnId!] || 'WALK-IN',
+                          barcode_scanned: barcodeValue,
                           scanner_user_name: userName || 'Mobile Scanner',
                           scanner_user_email: userEmail || undefined,
                           scanner_device_id: navigator.userAgent || undefined,
