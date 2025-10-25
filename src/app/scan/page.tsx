@@ -157,9 +157,18 @@ function ScanPageContent() {
   }, [tableId, columnName, searchParams])
 
   useEffect(() => {
-    if (!tableId || !columnName || !pairingCode) {
-      setError('Invalid pairing parameters. Please scan the QR code again.')
-      return
+    // Pulse mode only needs tableId, pulseTableId, and pairingCode
+    if (isPulseMode) {
+      if (!tableId || !pulseTableId || !pairingCode) {
+        setError('Invalid Pulse pairing parameters. Please scan the QR code again.')
+        return
+      }
+    } else {
+      // Regular mode needs tableId, columnName, and pairingCode
+      if (!tableId || !columnName || !pairingCode) {
+        setError('Invalid pairing parameters. Please scan the QR code again.')
+        return
+      }
     }
 
     // Check if user info is stored
