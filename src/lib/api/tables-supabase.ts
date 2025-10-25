@@ -70,24 +70,64 @@ export const tablesSupabase = {
   },
 
   /**
-   * Create a new table
+   * Create a new table with columns
    */
   async create(tableData: DataTableCreate): Promise<DataTable> {
-    const { data, error } = await supabase
+    // Extract columns from table data
+    const { columns, ...tableFields } = tableData as any
+    
+    // Step 1: Create the table
+    const { data: table, error: tableError } = await supabase
       .from('data_tables')
-      .insert(tableData)
+      .insert(tableFields)
+      .select('*')
+      .single()
+
+    if (tableError) {
+      console.error('Error creating table:', tableError)
+      throw new Error(tableError.message)
+    }
+
+    // Step 2: Create columns if provided
+    if (columns && columns.length > 0) {
+      const columnsWithTableId = columns.map((col: any) => ({
+        ...col,
+        table_id: table.id
+      }))
+
+      const { error: columnsError } = await supabase
+        .from('table_columns')
+        .insert(columnsWithTableId)
+
+      if (columnsError) {
+        console.error('Error creating columns:', columnsError)
+        // Try to clean up the table
+        await supabase.from('data_tables').delete().eq('id', table.id)
+        throw new Error(columnsError.message)
+      }
+    }
+
+    // Step 3: Fetch the complete table with columns
+    const { data: completeTable, error: fetchError } = await supabase
+      .from('data_tables')
       .select(`
         *,
         columns:table_columns!table_columns_table_id_fkey(*)
       `)
+      .eq('id', table.id)
       .single()
 
-    if (error) {
-      console.error('Error creating table:', error)
-      throw new Error(error.message)
+    if (fetchError) {
+      console.error('Error fetching complete table:', fetchError)
+      throw new Error(fetchError.message)
     }
 
-    return data as DataTable
+    // Sort columns by position
+    if (completeTable && completeTable.columns) {
+      completeTable.columns.sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
+    }
+
+    return completeTable as DataTable
   },
 
   /**
