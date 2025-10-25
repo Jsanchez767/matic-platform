@@ -63,7 +63,7 @@ export function PulseSettingsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="bg-green-100 p-2 rounded-lg">
@@ -76,7 +76,7 @@ export function PulseSettingsModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6 py-4 overflow-y-auto flex-1">
           {/* Display Settings */}
           <div>
             <h4 className="font-semibold text-sm text-gray-900 mb-3">Display</h4>
