@@ -86,6 +86,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   } | null>(null)
   const [pulseConfig, setPulseConfig] = useState<PulseEnabledTable | null>(null)
   const [isPulseEnabled, setIsPulseEnabled] = useState(false)
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
   
   const gridRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -386,8 +387,53 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       })
       if (!response.ok) throw new Error('Failed to delete row')
       setRows(rows.filter(r => r.id !== rowId))
+      setSelectedRows(prev => {
+        const next = new Set(prev)
+        next.delete(rowId)
+        return next
+      })
     } catch (error) {
       console.error('Error deleting row:', error)
+    }
+  }
+
+  const handleBulkDeleteRows = async () => {
+    if (selectedRows.size === 0) return
+    if (!confirm(`Are you sure you want to delete ${selectedRows.size} row(s)?`)) return
+    
+    try {
+      const deletePromises = Array.from(selectedRows).map(rowId =>
+        fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
+          method: 'DELETE',
+        })
+      )
+      await Promise.all(deletePromises)
+      setRows(rows.filter(r => !selectedRows.has(r.id)))
+      setSelectedRows(new Set())
+      toast.success(`Deleted ${selectedRows.size} row(s)`)
+    } catch (error) {
+      console.error('Error deleting rows:', error)
+      toast.error('Failed to delete some rows')
+    }
+  }
+
+  const toggleRowSelection = (rowId: string) => {
+    setSelectedRows(prev => {
+      const next = new Set(prev)
+      if (next.has(rowId)) {
+        next.delete(rowId)
+      } else {
+        next.add(rowId)
+      }
+      return next
+    })
+  }
+
+  const toggleAllRows = () => {
+    if (selectedRows.size === filteredRows.length) {
+      setSelectedRows(new Set())
+    } else {
+      setSelectedRows(new Set(filteredRows.map(r => r.id)))
     }
   }
 
@@ -878,6 +924,23 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
 
         {/* Toolbar */}
         <div className="flex items-center gap-3">
+          {selectedRows.size > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+              <span className="text-sm font-medium text-blue-700">
+                {selectedRows.size} row{selectedRows.size > 1 ? 's' : ''} selected
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDeleteRows}
+                className="h-7"
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Delete
+              </Button>
+            </div>
+          )}
+          
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -933,6 +996,14 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
           <Table>
             <TableHeader>
               <TableRowComponent className="bg-gray-50">
+                <TableHead className="w-12 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.size > 0 && selectedRows.size === filteredRows.length}
+                    onChange={toggleAllRows}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                </TableHead>
                 <TableHead className="w-12 text-center">#</TableHead>
                 {columns.filter(c => c.is_visible).map((column) => (
                   <TableHead key={column.id} style={{ minWidth: column.width }}>
@@ -980,11 +1051,20 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
             <TableBody>
               {filteredRows.map((row, rowIndex) => {
                 const isHighlighted = highlightedRows.has(row.id)
+                const isSelected = selectedRows.has(row.id)
                 return (
                   <TableRowComponent 
                     key={row.id}
-                    className={isHighlighted ? 'bg-green-100 border-green-300' : ''}
+                    className={`${isHighlighted ? 'bg-green-100 border-green-300' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
                   >
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleRowSelection(row.id)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell className="text-center text-gray-500 text-sm">
                       {rowIndex + 1}
                     </TableCell>

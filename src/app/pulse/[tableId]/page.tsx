@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Activity, Users, UserCheck, TrendingUp, Clock, Smartphone, Settings as SettingsIcon, QrCode, Loader2, ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { Activity, Users, UserCheck, TrendingUp, Clock, Smartphone, Settings as SettingsIcon, QrCode, Loader2, ArrowLeft, CheckCircle2, XCircle, X, ChevronRight, UserPlus, Scan, User, AlertTriangle } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Card } from "@/ui-components/card";
 import { pulseClient, PulseDashboardStats, PulseEnabledTable, PulseScannerSession } from "@/lib/api/pulse-client";
@@ -26,6 +26,7 @@ export default function PulseDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [checkInPopup, setCheckInPopup] = useState<any | null>(null);
+  const [selectedCheckIn, setSelectedCheckIn] = useState<any | null>(null);
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
@@ -376,36 +377,64 @@ export default function PulseDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {stats.recent_check_ins.map((checkIn) => (
-                    <div
-                      key={checkIn.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="bg-green-100 p-2 rounded-full">
-                          <UserCheck className="h-4 w-4 text-green-600" />
+                  {stats.recent_check_ins.map((checkIn) => {
+                    // Get display name from row data
+                    const rowData = checkIn.row_data || {};
+                    const displayName = rowData.name || rowData.Name || 
+                                       rowData.full_name || rowData['Full Name'] ||
+                                       checkIn.barcode_scanned;
+                    const displayEmail = rowData.email || rowData.Email || '';
+                    const displayRole = rowData.role || rowData.Role || rowData.program || rowData.Program || '';
+                    
+                    return (
+                      <div
+                        key={checkIn.id}
+                        onClick={() => setSelectedCheckIn(checkIn)}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-full ${checkIn.is_walk_in ? 'bg-orange-100' : 'bg-green-100'}`}>
+                            <UserCheck className={`h-4 w-4 ${checkIn.is_walk_in ? 'text-orange-600' : 'text-green-600'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900 truncate">
+                                {displayName}
+                              </p>
+                              {checkIn.is_walk_in && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                                  Walk-in
+                                </span>
+                              )}
+                            </div>
+                            {displayEmail && (
+                              <p className="text-sm text-gray-500 truncate">
+                                {displayEmail}
+                              </p>
+                            )}
+                            {displayRole && (
+                              <p className="text-xs text-gray-400 truncate">
+                                {displayRole}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            {checkIn.scanner_user_name || "Guest Scanner"}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {checkIn.barcode_scanned}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-700">
+                              {formatTime(checkIn.check_in_time)}
+                            </p>
+                            {checkIn.check_in_count > 1 && (
+                              <p className="text-xs text-orange-600">
+                                {checkIn.check_in_count}x scanned
+                              </p>
+                            )}
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600" />
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-gray-700">
-                          {formatTime(checkIn.check_in_time)}
-                        </p>
-                        {checkIn.check_in_count > 1 && (
-                          <p className="text-xs text-orange-600">
-                            {checkIn.check_in_count}x scanned
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Card>
@@ -618,6 +647,120 @@ export default function PulseDashboard() {
               </div>
             </Card>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Side Modal for Check-in Details */}
+      <AnimatePresence>
+        {selectedCheckIn && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCheckIn(null)}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+            
+            {/* Side Modal */}
+            <motion.div
+              initial={{ x: 500, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 500, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed right-0 top-0 bottom-0 w-[500px] bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Check-in Details</h2>
+                <button
+                  onClick={() => setSelectedCheckIn(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Walk-in Badge */}
+                {selectedCheckIn.is_walk_in && (
+                  <div className="inline-flex items-center px-3 py-1 rounded-full bg-orange-100 text-orange-800 text-sm font-medium">
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Walk-in Guest
+                  </div>
+                )}
+
+                {/* Check-in Metadata */}
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm">
+                    <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                    <span className="text-gray-600">Checked in:</span>
+                    <span className="ml-2 font-medium text-gray-900">
+                      {new Date(selectedCheckIn.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm">
+                    <Scan className="h-4 w-4 text-gray-400 mr-2" />
+                    <span className="text-gray-600">Barcode:</span>
+                    <span className="ml-2 font-mono text-gray-900 font-medium">
+                      {selectedCheckIn.barcode_scanned}
+                    </span>
+                  </div>
+
+                  {selectedCheckIn.scanner_user_name && (
+                    <div className="flex items-center text-sm">
+                      <User className="h-4 w-4 text-gray-400 mr-2" />
+                      <span className="text-gray-600">Scanned by:</span>
+                      <span className="ml-2 text-gray-900">
+                        {selectedCheckIn.scanner_user_name}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedCheckIn.duplicate_count > 1 && (
+                    <div className="flex items-center text-sm">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                      <span className="text-amber-700 font-medium">
+                        Scanned {selectedCheckIn.duplicate_count} times
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Row Data */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
+                    Attendee Information
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    {selectedCheckIn.row_data && Object.entries(selectedCheckIn.row_data).map(([key, value]) => {
+                      // Skip internal fields
+                      if (key.startsWith('_') || !value) return null;
+                      
+                      return (
+                        <div key={key} className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
+                            {key.replace(/_/g, ' ')}
+                          </span>
+                          <span className="text-sm text-gray-900 break-words">
+                            {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setSelectedCheckIn(null)}
+                    className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
