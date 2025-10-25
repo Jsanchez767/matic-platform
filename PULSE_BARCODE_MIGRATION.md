@@ -1,23 +1,28 @@
-# Pulse Barcode Column Migration
+# Pulse Barcode Column Migration - REQUIRED
 
-## Issue
-The Pulse settings modal now has a barcode column selector, but the database schema is missing the `barcode_column_id` column in the `pulse_enabled_tables` table.
+## 🚨 Current Issues (Before Migration)
+1. ❌ **Settings don't save**: Barcode column selector appears but selections aren't saved
+2. ❌ **Scanner can't find rows**: Pulse QR code works but scanner doesn't know which column to search
+3. ❌ **Silent failure**: No error messages, just doesn't work
 
-## Solution
-Run the migration SQL to add the column to your Supabase database.
+## ✅ Solution
+Run the migration SQL to add the `barcode_column_id` column to your Supabase database.
 
 ## Steps to Fix
 
 ### Option 1: Supabase Dashboard (Recommended)
-1. Go to your Supabase project dashboard
-2. Navigate to **SQL Editor**
-3. Create a new query
-4. Copy and paste the contents of `docs/003_add_barcode_column_to_pulse.sql`
-5. Click **Run** to execute the migration
+1. Go to your Supabase project dashboard: https://supabase.com/dashboard
+2. Select your project
+3. Navigate to **SQL Editor** (left sidebar)
+4. Click **New Query**
+5. Copy and paste the **entire contents** of `docs/003_add_barcode_column_to_pulse.sql`
+6. Click **Run** (or press Cmd/Ctrl + Enter)
+7. You should see: `✅ Migration successful! barcode_column_id column added to pulse_enabled_tables`
 
 ### Option 2: Supabase CLI
 ```bash
 # If you have Supabase CLI installed
+cd /path/to/matic-platform
 supabase db push --file docs/003_add_barcode_column_to_pulse.sql
 ```
 
