@@ -147,8 +147,8 @@ function ScanPageContent() {
         BarcodeFormat.UPC_E,
       ])
       hints.set(DecodeHintType.TRY_HARDER, true)
-      // Increase delay between scan attempts for better performance
-      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 1000 })
+      // Optimize scan speed - 300ms delay for responsive scanning
+      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 300 })
     }
     return scannerRef.current
   }
@@ -1192,62 +1192,60 @@ function ScanPageContent() {
 
       {/* Main Content */}
       <div className="flex-1 p-4 max-w-2xl mx-auto w-full">
-        {/* Scanner Card */}
-        <Card className="mb-4">
-          <div className="p-4">
-            {/* Camera Preview Area */}
-            <div className="relative mb-4 rounded-lg overflow-hidden bg-gray-900 aspect-square">
-            {/* Video Element for QR Scanner */}
-            <video 
-              ref={videoRef}
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ 
-                display: isScanning ? 'block' : 'none'
-              }}
-              playsInline
-              muted
-            />              
-            {/* Placeholder when not scanning */}
-              {!isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-white text-center">
-                    <Camera className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm opacity-75">Camera View</p>
-                  </div>
-                </div>
-              )}
-              
-              {/* Scanning overlay */}
-              {isScanning && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {/* Corner brackets */}
-                  <div className="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
-                  <div className="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
-                  <div className="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
-                  <div className="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-white rounded-br-lg"></div>
-                  
-                  {/* Scanning line animation */}
-                  <div className="absolute inset-x-8 top-1/2 h-0.5 bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
-                </div>
-              )}
-              
-              {/* Status badge */}
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-                {isScanning ? (
-                  <Badge className="bg-green-500 text-white border-0 shadow-lg">
-                    <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-                    Scanning...
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="shadow-lg">
-                    Camera Paused
-                  </Badge>
-                )}
+        {/* Camera Preview Area */}
+        <div className="relative mb-4 rounded-2xl overflow-hidden bg-gray-900 aspect-square shadow-lg">
+          {/* Video Element for QR Scanner */}
+          <video 
+            ref={videoRef}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ 
+              display: isScanning ? 'block' : 'none'
+            }}
+            playsInline
+            muted
+          />              
+          
+          {/* Placeholder when not scanning */}
+          {!isScanning && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-white text-center">
+                <Camera className="w-16 h-16 mx-auto mb-2 opacity-50" />
+                <p className="text-sm opacity-75">Camera View</p>
               </div>
             </div>
+          )}
+          
+          {/* Scanning overlay */}
+          {isScanning && (
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Corner brackets */}
+              <div className="absolute top-8 left-8 w-12 h-12 border-t-[3px] border-l-[3px] border-white"></div>
+              <div className="absolute top-8 right-8 w-12 h-12 border-t-[3px] border-r-[3px] border-white"></div>
+              <div className="absolute bottom-8 left-8 w-12 h-12 border-b-[3px] border-l-[3px] border-white"></div>
+              <div className="absolute bottom-8 right-8 w-12 h-12 border-b-[3px] border-r-[3px] border-white"></div>
+              
+              {/* Scanning line animation */}
+              <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-0.5 bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
+            </div>
+          )}
+          
+          {/* Status badge */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+            {isScanning ? (
+              <Badge className="bg-green-500 text-white border-0 shadow-lg">
+                <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                Scanning...
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="shadow-lg">
+                Camera Paused
+              </Badge>
+            )}
+          </div>
+        </div>
 
-            {/* Camera Controls */}
-            <div className="space-y-3">
+        {/* Camera Controls */}
+        <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <select
                   value={selectedCamera}
@@ -1324,9 +1322,20 @@ function ScanPageContent() {
                 <Camera className="w-4 h-4 mr-2" />
                 {isScanning ? 'Stop Camera' : 'Start Camera'}
               </Button>
+              
+              {/* Scanner Options */}
+              <div className="text-sm text-gray-600">Scanner options:</div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  // Add walk-in handler
+                  toast.info('Walk-in feature coming soon!');
+                }}
+              >
+                Add Walk-in
+              </Button>
             </div>
-          </div>
-        </Card>
 
         {/* Most Recent Scan */}
         {scanHistory.length > 0 && (

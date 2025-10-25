@@ -28,8 +28,10 @@ export default function PulseDashboard() {
 
   useEffect(() => {
     loadDashboard();
-    
-    // Set up real-time channel for check-ins
+  }, [tableId]);
+
+  // Separate effect for real-time channel setup after config is loaded
+  useEffect(() => {
     if (config?.id) {
       setupRealtimeChannel();
     }
@@ -40,14 +42,21 @@ export default function PulseDashboard() {
         supabase.removeChannel(channelRef.current);
       }
     };
-  }, [tableId, config?.id]);
+  }, [config?.id, tableId]);
 
   const setupRealtimeChannel = async () => {
     if (!config?.id) return;
 
+    // Remove existing channel if any
+    if (channelRef.current) {
+      await supabase.removeChannel(channelRef.current);
+    }
+
     try {
+      console.log('🔴 Setting up real-time channel for table:', tableId);
+      
       const channel = supabase
-        .channel(`pulse_${tableId}`)
+        .channel(`pulse_${tableId}_${Date.now()}`) // Unique channel name
         .on(
           'postgres_changes',
           {
@@ -59,8 +68,9 @@ export default function PulseDashboard() {
           (payload) => {
             console.log('🔴 Real-time check-in received:', payload);
             
-            // Reload stats immediately
+            // Reload stats and sessions immediately
             loadStats();
+            loadSessions();
             
             // Show toast notification
             const checkIn = payload.new as any;
@@ -73,6 +83,19 @@ export default function PulseDashboard() {
         .on(
           'postgres_changes',
           {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'pulse_check_ins',
+            filter: `table_id=eq.${tableId}`
+          },
+          (payload) => {
+            console.log('🔴 Check-in updated:', payload);
+            loadStats();
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
             event: '*',
             schema: 'public',
             table: 'pulse_scanner_sessions',
@@ -80,22 +103,36 @@ export default function PulseDashboard() {
           },
           (payload) => {
             console.log('📱 Scanner session update:', payload);
-            // Reload sessions
+            // Reload sessions immediately
             loadSessions();
           }
         )
         .subscribe((status) => {
           console.log('📡 Pulse real-time status:', status);
           if (status === 'SUBSCRIBED') {
+            console.log('✅ Real-time updates active for table:', tableId);
             toast.success('Real-time updates active', { duration: 2000 });
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Real-time channel error');
+            toast.error('Real-time updates failed, using polling', { duration: 3000 });
+            // Fallback to polling
+            const interval = setInterval(() => {
+              loadStats();
+              loadSessions();
+            }, 3000); // Poll every 3 seconds
+            return () => clearInterval(interval);
           }
         });
 
       channelRef.current = channel;
     } catch (error) {
       console.error('Failed to setup real-time channel:', error);
+      toast.error('Real-time updates failed, using polling');
       // Fallback to polling if real-time fails
-      const interval = setInterval(loadStats, 5000);
+      const interval = setInterval(() => {
+        loadStats();
+        loadSessions();
+      }, 3000); // Poll every 3 seconds
       return () => clearInterval(interval);
     }
   };
