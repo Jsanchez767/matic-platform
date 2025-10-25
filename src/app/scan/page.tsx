@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { BrowserMultiFormatReader, BarcodeFormat, IScannerControls } from '@zxing/browser'
 import { DecodeHintType } from '@zxing/library'
 import { Exception, NotFoundException, Result } from '@zxing/library'
-import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield, User, Mail, Activity } from 'lucide-react'
+import { ArrowLeft, Wifi, WifiOff, ScanLine, Camera, CheckCircle2, XCircle, Trash2, ChevronUp, AlertCircle, Shield, User, Mail, Activity, Settings, Flashlight, Search, TrendingUp, UserPlus } from 'lucide-react'
 import { Button } from '@/ui-components/button'
 import { Card } from '@/ui-components/card'
 import { Badge } from '@/ui-components/badge'
@@ -14,6 +14,10 @@ import { Separator } from '@/ui-components/separator'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/ui-components/drawer'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui-components/dialog'
 import { Input } from '@/ui-components/input'
+import { Label } from '@/ui-components/label'
+import { Switch } from '@/ui-components/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui-components/tabs'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Toaster } from '@/ui-components/sonner'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -54,6 +58,31 @@ function ScanPageContent() {
   const [showUserInfoDialog, setShowUserInfoDialog] = useState(false)
   const [userName, setUserName] = useState<string>('')
   const [userEmail, setUserEmail] = useState<string>('')
+  
+  // New state for modern UI
+  const [showFlash, setShowFlash] = useState<'green' | 'red' | null>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [settings, setSettings] = useState({
+    flashEnabled: false,
+    continuousScan: false,
+    scanCooldown: true,
+    manualEntry: false,
+  })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [manualIdInput, setManualIdInput] = useState('')
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
+  const [scanResult, setScanResult] = useState<{
+    found: boolean;
+    barcode: string;
+    row?: any;
+  } | null>(null)
+  const [showWalkInForm, setShowWalkInForm] = useState(false)
+  const [walkInForm, setWalkInForm] = useState({
+    name: '',
+    email: '',
+    studentId: '',
+  })
+  
   const scannerRef = useRef<BrowserMultiFormatReader | null>(null)
   const scannerControlsRef = useRef<IScannerControls | null>(null)
   const lastScanRef = useRef<{ barcode: string; timestamp: number } | null>(null)
@@ -71,8 +100,38 @@ function ScanPageContent() {
     }
   }, [])
   
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+  
   const videoRef = useRef<HTMLVideoElement>(null)
   const channelRef = useRef<any>(null)
+  
+  // Calculate statistics
+  const statistics = {
+    total: scanHistory.length,
+    successful: scanHistory.filter(item => item.success).length,
+    walkIns: 0, // TODO: Track walk-ins separately
+    get rsvps() { return this.successful - this.walkIns; }
+  };
+  
+  // Filtered history with search
+  const filteredHistory = searchQuery.trim() 
+    ? scanHistory.filter(item => 
+        item.barcode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        new Date(item.timestamp).toLocaleString().toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : scanHistory;
 
   const ensureCodeReader = () => {
     if (!scannerRef.current) {
@@ -460,6 +519,7 @@ function ScanPageContent() {
       console.log('📱 Mobile scan callback fired:', decodedText)
       
       const now = Date.now()
+      const cooldownTime = settings.scanCooldown ? 2000 : 0 // 2 seconds if enabled
       const oneMinuteInMs = 60000 // 60 seconds
       
       // Check if we're already processing a scan
@@ -472,6 +532,13 @@ function ScanPageContent() {
       if (lastScanRef.current) {
         const { barcode: lastBarcode, timestamp: lastTime } = lastScanRef.current
         const timeSinceLastScan = now - lastTime
+        
+        // Apply cooldown if enabled
+        if (cooldownTime > 0 && timeSinceLastScan < cooldownTime) {
+          console.log(`🚫 Cooldown active (${Math.ceil((cooldownTime - timeSinceLastScan) / 1000)}s remaining)`)
+          toast.info(`Please wait ${Math.ceil((cooldownTime - timeSinceLastScan) / 1000)}s`)
+          return
+        }
         
         if (lastBarcode === decodedText && timeSinceLastScan < oneMinuteInMs) {
           console.log(`🚫 Skipping duplicate scan (${Math.floor(timeSinceLastScan / 1000)}s ago):`, decodedText)
@@ -661,6 +728,30 @@ function ScanPageContent() {
       
       // Add to local scan history for real-time display
       setScanHistory(prev => [scanResult, ...prev.slice(0, 9)]) // Keep last 10 scans
+      
+      // Modern UI feedback
+      const success = condensedRows.length > 0;
+      
+      // Trigger haptic feedback
+      if ('vibrate' in navigator) {
+        navigator.vibrate(success ? 200 : [100, 50, 100]);
+      }
+      
+      // Show flash overlay
+      setShowFlash(success ? 'green' : 'red');
+      setTimeout(() => setShowFlash(null), 500);
+      
+      // Set scan result for modal
+      setScanResult({
+        found: success,
+        barcode: decodedText,
+        row: condensedRows[0],
+      });
+      
+      // Auto-continue if enabled
+      if (settings.continuousScan && success) {
+        setTimeout(() => setScanResult(null), 1500);
+      }
       
       // ============================================================================
       // PULSE MODE: Create check-in event
@@ -1050,25 +1141,29 @@ function ScanPageContent() {
           </Button>
           
           <div className="flex items-center gap-2">
-            {isPulseMode && (
-              <Badge className="bg-green-600 text-white border-0">
-                <Activity className="w-3 h-3 mr-1" />
-                Pulse Mode
+            <Badge 
+              variant="outline" 
+              className={isOnline 
+                ? "bg-green-50 text-green-700 border-green-200" 
+                : "bg-gray-50 text-gray-700 border-gray-200"
+              }
+            >
+              {isOnline ? <Wifi className="w-3 h-3 mr-1" /> : <WifiOff className="w-3 h-3 mr-1" />}
+              {isOnline ? 'Connected' : 'Offline'}
+            </Badge>
+            {pairingCode && (
+              <Badge variant="secondary" className="text-xs">
+                {pairingCode}
               </Badge>
             )}
-            <Badge variant="outline" className={`${
-              connectionStatus === 'connected' 
-                ? 'bg-green-50 text-green-700 border-green-200' 
-                : connectionStatus === 'connecting'
-                ? 'bg-orange-50 text-orange-700 border-orange-200'
-                : 'bg-red-50 text-red-700 border-red-200'
-            }`}>
-              {getConnectionIcon()}
-              <span className="ml-1">{getConnectionText()}</span>
-            </Badge>
-            <Badge variant="secondary" className="text-xs">
-              {pairingCode}
-            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSettingsOpen(true)}
+              className="h-8 w-8 p-0"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
           </div>
         </div>
         
@@ -1077,19 +1172,19 @@ function ScanPageContent() {
           <div className="flex-1 bg-green-50 rounded-lg px-3 py-2 border border-green-100">
             <div className="flex items-center justify-between">
               <span className="text-xs text-green-600">Success</span>
-              <span className="font-semibold text-green-700">{successCount}</span>
+              <span className="font-semibold text-green-700">{statistics.successful}</span>
             </div>
           </div>
           <div className="flex-1 bg-red-50 rounded-lg px-3 py-2 border border-red-100">
             <div className="flex items-center justify-between">
               <span className="text-xs text-red-600">Failed</span>
-              <span className="font-semibold text-red-700">{failureCount}</span>
+              <span className="font-semibold text-red-700">{statistics.total - statistics.successful}</span>
             </div>
           </div>
           <div className="flex-1 bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
             <div className="flex items-center justify-between">
               <span className="text-xs text-purple-600">Total</span>
-              <span className="font-semibold text-purple-700">{scanHistory.length}</span>
+              <span className="font-semibold text-purple-700">{statistics.total}</span>
             </div>
           </div>
         </div>
@@ -1111,7 +1206,8 @@ function ScanPageContent() {
               }}
               playsInline
               muted
-            />              {/* Placeholder when not scanning */}
+            />              
+            {/* Placeholder when not scanning */}
               {!isScanning && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-white text-center">
@@ -1124,6 +1220,12 @@ function ScanPageContent() {
               {/* Scanning overlay */}
               {isScanning && (
                 <div className="absolute inset-0 pointer-events-none">
+                  {/* Corner brackets */}
+                  <div className="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-white rounded-tl-lg"></div>
+                  <div className="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-white rounded-tr-lg"></div>
+                  <div className="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-white rounded-bl-lg"></div>
+                  <div className="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-white rounded-br-lg"></div>
+                  
                   {/* Scanning line animation */}
                   <div className="absolute inset-x-8 top-1/2 h-0.5 bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
                 </div>
@@ -1190,6 +1292,28 @@ function ScanPageContent() {
                   )}
                 </Button>
               </div>
+              
+              {/* Manual ID Entry */}
+              {settings.manualEntry && (
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (manualIdInput.trim()) {
+                    onScanSuccess(manualIdInput.trim());
+                    setManualIdInput('');
+                  }
+                }} className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter Student ID manually..."
+                    value={manualIdInput}
+                    onChange={(e) => setManualIdInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="submit" size="sm" className="px-6">
+                    Enter
+                  </Button>
+                </form>
+              )}
               
               <Button
                 onClick={handleToggleScanning}
@@ -1274,21 +1398,43 @@ function ScanPageContent() {
             <DrawerDescription>
               {scanHistory.length === 0 
                 ? 'No scans yet' 
-                : `${successCount} successful, ${failureCount} failed`}
+                : `${statistics.successful} successful, ${statistics.total - statistics.successful} failed`}
             </DrawerDescription>
           </DrawerHeader>
           
           <div className="px-4 pb-4 overflow-hidden">
+            {/* Search Input */}
+            {scanHistory.length > 0 && (
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Search scans..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+            )}
+            
             {scanHistory.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <ScanLine className="w-16 h-16 mx-auto mb-3 opacity-30" />
                 <p className="text-sm">No scans yet</p>
                 <p className="text-xs mt-1">Scanned items will appear here automatically</p>
               </div>
+            ) : filteredHistory.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Search className="w-16 h-16 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No results found</p>
+                <p className="text-xs mt-1">Try a different search term</p>
+              </div>
             ) : (
-              <ScrollArea className="h-[calc(85vh-180px)]">
+              <ScrollArea className="h-[calc(85vh-240px)]">
                 <div className="space-y-1 pr-4">
-                  {scanHistory.map((item, index) => (
+                  {filteredHistory.map((item, index) => (
                     <div key={item.id}>
                       <div className="flex items-start gap-3 py-3">
                         <div className="shrink-0 mt-0.5">
