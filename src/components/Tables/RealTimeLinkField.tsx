@@ -195,12 +195,17 @@ export function RealTimeLinkField({
           onClick={handleStopEditing}
         />
         
-        {/* Dropdown for selecting linked records */}
-        <div className="absolute left-0 top-0 z-50 w-96 bg-white border border-gray-200 rounded-lg shadow-xl">
+        {/* Dropdown for selecting linked records - FIXED positioning to avoid clipping */}
+        <div className="fixed z-50 w-96 bg-white border border-gray-200 rounded-lg shadow-2xl" style={{
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          maxHeight: '80vh',
+        }}>
           {/* Current linked records */}
           <div className="p-3 border-b border-gray-200">
             <div className="text-sm font-medium text-gray-700 mb-2">Linked Records:</div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
               {linkedRecords.map((record) => (
                 <span 
                   key={record.id} 
@@ -242,7 +247,7 @@ export function RealTimeLinkField({
           </div>
           
           {/* Available records from linked table */}
-          <div className="max-h-96 overflow-y-auto">
+          <div className="overflow-y-auto" style={{ maxHeight: 'calc(80vh - 200px)' }}>
             {loading ? (
               <div className="text-center py-8 text-gray-400 text-sm">
                 Loading records...
