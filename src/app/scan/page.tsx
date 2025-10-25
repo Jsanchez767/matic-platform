@@ -147,8 +147,8 @@ function ScanPageContent() {
         BarcodeFormat.UPC_E,
       ])
       hints.set(DecodeHintType.TRY_HARDER, true)
-      // Optimize scan speed - 300ms delay for responsive scanning
-      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 300 })
+      // Ultra-fast scan speed - 100ms delay for instant response
+      scannerRef.current = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 100 })
     }
     return scannerRef.current
   }
@@ -519,7 +519,7 @@ function ScanPageContent() {
       console.log('📱 Mobile scan callback fired:', decodedText)
       
       const now = Date.now()
-      const cooldownTime = settings.scanCooldown ? 2000 : 0 // 2 seconds if enabled
+      const cooldownTime = settings.scanCooldown ? 1000 : 0 // 1 second cooldown if enabled (faster than before)
       const oneMinuteInMs = 60000 // 60 seconds
       
       // Check if we're already processing a scan
@@ -793,10 +793,10 @@ function ScanPageContent() {
       }
       // Note: Modal handles all visual feedback now, no need for extra toasts
 
-      // Broadcast to desktop via Supabase real-time
+      // Broadcast to desktop via Supabase real-time (non-blocking)
       if (channelRef.current) {
-        console.log('📡 Broadcasting scan result to desktop...')
-        await channelRef.current.send({
+        // Use non-blocking fire-and-forget pattern
+        channelRef.current.send({
           type: 'broadcast',
           event: 'barcode_scanned',
           payload: {
@@ -809,37 +809,8 @@ function ScanPageContent() {
             tableId,
             columnName,
             columnLabel,
-            scanRecord: persistedRecord,
           }
-        })
-        
-        // Also send to results page channel if someone is viewing it
-        const resultsChannelName = `scan_results_${tableId}_${columnName}`
-        const resultsChannel = supabase.channel(resultsChannelName)
-        
-        resultsChannel.subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await resultsChannel.send({
-              type: 'broadcast',
-              event: 'new_scan_result',
-              payload: {
-                ...scanResult,
-                timestamp: scanResult.timestamp.toISOString(),
-                column: columnName,
-                tableId,
-                status: scanResult.status,
-                foundRows: condensedRows,
-                scanRecord: persistedRecord,
-              }
-            })
-            console.log('📡 Sent scan result to results channel:', decodedText)
-            
-            // Unsubscribe after sending
-            setTimeout(() => {
-              resultsChannel.unsubscribe()
-            }, 1000)
-          }
-        })
+        }).catch((err: any) => console.warn('Broadcast failed:', err));
       }
       } catch (error) {
         console.error('Error processing scan:', error)
@@ -1239,31 +1210,13 @@ function ScanPageContent() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={requestCameraPermissions}
-                  disabled={cameraPermission === 'granted' || cameraPermission === 'requesting'}
+                  onClick={() => {
+                    setScanHistory([]);
+                    toast.success('History cleared');
+                  }}
                   className="shrink-0"
                 >
-                  {cameraPermission === 'requesting' && (
-                    <div className="w-3 h-3 mr-2 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-                  )}
-                  {cameraPermission === 'granted' ? (
-                    <>
-                      <CheckCircle2 className="w-3 h-3 mr-1 text-green-500" />
-                      Camera Ready
-                    </>
-                  ) : cameraPermission === 'denied' ? (
-                    <>
-                      <AlertCircle className="w-3 h-3 mr-1 text-red-500" />
-                      Grant Access
-                    </>
-                  ) : cameraPermission === 'requesting' ? (
-                    'Requesting...'
-                  ) : (
-                    <>
-                      <Shield className="w-3 h-3 mr-1" />
-                      Camera Access
-                    </>
-                  )}
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
               
