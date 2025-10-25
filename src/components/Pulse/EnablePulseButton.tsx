@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/ui-components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/ui-components/dialog";
 import { Activity, Loader2 } from "lucide-react";
-import { pulseClient, PulseEnabledTable } from "@/lib/api/pulse-client";
+import { pulseSupabase } from "@/lib/api/pulse-supabase";
 import { toast } from "sonner";
 
 interface EnablePulseButtonProps {
@@ -27,14 +27,11 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
 
   const checkPulseStatus = async () => {
     try {
-      const config = await pulseClient.getPulseConfig(tableId);
-      setIsPulseEnabled(config.enabled);
+      const config = await pulseSupabase.getPulseConfig(tableId);
+      setIsPulseEnabled(config?.enabled || false);
     } catch (error: any) {
-      if (error.message.includes("not enabled")) {
-        setIsPulseEnabled(false);
-      } else {
-        console.error("Error checking Pulse status:", error);
-      }
+      console.error("Error checking Pulse status:", error);
+      setIsPulseEnabled(false);
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +42,7 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
     setIsEnabling(true);
     try {
       console.log('📤 Sending enablePulse request...');
-      const result = await pulseClient.enablePulse({
+      const result = await pulseSupabase.enablePulse({
         table_id: tableId,
         workspace_id: workspaceId,
       });
@@ -59,11 +56,6 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
       router.push(`/pulse/${tableId}`);
     } catch (error: any) {
       console.error("❌ Error enabling Pulse:", error);
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
       toast.error(error.message || "Failed to enable Pulse");
     } finally {
       setIsEnabling(false);

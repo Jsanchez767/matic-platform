@@ -6,7 +6,8 @@ import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
 import { EnablePulseButton } from '@/components/Pulse/EnablePulseButton'
-import { pulseClient, type PulseEnabledTable } from '@/lib/api/pulse-client'
+import { pulseSupabase } from '@/lib/api/pulse-supabase'
+import type { PulseEnabledTable } from '@/lib/api/pulse-client'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
@@ -139,7 +140,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   // Load Pulse configuration
   const loadPulseConfig = async () => {
     try {
-      const config = await pulseClient.getPulseConfig(tableId)
+      const config = await pulseSupabase.getPulseConfig(tableId)
       if (config && config.enabled) {
         setPulseConfig(config)
         setIsPulseEnabled(true)
