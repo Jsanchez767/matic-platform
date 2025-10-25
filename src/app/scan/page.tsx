@@ -1790,6 +1790,12 @@ function ScanPageContent() {
                           if (idCol?.id && walkInForm[idCol.id]) rowData[idCol.name] = walkInForm[idCol.id];
                         }
                         
+                        console.log('📝 Creating row with data:', {
+                          tableId,
+                          rowData,
+                          created_by: userName || 'Walk-in Scanner'
+                        });
+                        
                         const newRow = await rowsSupabase.create(tableId, {
                           table_id: tableId,
                           data: rowData,
@@ -1988,7 +1994,34 @@ function ScanPageContent() {
                       
                       <Button
                         onClick={() => {
-                          setWalkInForm(prev => ({ ...prev, studentId: scanResult.barcode }));
+                          // Pre-populate the barcode/ID field with the scanned value
+                          const selectedFields = pulseConfig?.settings?.walkin_fields || [];
+                          let barcodeFieldId: string | null = null;
+                          
+                          if (selectedFields.length > 0 && tableInfo?.columns) {
+                            // Find the ID/barcode field in selected fields
+                            barcodeFieldId = selectedFields.find((fieldId: string) => {
+                              const column = tableInfo.columns.find(c => c.id === fieldId);
+                              return column && (
+                                column.id === resolvedColumnId ||
+                                column.name.toLowerCase().includes('id') ||
+                                column.label?.toLowerCase().includes('id') ||
+                                column.name.toLowerCase().includes('barcode') ||
+                                column.label?.toLowerCase().includes('barcode')
+                              );
+                            }) || null;
+                          } else if (resolvedColumnId) {
+                            // Use the configured barcode column
+                            barcodeFieldId = resolvedColumnId;
+                          }
+                          
+                          // Pre-fill the form with the scanned barcode
+                          if (barcodeFieldId) {
+                            setWalkInForm({ [barcodeFieldId]: scanResult.barcode });
+                          } else {
+                            setWalkInForm({});
+                          }
+                          
                           setShowWalkInForm(true);
                         }}
                         className="w-full bg-blue-600 hover:bg-blue-700"
