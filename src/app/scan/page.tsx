@@ -1863,12 +1863,16 @@ function ScanPageContent() {
                         const checkIn = await pulseClient.createCheckIn(checkInData);
                         console.log('✅ Walk-in check-in created:', checkIn.id);
                         
-                        // 3. Update scanner session
+                        // 3. Update scanner session (non-blocking, don't fail if this errors)
                         if (scannerSessionId) {
-                          await pulseClient.updateScannerSession(scannerSessionId, {
-                            total_scans: (scanHistory.filter(s => s.success).length + 1),
-                            last_scan_at: new Date().toISOString(),
-                          });
+                          try {
+                            await pulseClient.updateScannerSession(scannerSessionId, {
+                              total_scans: (scanHistory.filter(s => s.success).length + 1),
+                              last_scan_at: new Date().toISOString(),
+                            });
+                          } catch (sessionError) {
+                            console.warn('⚠️ Failed to update scanner session (non-critical):', sessionError);
+                          }
                         }
                         
                         // 4. Close walk-in form and show success result
