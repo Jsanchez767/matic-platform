@@ -1871,21 +1871,30 @@ function ScanPageContent() {
                           });
                         }
                         
-                        // Get first field value for success message
-                        const firstFieldValue = Object.values(walkInForm)[0] || 'Guest';
-                        
-                        // 4. Show success and close form
-                        toast.success('Walk-in added successfully!', {
-                          description: `${firstFieldValue} has been checked in`,
-                        });
-                        
+                        // 4. Close walk-in form and show success result
                         setShowWalkInForm(false);
-                        setScanResult(null);
                         setWalkInForm({});
+                        
+                        // Show success modal with walk-in data
+                        setScanResult({
+                          found: true,
+                          barcode: barcodeValue,
+                          row: { id: newRow.id, data: rowData },
+                        });
                         
                         // Show flash
                         setShowFlash('green');
                         setTimeout(() => setShowFlash(null), 500);
+                        
+                        // Trigger haptic feedback
+                        if ('vibrate' in navigator) {
+                          navigator.vibrate(200);
+                        }
+                        
+                        // Auto-close after 3 seconds if continuous scan enabled
+                        if (settings.continuousScan) {
+                          setTimeout(() => setScanResult(null), 3000);
+                        }
                         
                       } catch (error) {
                         console.error('❌ Failed to add walk-in:', error);
