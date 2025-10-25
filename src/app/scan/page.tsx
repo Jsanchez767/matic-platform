@@ -1796,10 +1796,18 @@ function ScanPageContent() {
                           created_by: userName || 'Walk-in Scanner'
                         });
                         
+                        // Get current user ID from Supabase auth
+                        const { data: { user } } = await supabase.auth.getUser();
+                        const userId = user?.id;
+                        
+                        if (!userId) {
+                          throw new Error('User not authenticated. Please log in to add walk-ins.');
+                        }
+                        
                         const newRow = await rowsSupabase.create(tableId, {
                           table_id: tableId,
                           data: rowData,
-                          created_by: userName || 'Walk-in Scanner',
+                          created_by: userId,
                         });
                         
                         console.log('✅ Walk-in row created:', newRow.id);
