@@ -219,17 +219,6 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
                 </svg>
               </button>
             </div>
-            <div className="flex items-center space-x-2">
-              <button className="flex items-center space-x-2 px-4 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                <Plus className="w-4 h-4" />
-                <span>Quick Add</span>
-              </button>
-              
-              <button className="flex items-center space-x-2 px-4 py-1.5 text-gray-700 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors">
-                <Settings className="w-4 h-4" />
-                <span>Workspace Settings</span>
-              </button>
-            </div>
           </div>
         )}
       </nav>
