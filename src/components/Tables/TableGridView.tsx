@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine, BarChart3 } from 'lucide-react'
+import { Plus, ChevronDown, Trash2, Copy, Settings, EyeOff, Grid3x3, Kanban, Calendar as CalendarIcon, Image as ImageIcon, List, Search, ScanLine, BarChart3, Filter, Download, MoreHorizontal } from 'lucide-react'
 import { ColumnEditorModal } from './ColumnEditorModal'
 import { RealTimeLinkField } from './RealTimeLinkField'
 import { BarcodeScanModal } from './BarcodeScanModal'
@@ -12,6 +12,11 @@ import { rowsSupabase } from '@/lib/api/rows-supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
 import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
 import type { TableRow } from '@/types/data-tables'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as TableRowComponent } from '@/ui-components/table'
+import { Badge } from '@/ui-components/badge'
+import { Input } from '@/ui-components/input'
+import { Button } from '@/ui-components/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
 
 // @ts-ignore - Next.js injects env vars at build time
 // API Configuration - Always use production backend on Render
@@ -851,257 +856,215 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center gap-4">
-          {isEditingTableName ? (
-            <input
-              ref={tableNameInputRef}
-              type="text"
-              value={tempTableName}
-              onChange={(e) => setTempTableName(e.target.value)}
-              onBlur={handleSaveTableName}
-              onKeyDown={handleTableNameKeyDown}
-              className="text-lg font-semibold text-gray-900 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          ) : (
-            <h2 
-              className="text-lg font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
-              onClick={handleStartEditingTableName}
-            >
-              {tableName}
-            </h2>
-          )}
-          <div className="relative">
-            <button 
-              onClick={() => setShowViewMenu(!showViewMenu)}
-              className="px-3 py-1.5 text-sm bg-gray-100 rounded-lg hover:bg-gray-200 flex items-center gap-2"
-            >
-              <Grid3x3 className="w-4 h-4" />
-              Grid view
-              <ChevronDown className="w-4 h-4" />
-            </button>
-            {showViewMenu && (
-              <div className="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-20">
-                {VIEW_OPTIONS.map((view) => {
-                  const Icon = view.icon
-                  return (
-                    <button
-                      key={view.value}
-                      onClick={() => {
-                        setCurrentView(view.value as any)
-                        setShowViewMenu(false)
-                      }}
-                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-start gap-3 ${
-                        currentView === view.value ? 'bg-blue-50' : ''
-                      }`}
-                    >
-                      <Icon className="w-5 h-5 text-gray-600 mt-0.5" />
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{view.label}</div>
-                        <div className="text-xs text-gray-500">{view.description}</div>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Connection status - Enhanced visibility */}
-          <div className="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 px-3 py-1.5 rounded-lg border">
-            <div 
-              className={`w-3 h-3 rounded-full ${
-                connectionStatus === 'connected' ? 'bg-green-500' : 
-                connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                connectionStatus === 'error' ? 'bg-red-500' : 'bg-green-500'
-              }`}
-            />
-            <span className="font-medium">
-              {connectionStatus === 'connected' ? 'Live (WebSocket)' : 
-               connectionStatus === 'connecting' ? 'Connecting...' :
-               connectionStatus === 'error' ? 'Connection Error' : 'Live (Supabase)'}
-            </span>
-            {connectionStatus === 'disconnected' && (
-              <span className="text-xs text-gray-400" title="Using Supabase Realtime for live updates">
-                (DB Sync)
-              </span>
-            )}
-          </div>
-          
-          <button
-            onClick={() => setIsBarcodeScanModalOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-          >
-            <ScanLine className="w-4 h-4" />
-            Scan & Lookup
-          </button>
-          
-          <button
-            onClick={() => {
-              // Find a column to use for scan results (prefer 'email' or first text column)
-              const emailColumn = columns.find(col => col.name.toLowerCase() === 'email')
-              const firstColumn = columns.find(col => col.column_type === 'text') || columns[0]
-              const targetColumn = emailColumn || firstColumn
-              
-              if (targetColumn) {
-                // Open scan results in new tab using workspace tab system
-                const scanResultsUrl = `/scan-results?table=${tableId}&column=${targetColumn.name}`
-                window.open(scanResultsUrl, '_blank')
-              } else {
-                alert('No columns available for scanning. Please add a column first.')
-              }
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            title="View scan history and results"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Scan Results
-          </button>
-          
-          <EnablePulseButton tableId={tableId} workspaceId={workspaceId} />
-          
-          <button
-            onClick={handleAddRow}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4" />
-            Add Row
-          </button>
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="flex-1 overflow-auto" ref={gridRef}>
-        <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10">
-            <tr className="bg-gray-50">
-              <th className="w-12 border-r border-b border-gray-300 bg-gray-100"></th>
-              {columns.filter(c => c.is_visible).map((column) => (
-                <th
-                  key={column.id}
-                  className="border-r border-b border-gray-300 bg-gray-50 p-0 relative group"
-                  style={{ minWidth: column.width }}
-                >
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-sm font-medium text-gray-700 truncate">{column.label}</span>
-                    <button
-                      onClick={() => setActiveColumnMenu(activeColumnMenu === column.id ? null : column.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded"
-                    >
-                      <ChevronDown className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {activeColumnMenu === column.id && (
-                    <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border py-1 z-20">
-                      <button 
-                        onClick={() => handleEditColumn(column)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Edit field
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteColumn(column.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete field
-                      </button>
-                    </div>
-                  )}
-                </th>
-              ))}
-              <th className="border-b border-gray-300 bg-gray-50 p-2 w-12">
-                <button 
-                  onClick={handleAddColumn}
-                  className="w-full h-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => {
-              const isHighlighted = highlightedRows.has(row.id)
-              return (
-              <tr 
-                key={row.id} 
-                className={`group hover:bg-gray-50 ${
-                  isHighlighted 
-                    ? 'bg-green-100 border-green-300 animate-pulse' 
-                    : ''
-                }`}
+    <div className="h-full flex flex-col bg-gray-50">
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            {isEditingTableName ? (
+              <input
+                ref={tableNameInputRef}
+                type="text"
+                value={tempTableName}
+                onChange={(e) => setTempTableName(e.target.value)}
+                onBlur={handleSaveTableName}
+                onKeyDown={handleTableNameKeyDown}
+                className="text-2xl font-semibold text-gray-900 border border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            ) : (
+              <h1 
+                className="text-2xl font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                onClick={handleStartEditingTableName}
               >
-                <td className="border-r border-b border-gray-200 bg-gray-50 text-center text-xs text-gray-500">
-                  <div className="flex items-center justify-center h-full">
-                    <span className="group-hover:hidden">{rowIndex + 1}</span>
-                    <div className="hidden group-hover:flex items-center gap-1">
-                      <button
-                        onClick={() => handleDuplicateRow(row.id)}
-                        className="p-1 hover:bg-gray-200 rounded"
-                        title="Duplicate"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteRow(row.id)}
-                        className="p-1 hover:bg-red-100 rounded text-red-600"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                </td>
-                {columns.filter(c => c.is_visible).map((column) => (
-                  <td
-                    key={column.id}
-                    className="border-r border-b border-gray-200"
-                    style={{ minWidth: column.width }}
-                  >
-                    {renderCell(row, column)}
-                  </td>
-                ))}
-                <td className="border-b border-gray-200"></td>
-              </tr>
-            )
-            })}
-            <tr>
-              <td colSpan={columns.filter(c => c.is_visible).length + 2} className="border-b border-gray-200">
-                <button
-                  onClick={handleAddRow}
-                  className="w-full py-2 text-left px-3 text-sm text-gray-500 hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add row
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                {tableName}
+              </h1>
+            )}
+            <Badge variant="outline" className="gap-1.5 bg-green-50 text-green-700 border-green-200">
+              <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              {connectionStatus === 'connected' ? 'Live' : 
+               connectionStatus === 'connecting' ? 'Connecting...' :
+               connectionStatus === 'error' ? 'Error' : 'Live'}
+            </Badge>
+          </div>
 
-      {rows.length === 0 && (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No rows yet</h3>
-            <p className="text-gray-600 mb-4">Add your first row to get started</p>
-            <button
-              onClick={handleAddRow}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsBarcodeScanModalOpen(true)}
             >
-              Add Row
-            </button>
+              <ScanLine className="h-4 w-4 mr-2" />
+              Scan & Lookup
+            </Button>
+            <EnablePulseButton tableId={tableId} workspaceId={workspaceId} />
           </div>
         </div>
-      )}
+
+        {/* Toolbar */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder={`Search ${tableName.toLowerCase()}...`}
+              className="pl-9 h-9"
+            />
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Grid3x3 className="h-4 w-4 mr-2" />
+                Grid view
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {VIEW_OPTIONS.map((view) => {
+                const Icon = view.icon
+                return (
+                  <DropdownMenuItem
+                    key={view.value}
+                    onClick={() => setCurrentView(view.value as any)}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {view.label}
+                  </DropdownMenuItem>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" size="sm">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto px-6 py-6">
+        {/* Table */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRowComponent className="bg-gray-50">
+                <TableHead className="w-12 text-center">#</TableHead>
+                {columns.filter(c => c.is_visible).map((column) => (
+                  <TableHead key={column.id} style={{ minWidth: column.width }}>
+                    <div className="flex items-center justify-between group">
+                      <span>{column.label}</span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditColumn(column)}>
+                            <Settings className="h-4 w-4 mr-2" />
+                            Edit field
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteColumn(column.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete field
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableHead>
+                ))}
+                <TableHead className="w-12">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={handleAddColumn}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TableHead>
+              </TableRowComponent>
+            </TableHeader>
+            <TableBody>
+              {rows.map((row, rowIndex) => {
+                const isHighlighted = highlightedRows.has(row.id)
+                return (
+                  <TableRowComponent 
+                    key={row.id}
+                    className={isHighlighted ? 'bg-green-100 border-green-300' : ''}
+                  >
+                    <TableCell className="text-center text-gray-500 text-sm">
+                      {rowIndex + 1}
+                    </TableCell>
+                    {columns.filter(c => c.is_visible).map((column) => (
+                      <TableCell 
+                        key={column.id}
+                        style={{ minWidth: column.width }}
+                      >
+                        {renderCell(row, column)}
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleDuplicateRow(row.id)}>
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteRow(row.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRowComponent>
+                )
+              })}
+            </TableBody>
+          </Table>
+
+          {/* Empty State for Add Row */}
+          <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-gray-600 hover:text-gray-900"
+              onClick={handleAddRow}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add row
+            </Button>
+          </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-4 text-sm text-gray-500">
+          Showing {rows.length} {rows.length === 1 ? 'row' : 'rows'}
+        </div>
+      </div>
 
       <ColumnEditorModal
         isOpen={isColumnEditorOpen}
