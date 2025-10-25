@@ -7,6 +7,7 @@ import { CreateTableModal, TableFormData } from './CreateTableModal'
 import { CSVImportModal } from './CSVImportModal'
 import { tablesSupabase } from '@/lib/api/tables-supabase'
 import { supabase, getSessionToken } from '@/lib/supabase'
+import { toast } from 'sonner'
 import type { DataTable } from '@/types/data-tables'
 
 // API Configuration
@@ -53,11 +54,13 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   }
 
     const handleCSVImport = async (data: { headers: string[]; rows: string[][]; mappings: { name: string; type: string; included: boolean }[] }) => {
+    let createdTableId: string | null = null
+    
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
-        alert('You must be logged in to import data')
+        toast.error('You must be logged in to import data')
         return
       }
 
@@ -97,6 +100,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
       }))
 
       // Create the table via Supabase
+      toast.loading('Creating table...')
       const newTable = await tablesSupabase.create({
         workspace_id: workspaceId,
         name: tableName,
@@ -106,6 +110,9 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
       })
 
       console.log('Table created:', newTable)
+      createdTableId = newTable.id
+      toast.dismiss()
+      toast.success(`Table "${tableName}" created with ${tableColumns.length} columns`)
 
       // Transform CSV rows to match table structure
       const transformedRows = data.rows.map((row, index) => {
@@ -123,42 +130,74 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
       })
 
       // Bulk insert rows via FastAPI
-      const token = await getSessionToken()
-      const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` })
-        },
-        body: JSON.stringify({
-          rows: transformedRows.map(r => r.data),
-          created_by: user.id
+      if (transformedRows.length > 0) {
+        toast.loading(`Importing ${transformedRows.length} rows...`)
+        const token = await getSessionToken()
+        console.log('Attempting to insert rows:', {
+          tableId: newTable.id,
+          rowCount: transformedRows.length,
+          sampleRow: transformedRows[0]
         })
-      })
 
-      if (!response.ok) {
-        throw new Error('Failed to import rows')
+        const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` })
+          },
+          body: JSON.stringify({
+            rows: transformedRows.map(r => r.data),
+            created_by: user.id
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('Failed to import rows:', response.status, errorData)
+          toast.dismiss()
+          toast.error(`Table created but rows failed to import: ${errorData.detail || response.statusText}`)
+          // Don't throw - table was created successfully
+        } else {
+          const importedRows = await response.json()
+          console.log('Rows imported successfully:', importedRows.length, 'rows')
+          toast.dismiss()
+          toast.success(`Successfully imported ${importedRows.length} rows!`)
+        }
       }
 
-      console.log('Rows imported successfully')
-
-      // Reload tables list
+      // Reload tables list to get updated row counts
       await loadTables()
 
       // Close modal
       setIsImportModalOpen(false)
 
       // Open the new table in a tab
-      tabManager?.addTab({
-        title: newTable.name,
-        type: 'table',
-        url: `/w/${workspaceId}/tables/${newTable.id}`,
-        workspaceId,
-        metadata: { tableId: newTable.id }
-      })
+      if (createdTableId) {
+        tabManager?.addTab({
+          title: newTable.name,
+          type: 'table',
+          url: `/w/${workspaceId}/tables/${createdTableId}`,
+          workspaceId,
+          metadata: { tableId: createdTableId }
+        })
+      }
     } catch (error) {
       console.error('Error importing CSV:', error)
-      alert(`Failed to import CSV: ${error}`)
+      toast.dismiss()
+      toast.error(`Failed to import CSV: ${error}`)
+      
+      // If table was created, still offer to open it
+      if (createdTableId) {
+        toast.info('Table was created but import had issues. Opening table...')
+        await loadTables()
+        tabManager?.addTab({
+          title: 'Imported Table',
+          type: 'table',
+          url: `/w/${workspaceId}/tables/${createdTableId}`,
+          workspaceId,
+          metadata: { tableId: createdTableId }
+        })
+      }
     }
   }
 
