@@ -67,4 +67,23 @@ export const workspacesSupabase = {
 
     return data as Workspace
   },
+
+  /**
+   * Update workspace settings
+   */
+  async update(workspaceId: string, updates: Partial<Workspace>): Promise<Workspace> {
+    const { data, error } = await supabase
+      .from('workspaces')
+      .update(updates)
+      .eq('id', workspaceId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating workspace:', error)
+      throw new Error(error.message)
+    }
+
+    return data as Workspace
+  },
 }

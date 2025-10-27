@@ -4,8 +4,11 @@ import React, { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { ChevronDown, Settings, LogOut, Search, Plus } from 'lucide-react'
 import { supabase, getCurrentUser } from '@/lib/supabase'
+import { clearLastWorkspace } from '@/lib/utils'
 import { useWorkspaceDiscovery } from '@/hooks/useWorkspaceDiscovery'
 import { TabNavigation } from './TabNavigation'
+import { WorkspaceSettingsModal } from './WorkspaceSettingsModal'
+import type { Workspace } from '@/types/workspaces'
 
 interface NavigationLayoutProps {
   children: React.ReactNode
@@ -19,6 +22,7 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
   const [loading, setLoading] = useState(true)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   
   const { workspaces, currentWorkspace, setCurrentWorkspaceBySlug } = useWorkspaceDiscovery()
 
@@ -43,11 +47,18 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
       // Clear any cached data
       setUser(null)
       setShowUserMenu(false)
+      clearLastWorkspace()
       // Force redirect to login
       window.location.href = '/login'
     } catch (error) {
       console.error('Error signing out:', error)
     }
+  }
+
+  const handleWorkspaceUpdate = (updatedWorkspace: Workspace) => {
+    // The workspace discovery hook will automatically pick up changes
+    // via Supabase realtime, but we can force a refresh if needed
+    setCurrentWorkspaceBySlug(updatedWorkspace.slug)
   }
 
   const handleWorkspaceSwitch = (slug: string) => {
@@ -177,7 +188,13 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
                       <Settings className="w-4 h-4" />
                       <span>Profile</span>
                     </button>
-                    <button className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button 
+                      onClick={() => {
+                        setShowSettingsModal(true)
+                        setShowUserMenu(false)
+                      }}
+                      className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       <Settings className="w-4 h-4" />
                       <span>Settings</span>
                     </button>
@@ -225,6 +242,16 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">{children}</main>
+      
+      {/* Workspace Settings Modal */}
+      {currentWorkspace && (
+        <WorkspaceSettingsModal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          workspace={currentWorkspace}
+          onUpdate={handleWorkspaceUpdate}
+        />
+      )}
       
       {/* Backdrop */}
       {(showUserMenu || showWorkspaceMenu) && (

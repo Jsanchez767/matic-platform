@@ -7,6 +7,7 @@ export interface Workspace {
   description?: string
   color?: string
   icon?: string
+  logo_url?: string
   settings: Record<string, any>
   is_archived: boolean
   created_by: string
@@ -37,6 +38,7 @@ export interface WorkspaceUpdate {
   description?: string
   color?: string
   icon?: string
+  logo_url?: string
   settings?: Record<string, any>
   is_archived?: boolean
 }
