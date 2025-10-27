@@ -412,9 +412,9 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
         </div>
         <div onClick={() => handleQuickAction('tables')}>
           <QuickActionCard
-            title="Analytics"
-            description="View workspace insights"
-            icon={BarChart3}
+            title="Tables"
+            description="Manage your data tables"
+            icon={Folder}
             color="orange"
           />
         </div>
