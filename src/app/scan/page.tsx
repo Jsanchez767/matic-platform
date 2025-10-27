@@ -1703,51 +1703,86 @@ function ScanPageContent() {
                           <CheckCircle2 className="w-10 h-10 text-green-600" />
                         </div>
                         
-                        {/* Display configured fields from display_columns */}
+                        {/* Display main name/title */}
                         {(() => {
                           const displayColumns = pulseConfig?.display_columns || [];
                           const rowData = scanResult.row?.data || {};
                           
-                          // If no display columns configured, show default fields
-                          if (displayColumns.length === 0) {
-                            return (
-                              <>
-                                <h3 className="text-xl font-semibold mb-1">{rowData.name || rowData.Name || 'Student'}</h3>
-                                <p className="text-gray-600 text-sm mb-1">{rowData.role || rowData.Role || rowData.program || 'School Student'}</p>
-                                <p className="text-gray-500 text-sm">{rowData.email || rowData.Email || scanResult.barcode}</p>
-                              </>
-                            );
+                          // Get first field as main title
+                          if (displayColumns.length > 0) {
+                            const firstColumn = tableInfo?.columns?.find((c: any) => c.id === displayColumns[0]);
+                            const firstValue = firstColumn ? rowData[firstColumn.name] : null;
+                            if (firstValue) {
+                              return <h3 className="text-xl font-semibold mb-1">{firstValue}</h3>;
+                            }
                           }
                           
-                          // Display fields based on display_columns configuration
+                          // Fallback to name field
+                          return <h3 className="text-xl font-semibold mb-1">{rowData.name || rowData.Name || 'Student'}</h3>;
+                        })()}
+                        
+                        {/* Barcode/ID */}
+                        <p className="text-gray-500 text-sm font-mono">{scanResult.barcode}</p>
+                      </div>
+                      
+                      {/* Attendee Information Card */}
+                      {(() => {
+                        const displayColumns = pulseConfig?.display_columns || [];
+                        const walkinFields = pulseConfig?.settings?.walkin_fields || [];
+                        const rowData = scanResult.row?.data || {};
+                        
+                        // Use display_columns or walkin_fields, whichever is configured
+                        const fieldsToShow = displayColumns.length > 0 ? displayColumns : walkinFields;
+                        
+                        if (fieldsToShow.length === 0) {
+                          // Fallback to default fields if nothing configured
                           return (
-                            <div className="space-y-2">
-                              {displayColumns.map((columnId: string, index: number) => {
-                                const column = tableInfo?.columns?.find((c: any) => c.id === columnId);
-                                if (!column) return null;
-                                
-                                const value = rowData[column.name];
-                                if (!value) return null;
-                                
-                                const isFirstField = index === 0;
-                                const isSecondField = index === 1;
-                                
-                                return (
-                                  <div key={columnId}>
-                                    {isFirstField ? (
-                                      <h3 className="text-xl font-semibold">{value}</h3>
-                                    ) : isSecondField ? (
-                                      <p className="text-gray-600 text-sm">{value}</p>
-                                    ) : (
-                                      <p className="text-gray-500 text-sm">{value}</p>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-left">
+                              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                Attendee Information
+                              </h4>
+                              {rowData.role && (
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-600">Role:</span>
+                                  <span className="text-sm font-medium text-gray-900">{rowData.role}</span>
+                                </div>
+                              )}
+                              {rowData.email && (
+                                <div className="flex justify-between">
+                                  <span className="text-sm text-gray-600">Email:</span>
+                                  <span className="text-sm font-medium text-gray-900">{rowData.email}</span>
+                                </div>
+                              )}
                             </div>
                           );
-                        })()}
-                      </div>
+                        }
+                        
+                        return (
+                          <div className="bg-gray-50 rounded-lg p-4 space-y-2.5 text-left">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                              Attendee Information
+                            </h4>
+                            {fieldsToShow.map((columnId: string) => {
+                              const column = tableInfo?.columns?.find((c: any) => c.id === columnId);
+                              if (!column) return null;
+                              
+                              const value = rowData[column.name];
+                              if (!value) return null;
+                              
+                              return (
+                                <div key={columnId} className="flex justify-between items-start gap-3">
+                                  <span className="text-sm text-gray-600 flex-shrink-0">
+                                    {column.label || column.name}:
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900 text-right break-words">
+                                    {typeof value === 'object' ? JSON.stringify(value) : value}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                       
                       <div className="bg-green-50 rounded-lg px-4 py-3 border border-green-200">
                         <div className="flex items-center gap-2 text-green-700">
