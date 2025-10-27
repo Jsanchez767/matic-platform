@@ -185,11 +185,18 @@ export default function PulseDashboard() {
   const loadSessions = async () => {
     try {
       console.log('📱 Loading scanner sessions for table:', tableId);
+      console.log('📱 Requesting active sessions only: true');
       const data = await pulseClient.getScannerSessions(tableId, true);
-      console.log('📱 Scanner sessions loaded:', data.length, 'active sessions', data);
+      console.log('📱 Scanner sessions loaded:', {
+        count: data.length,
+        sessions: data,
+        activeOnly: true
+      });
       setSessions(data);
     } catch (error) {
-      console.error('Failed to load scanner sessions:', error);
+      console.error('❌ Failed to load scanner sessions:', error);
+      // Don't throw, just log - this prevents dashboard from breaking
+      setSessions([]);
     }
   };
 
@@ -463,32 +470,74 @@ export default function PulseDashboard() {
                   <p className="text-xs text-gray-400 mt-1">Pair a mobile device to start</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {sessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="p-3 bg-gray-50 rounded-lg border border-gray-200"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-gray-900 text-sm">
-                          {session.scanner_name}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                          <span className="text-xs text-green-600">Live</span>
+                <div className="space-y-3">
+                  {sessions.map((session) => {
+                    const isActive = session.is_active;
+                    const lastScanTime = session.last_scan_at ? new Date(session.last_scan_at) : null;
+                    const startTime = new Date(session.started_at);
+                    
+                    return (
+                      <div
+                        key={session.id}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          isActive 
+                            ? 'bg-green-50 border-green-200 shadow-sm' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-gray-900 text-sm truncate">
+                                {session.scanner_name}
+                              </p>
+                              {isActive ? (
+                                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
+                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                  <span className="text-xs font-medium text-green-700">Active</span>
+                                </div>
+                              ) : (
+                                <div className="px-2 py-0.5 bg-gray-100 rounded-full">
+                                  <span className="text-xs font-medium text-gray-600">Inactive</span>
+                                </div>
+                              )}
+                            </div>
+                            {session.scanner_email && (
+                              <p className="text-xs text-gray-600 truncate">{session.scanner_email}</p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between py-1.5 px-2 bg-white rounded border border-gray-200">
+                            <span className="text-gray-600 font-medium">Pairing Code:</span>
+                            <span className="font-mono font-semibold text-blue-600">{session.pairing_code}</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-gray-600">
+                            <span>Total Scans:</span>
+                            <span className="font-semibold text-gray-900">{session.total_scans || 0}</span>
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-gray-600">
+                            <span>{isActive ? 'Last Scan:' : 'Last Active:'}</span>
+                            <span className="font-medium text-gray-700">
+                              {lastScanTime ? formatTime(session.last_scan_at) : formatTime(session.started_at)}
+                            </span>
+                          </div>
+                          
+                          {!isActive && session.ended_at && (
+                            <div className="flex items-center justify-between text-gray-600 pt-1 border-t border-gray-200">
+                              <span>Ended:</span>
+                              <span className="font-medium text-gray-700">
+                                {formatTime(session.ended_at)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <p className="text-xs text-gray-500">{session.scanner_email}</p>
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
-                        <span className="text-xs text-gray-600">
-                          {session.total_scans} scans
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatTime(session.last_scan_at)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </Card>

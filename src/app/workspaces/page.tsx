@@ -5,6 +5,7 @@ import { NavigationLayout } from '@/components/NavigationLayout'
 import { WorkspaceTabProvider } from '@/components/WorkspaceTabProvider'
 import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
 import { getCurrentUser } from '@/lib/supabase'
+import { saveLastWorkspace } from '@/lib/utils'
 import type { Workspace } from '@/types/workspaces'
 
 export default function WorkspacesPage() {
@@ -81,6 +82,7 @@ export default function WorkspacesPage() {
             <a
               key={workspace.id}
               href={`/workspace/${workspace.slug}`}
+              onClick={() => saveLastWorkspace(workspace.slug)}
               className="block p-6 border border-border rounded-lg hover:border-primary hover:shadow-lg transition"
             >
               <div className="flex items-center gap-3 mb-3">

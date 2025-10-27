@@ -6,6 +6,7 @@ import { NavigationLayout } from '@/components/NavigationLayout'
 import { WorkspaceTabProvider } from '@/components/WorkspaceTabProvider'
 import { TabContentRouter } from '@/components/TabContentRouter'
 import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
+import { saveLastWorkspace } from '@/lib/utils'
 import type { Workspace } from '@/types/workspaces'
 
 export default function WorkspacePage() {
@@ -24,6 +25,9 @@ export default function WorkspacePage() {
       setLoading(true)
       const data = await workspacesSupabase.getBySlug(slug)
       setWorkspace(data)
+      
+      // Save this as the last visited workspace
+      saveLastWorkspace(slug)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load workspace')
     } finally {

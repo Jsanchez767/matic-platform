@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getLastWorkspace } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -29,8 +30,16 @@ export default function LoginPage() {
       if (signInError) throw signInError
       if (!data.user) throw new Error('Login failed')
 
-      // Redirect to workspaces page
-      router.push('/workspaces')
+      // Check for last visited workspace
+      const lastWorkspace = getLastWorkspace()
+      
+      if (lastWorkspace) {
+        // Redirect to last visited workspace
+        router.push(`/workspace/${lastWorkspace}`)
+      } else {
+        // Redirect to workspaces page if no last workspace
+        router.push('/workspaces')
+      }
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'Failed to sign in')

@@ -58,3 +58,33 @@ export function formatRelativeTime(date: Date | string): string {
   
   return formatDate(target)
 }
+// Workspace navigation tracking
+const LAST_WORKSPACE_KEY = 'matic_last_workspace'
+
+export function saveLastWorkspace(workspaceSlug: string) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(LAST_WORKSPACE_KEY, workspaceSlug)
+  } catch (error) {
+    console.error('Failed to save last workspace:', error)
+  }
+}
+
+export function getLastWorkspace(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return localStorage.getItem(LAST_WORKSPACE_KEY)
+  } catch (error) {
+    console.error('Failed to get last workspace:', error)
+    return null
+  }
+}
+
+export function clearLastWorkspace() {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.removeItem(LAST_WORKSPACE_KEY)
+  } catch (error) {
+    console.error('Failed to clear last workspace:', error)
+  }
+}
