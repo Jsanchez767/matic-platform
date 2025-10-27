@@ -1867,10 +1867,16 @@ function ScanPageContent() {
                         
                         // Get current user ID from Supabase auth
                         const { data: { user } } = await supabase.auth.getUser();
-                        const userId = user?.id;
+                        let userId = user?.id;
+                        
+                        // For guest scanners without auth, use the table's created_by as fallback
+                        if (!userId && tableInfo) {
+                          userId = tableInfo.created_by;
+                          console.log('📱 Guest scanner: Using table creator as created_by:', userId);
+                        }
                         
                         if (!userId) {
-                          throw new Error('User not authenticated. Please log in to add walk-ins.');
+                          throw new Error('Unable to determine creator. Please ensure the scanner is properly configured.');
                         }
                         
                         const newRow = await rowsSupabase.create(tableId, {
