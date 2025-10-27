@@ -1690,14 +1690,11 @@ function ScanPageContent() {
                 {scanResult.found ? (
                   /* RSVP Confirmed - Green */
                   <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                    <div className="bg-green-500 text-white px-6 py-4 flex items-center justify-between">
+                    <div className="bg-green-500 text-white px-6 py-4">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-6 h-6" />
                         <span className="font-semibold">RSVP CONFIRMED</span>
                       </div>
-                      <button onClick={() => setScanResult(null)}>
-                        <XCircle className="w-5 h-5" />
-                      </button>
                     </div>
                     
                     <div className="p-6 space-y-4">
@@ -1706,9 +1703,50 @@ function ScanPageContent() {
                           <CheckCircle2 className="w-10 h-10 text-green-600" />
                         </div>
                         
-                        <h3 className="text-xl font-semibold mb-1">{scanResult.row?.data?.name || 'Student'}</h3>
-                        <p className="text-gray-600 text-sm mb-1">{scanResult.row?.data?.role || 'School Student'}</p>
-                        <p className="text-gray-500 text-sm">{scanResult.row?.data?.email || scanResult.barcode}</p>
+                        {/* Display configured fields from display_columns */}
+                        {(() => {
+                          const displayColumns = pulseConfig?.display_columns || [];
+                          const rowData = scanResult.row?.data || {};
+                          
+                          // If no display columns configured, show default fields
+                          if (displayColumns.length === 0) {
+                            return (
+                              <>
+                                <h3 className="text-xl font-semibold mb-1">{rowData.name || rowData.Name || 'Student'}</h3>
+                                <p className="text-gray-600 text-sm mb-1">{rowData.role || rowData.Role || rowData.program || 'School Student'}</p>
+                                <p className="text-gray-500 text-sm">{rowData.email || rowData.Email || scanResult.barcode}</p>
+                              </>
+                            );
+                          }
+                          
+                          // Display fields based on display_columns configuration
+                          return (
+                            <div className="space-y-2">
+                              {displayColumns.map((columnId: string, index: number) => {
+                                const column = tableInfo?.columns?.find((c: any) => c.id === columnId);
+                                if (!column) return null;
+                                
+                                const value = rowData[column.name];
+                                if (!value) return null;
+                                
+                                const isFirstField = index === 0;
+                                const isSecondField = index === 1;
+                                
+                                return (
+                                  <div key={columnId}>
+                                    {isFirstField ? (
+                                      <h3 className="text-xl font-semibold">{value}</h3>
+                                    ) : isSecondField ? (
+                                      <p className="text-gray-600 text-sm">{value}</p>
+                                    ) : (
+                                      <p className="text-gray-500 text-sm">{value}</p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </div>
                       
                       <div className="bg-green-50 rounded-lg px-4 py-3 border border-green-200">
