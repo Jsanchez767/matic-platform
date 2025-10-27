@@ -27,7 +27,9 @@ export default function PulseDashboard() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [checkInPopup, setCheckInPopup] = useState<any | null>(null);
   const [selectedCheckIn, setSelectedCheckIn] = useState<any | null>(null);
+  const [activeScanners, setActiveScanners] = useState<any[]>([]);
   const channelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
 
   useEffect(() => {
     loadDashboard();
@@ -37,12 +39,16 @@ export default function PulseDashboard() {
   useEffect(() => {
     if (config?.id) {
       setupRealtimeChannel();
+      setupPresenceChannel();
     }
 
     return () => {
       // Cleanup real-time channel on unmount
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      if (presenceChannelRef.current) {
+        supabase.removeChannel(presenceChannelRef.current);
       }
     };
   }, [config?.id, tableId]);
@@ -153,6 +159,75 @@ export default function PulseDashboard() {
         loadSessions();
       }, 3000); // Poll every 3 seconds
       return () => clearInterval(interval);
+    }
+  };
+
+  const setupPresenceChannel = async () => {
+    if (!config?.id) return;
+
+    // Remove existing presence channel if any
+    if (presenceChannelRef.current) {
+      await supabase.removeChannel(presenceChannelRef.current);
+    }
+
+    try {
+      const channelName = `pulse_scanners_${config.id}`;
+      console.log('👥 Setting up presence channel:', channelName);
+      
+      const presenceChannel = supabase.channel(channelName, {
+        config: {
+          presence: {
+            key: 'dashboard', // Dashboard is just listening, not participating
+          },
+        },
+      });
+
+      presenceChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = presenceChannel.presenceState();
+          console.log('👥 Presence state synced:', state);
+          
+          // Extract active scanners from presence state
+          const scanners = Object.entries(state).flatMap(([key, presences]: [string, any]) => 
+            presences.map((presence: any) => ({
+              pairing_code: presence.pairing_code,
+              scanner_name: presence.scanner_name,
+              scanner_email: presence.scanner_email,
+              device_id: presence.device_id,
+              total_scans: presence.total_scans || 0,
+              joined_at: presence.joined_at,
+              is_active: true,
+            }))
+          );
+          
+          console.log('📱 Active scanners from presence:', scanners);
+          setActiveScanners(scanners);
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          console.log('👋 Scanner joined:', key, newPresences);
+          toast.success('Scanner connected', {
+            description: `${newPresences[0]?.scanner_name} is now scanning`,
+            duration: 2000,
+          });
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          console.log('👋 Scanner left:', key, leftPresences);
+          toast.info('Scanner disconnected', {
+            description: `${leftPresences[0]?.scanner_name} has left`,
+            duration: 2000,
+          });
+        })
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Presence channel subscribed');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Presence channel error');
+          }
+        });
+
+      presenceChannelRef.current = presenceChannel;
+    } catch (error) {
+      console.error('Failed to setup presence channel:', error);
     }
   };
 
@@ -457,13 +532,13 @@ export default function PulseDashboard() {
                 <Smartphone className="h-5 w-5 text-green-600" />
                 <div>
                   <p className="text-sm font-medium text-green-900">
-                    {sessions.length} Active
+                    {activeScanners.length} Active
                   </p>
-                  <p className="text-xs text-green-700">Scanning now</p>
+                  <p className="text-xs text-green-700">Connected now</p>
                 </div>
               </div>
 
-              {sessions.length === 0 ? (
+              {activeScanners.length === 0 ? (
                 <div className="text-center py-6">
                   <Smartphone className="h-10 w-10 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-500">No active scanners</p>
@@ -471,39 +546,27 @@ export default function PulseDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {sessions.map((session) => {
-                    const isActive = session.is_active;
-                    const lastScanTime = session.last_scan_at ? new Date(session.last_scan_at) : null;
-                    const startTime = new Date(session.started_at);
+                  {activeScanners.map((scanner) => {
+                    const joinedTime = scanner.joined_at ? new Date(scanner.joined_at) : null;
                     
                     return (
                       <div
-                        key={session.id}
-                        className={`p-4 rounded-lg border-2 transition-all ${
-                          isActive 
-                            ? 'bg-green-50 border-green-200 shadow-sm' 
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
+                        key={scanner.pairing_code}
+                        className="p-4 rounded-lg border-2 bg-green-50 border-green-200 shadow-sm transition-all"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-semibold text-gray-900 text-sm truncate">
-                                {session.scanner_name}
+                                {scanner.scanner_name}
                               </p>
-                              {isActive ? (
-                                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
-                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                  <span className="text-xs font-medium text-green-700">Active</span>
-                                </div>
-                              ) : (
-                                <div className="px-2 py-0.5 bg-gray-100 rounded-full">
-                                  <span className="text-xs font-medium text-gray-600">Inactive</span>
-                                </div>
-                              )}
+                              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-xs font-medium text-green-700">Live</span>
+                              </div>
                             </div>
-                            {session.scanner_email && (
-                              <p className="text-xs text-gray-600 truncate">{session.scanner_email}</p>
+                            {scanner.scanner_email && (
+                              <p className="text-xs text-gray-600 truncate">{scanner.scanner_email}</p>
                             )}
                           </div>
                         </div>
@@ -511,29 +574,20 @@ export default function PulseDashboard() {
                         <div className="space-y-1.5 text-xs">
                           <div className="flex items-center justify-between py-1.5 px-2 bg-white rounded border border-gray-200">
                             <span className="text-gray-600 font-medium">Pairing Code:</span>
-                            <span className="font-mono font-semibold text-blue-600">{session.pairing_code}</span>
+                            <span className="font-mono font-semibold text-blue-600">{scanner.pairing_code}</span>
                           </div>
                           
                           <div className="flex items-center justify-between text-gray-600">
                             <span>Total Scans:</span>
-                            <span className="font-semibold text-gray-900">{session.total_scans || 0}</span>
+                            <span className="font-semibold text-gray-900">{scanner.total_scans || 0}</span>
                           </div>
                           
                           <div className="flex items-center justify-between text-gray-600">
-                            <span>{isActive ? 'Last Scan:' : 'Last Active:'}</span>
+                            <span>Connected:</span>
                             <span className="font-medium text-gray-700">
-                              {lastScanTime ? formatTime(session.last_scan_at) : formatTime(session.started_at)}
+                              {formatTime(scanner.joined_at)}
                             </span>
                           </div>
-                          
-                          {!isActive && session.ended_at && (
-                            <div className="flex items-center justify-between text-gray-600 pt-1 border-t border-gray-200">
-                              <span>Ended:</span>
-                              <span className="font-medium text-gray-700">
-                                {formatTime(session.ended_at)}
-                              </span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     );

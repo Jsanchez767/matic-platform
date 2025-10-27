@@ -358,7 +358,7 @@ function ScanPageContent() {
 
   // Scanner session management for Pulse mode
   useEffect(() => {
-    console.log('🔵 Scanner session effect triggered', {
+    console.log('🔵 Scanner presence tracking triggered', {
       isPulseMode,
       hasPulseConfig: !!pulseConfig,
       pulseTableId,
@@ -367,68 +367,64 @@ function ScanPageContent() {
     });
     
     if (!isPulseMode || !pulseConfig || !pulseTableId || !pairingCode || !userName) {
-      console.log('⚠️ Scanner session not created - missing requirements');
+      console.log('⚠️ Scanner presence not tracked - missing requirements');
       return
     }
 
-    const createSession = async () => {
-      try {
-        console.log('📱 Creating scanner session with:', {
-          pulse_table_id: pulseTableId,
-          pairing_code: pairingCode,
-          scanner_name: userName,
-          scanner_email: userEmail || 'none',
-        });
-        
-        const session = await pulseClient.createScannerSession({
-          pulse_table_id: pulseTableId,
-          pairing_code: pairingCode,
-          scanner_name: userName,
-          scanner_email: userEmail || undefined,
-          device_id: `scanner_${Date.now()}`,
-        })
-        
-        setScannerSessionId(session.id)
-        console.log('✅ Scanner session created successfully:', session);
-        toast.success('Scanner registered!', {
-          description: 'Your scanner is now active',
-          duration: 2000,
-        });
-        
-        // Setup heartbeat to keep session active
-        heartbeatIntervalRef.current = setInterval(async () => {
-          try {
-            await pulseClient.updateScannerSession(session.id, {
-              is_active: true,
-              last_scan_at: new Date().toISOString(),
-            })
-            console.log('💓 Scanner session heartbeat sent')
-          } catch (error) {
-            console.error('Failed to send heartbeat:', error)
-          }
-        }, 30000) // Every 30 seconds
-      } catch (error) {
-        console.error('Failed to create scanner session:', error)
-        toast.error('Failed to register scanner session')
-      }
-    }
+    // Use Supabase Realtime presence for active scanner tracking
+    const channelName = `pulse_scanners_${pulseTableId}`;
+    console.log('� Joining presence channel:', channelName);
+    
+    const presenceChannel = supabase.channel(channelName, {
+      config: {
+        presence: {
+          key: pairingCode, // Use pairing code as unique key
+        },
+      },
+    });
 
-    createSession()
+    // Track this scanner's presence
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        console.log('👥 Presence synced:', state);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('👋 Scanner joined:', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('👋 Scanner left:', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Presence channel subscribed');
+          
+          // Track this scanner
+          const presenceData = {
+            scanner_name: userName,
+            scanner_email: userEmail || '',
+            pairing_code: pairingCode,
+            device_id: `scanner_${Date.now()}`,
+            total_scans: scanHistory.filter(s => s.success).length,
+            joined_at: new Date().toISOString(),
+          };
+          
+          await presenceChannel.track(presenceData);
+          console.log('📍 Scanner presence tracked:', presenceData);
+          
+          toast.success('Scanner online!', {
+            description: 'You are now visible on the dashboard',
+            duration: 2000,
+          });
+        }
+      });
 
     return () => {
-      // Cleanup: mark session as inactive
-      if (scannerSessionId) {
-        pulseClient.updateScannerSession(scannerSessionId, {
-          is_active: false,
-        }).catch(err => console.error('Failed to end session:', err))
-      }
-      
-      if (heartbeatIntervalRef.current) {
-        clearInterval(heartbeatIntervalRef.current)
-        heartbeatIntervalRef.current = null
-      }
-    }
-  }, [isPulseMode, pulseConfig, pulseTableId, pairingCode, userName, userEmail])
+      console.log('🔴 Unsubscribing from presence channel');
+      presenceChannel.unsubscribe();
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [isPulseMode, pulseConfig, pulseTableId, pairingCode, userName, userEmail, scanHistory])
 
   // Check camera permissions on mount
   const checkCameraPermissions = async () => {
