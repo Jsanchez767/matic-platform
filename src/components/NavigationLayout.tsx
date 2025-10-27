@@ -8,6 +8,8 @@ import { clearLastWorkspace } from '@/lib/utils'
 import { useWorkspaceDiscovery } from '@/hooks/useWorkspaceDiscovery'
 import { TabNavigation } from './TabNavigation'
 import { WorkspaceSettingsModal } from './WorkspaceSettingsModal'
+import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
+import { toast } from 'sonner'
 import type { Workspace } from '@/types/workspaces'
 
 interface NavigationLayoutProps {
@@ -23,6 +25,7 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [fullWorkspace, setFullWorkspace] = useState<Workspace | null>(null)
   
   const { workspaces, currentWorkspace, setCurrentWorkspaceBySlug } = useWorkspaceDiscovery()
 
@@ -48,10 +51,25 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
       setUser(null)
       setShowUserMenu(false)
       clearLastWorkspace()
-      // Force redirect to login
+      // Redirect to login
       window.location.href = '/login'
     } catch (error) {
       console.error('Error signing out:', error)
+    }
+  }
+
+  const handleOpenSettings = async () => {
+    if (!currentWorkspace) return
+    
+    try {
+      // Fetch full workspace data
+      const workspace = await workspacesSupabase.get(currentWorkspace.id)
+      setFullWorkspace(workspace)
+      setShowSettingsModal(true)
+      setShowUserMenu(false)
+    } catch (error) {
+      console.error('Error fetching workspace:', error)
+      toast.error('Failed to load workspace settings')
     }
   }
 
@@ -189,10 +207,7 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
                       <span>Profile</span>
                     </button>
                     <button 
-                      onClick={() => {
-                        setShowSettingsModal(true)
-                        setShowUserMenu(false)
-                      }}
+                      onClick={handleOpenSettings}
                       className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <Settings className="w-4 h-4" />
@@ -244,11 +259,11 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
       <main className="flex-1 overflow-auto">{children}</main>
       
       {/* Workspace Settings Modal */}
-      {currentWorkspace && (
+      {fullWorkspace && (
         <WorkspaceSettingsModal
           isOpen={showSettingsModal}
           onClose={() => setShowSettingsModal(false)}
-          workspace={currentWorkspace}
+          workspace={fullWorkspace}
           onUpdate={handleWorkspaceUpdate}
         />
       )}
