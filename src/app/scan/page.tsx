@@ -1737,20 +1737,20 @@ function ScanPageContent() {
                         if (fieldsToShow.length === 0) {
                           // Fallback to default fields if nothing configured
                           return (
-                            <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-left">
+                            <div className="bg-gray-50 rounded-lg p-4 space-y-2.5 text-left">
                               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                 Attendee Information
                               </h4>
                               {rowData.role && (
-                                <div className="flex justify-between">
-                                  <span className="text-sm text-gray-600">Role:</span>
-                                  <span className="text-sm font-medium text-gray-900">{rowData.role}</span>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-500 font-medium">Role:</div>
+                                  <div className="text-sm font-medium text-gray-900 break-words">{rowData.role}</div>
                                 </div>
                               )}
                               {rowData.email && (
-                                <div className="flex justify-between">
-                                  <span className="text-sm text-gray-600">Email:</span>
-                                  <span className="text-sm font-medium text-gray-900">{rowData.email}</span>
+                                <div className="space-y-1">
+                                  <div className="text-xs text-gray-500 font-medium">Email:</div>
+                                  <div className="text-sm font-medium text-gray-900 break-words">{rowData.email}</div>
                                 </div>
                               )}
                             </div>
@@ -1770,13 +1770,13 @@ function ScanPageContent() {
                               if (!value) return null;
                               
                               return (
-                                <div key={columnId} className="flex justify-between items-start gap-3">
-                                  <span className="text-sm text-gray-600 flex-shrink-0">
+                                <div key={columnId} className="space-y-1">
+                                  <div className="text-xs text-gray-500 font-medium">
                                     {column.label || column.name}:
-                                  </span>
-                                  <span className="text-sm font-medium text-gray-900 text-right break-words">
+                                  </div>
+                                  <div className="text-sm font-medium text-gray-900 break-words whitespace-normal">
                                     {typeof value === 'object' ? JSON.stringify(value) : value}
-                                  </span>
+                                  </div>
                                 </div>
                               );
                             })}
