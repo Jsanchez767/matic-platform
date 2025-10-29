@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/ui-components/input";
 import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
 import { supabase } from "@/lib/supabase";
+import { useTabContext } from "@/components/WorkspaceTabProvider";
 import type { RequestHub } from "@/types/request-hub";
 
 interface RequestHubListPageProps {
@@ -23,6 +24,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
   const [selectedHub, setSelectedHub] = useState<RequestHub | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { tabManager } = useTabContext();
   
   // Form state
   const [newHubName, setNewHubName] = useState("");
@@ -158,10 +160,16 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
   };
 
   const handleOpenHub = (hub: RequestHub) => {
-    // Navigate to hub viewer (will implement routing)
-    console.log("Opening hub:", hub);
-    // TODO: Implement navigation to hub viewer
-    // window.location.href = `/w/${workspaceId}/hub/${hub.slug}`;
+    // Open hub in new tab
+    if (tabManager) {
+      tabManager.addTab({
+        title: hub.name,
+        type: 'custom',
+        url: `/workspace/${workspaceId}/request-hubs/${hub.slug}`,
+        workspaceId,
+        metadata: { hubId: hub.id, hubSlug: hub.slug }
+      });
+    }
   };
 
   if (loading) {

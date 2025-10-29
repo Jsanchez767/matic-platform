@@ -7,6 +7,7 @@ import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
 import { RequestHubListPage } from './RequestHub/RequestHubListPage'
+import { RequestHubViewer } from './RequestHub/RequestHubViewer'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -93,6 +94,14 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
       // Handle Request Hub list page
       if (tab.url?.includes('/request-hubs') && !tab.url?.includes('/request-hubs/')) {
         return <RequestHubListPage workspaceId={workspaceId} />
+      }
+      
+      // Handle individual Request Hub viewer
+      if (tab.url?.includes('/request-hubs/')) {
+        const hubSlug = tab.url.split('/request-hubs/')[1]?.split('/')[0]
+        if (hubSlug) {
+          return <RequestHubViewer hubSlug={hubSlug} workspaceId={workspaceId} />
+        }
       }
       
       // Handle Overview and other custom workspace content
