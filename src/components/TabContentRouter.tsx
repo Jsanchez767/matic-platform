@@ -2,10 +2,11 @@
 
 import { TabData } from '@/lib/tab-manager'
 import { useTabContext } from './WorkspaceTabProvider'
-import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock } from 'lucide-react'
+import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layout } from 'lucide-react'
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
+import { RequestHubListPage } from './RequestHub/RequestHubListPage'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -89,6 +90,11 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
       )
       
     case 'custom':
+      // Handle Request Hub list page
+      if (tab.url?.includes('/request-hubs') && !tab.url?.includes('/request-hubs/')) {
+        return <RequestHubListPage workspaceId={workspaceId} />
+      }
+      
       // Handle Overview and other custom workspace content
       if (tab.url === `/w/${workspaceId}` || tab.title === 'Overview') {
         return (
@@ -123,9 +129,10 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
             <p className="text-gray-600">
               Content type: {tab.type}
             </p>
-      </div>
-    </div>
-  )
+          </div>
+        </div>
+      )
+  }
 }
 // Empty state when no tab is active
 function EmptyTabState({ workspaceId }: { workspaceId: string }) {
@@ -330,7 +337,7 @@ function SearchResultsView({
 function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
   const { tabManager } = useTabContext()
 
-  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document') => {
+  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document' | 'request-hubs') => {
     if (!tabManager) return
     
     switch (type) {
@@ -348,6 +355,15 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
           title: 'Tables',
           type: 'table',
           url: `/workspace/${workspaceId}/tables`,
+          workspaceId,
+          metadata: {}
+        })
+        break
+      case 'request-hubs':
+        tabManager.addTab({
+          title: 'Request Hubs',
+          type: 'custom',
+          url: `/workspace/${workspaceId}/request-hubs`,
           workspaceId,
           metadata: {}
         })
@@ -403,11 +419,11 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
             color="green"
           />
         </div>
-        <div onClick={() => handleQuickAction('calendar')}>
+        <div onClick={() => handleQuickAction('request-hubs')}>
           <QuickActionCard
-            title="Calendar"
-            description="Schedule and manage events"
-            icon={Calendar}
+            title="Request Hubs"
+            description="Manage request workflows"
+            icon={Layout}
             color="purple"
           />
         </div>

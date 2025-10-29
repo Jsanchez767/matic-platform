@@ -1,35 +1,36 @@
-import { NavigationLayout } from '@/components/NavigationLayout'
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 
 export default function Home() {
+  const router = useRouter()
+
+  useEffect(() => {
+    checkAuthAndRedirect()
+  }, [])
+
+  async function checkAuthAndRedirect() {
+    // Check if user is already logged in
+    const { data: { session } } = await supabase.auth.getSession()
+    
+    if (session) {
+      // User is logged in - redirect to workspaces
+      router.push('/workspaces')
+    } else {
+      // User is not logged in - redirect to Webflow homepage
+      window.location.href = 'https://www.maticslab.com'
+    }
+  }
+
+  // Show loading state while checking auth
   return (
-    <NavigationLayout>
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-6 max-w-2xl px-4">
-          <h1 className="text-5xl font-bold text-gray-900">Welcome to Matic Platform</h1>
-          <p className="text-gray-600 text-xl">
-            Create forms and manage data tables with ease. Build powerful workflows for your team.
-          </p>
-          <div className="flex gap-4 justify-center mt-8">
-            <a
-              href="/signup"
-              className="px-8 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition shadow-lg"
-            >
-              Get Started Free
-            </a>
-            <a
-              href="/login"
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition"
-            >
-              Sign In
-            </a>
-          </div>
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <p className="text-sm text-gray-500">
-              Already have an account? <a href="/workspaces" className="text-blue-600 hover:text-blue-700 font-medium">Go to your workspaces →</a>
-            </p>
-          </div>
-        </div>
+    <div className="flex items-center justify-center h-screen bg-white">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
+        <p className="text-gray-600">Loading...</p>
       </div>
-    </NavigationLayout>
+    </div>
   )
 }

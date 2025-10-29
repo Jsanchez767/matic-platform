@@ -26,7 +26,9 @@ import {
   Search,
   Plus,
   Grid3x3,
-  Home
+  Home,
+  Layout,
+  Table
 } from "lucide-react"
 
 // =============================================================================
@@ -112,6 +114,20 @@ export const NAV_CONFIG = {
       description: 'Create and manage forms'
     },
     {
+      id: 'tables',
+      label: 'Tables',
+      href: '/tables',
+      icon: Table,
+      description: 'Organize data in tables'
+    },
+    {
+      id: 'request-hubs',
+      label: 'Request Hubs',
+      href: '/request-hubs',
+      icon: Layout,
+      description: 'Manage request workflows'
+    },
+    {
       id: 'projects',
       label: 'Projects',
       href: '/projects',
@@ -154,6 +170,32 @@ export const NAV_CONFIG = {
         bg: 'bg-blue-50',
         border: 'border-blue-200',
         icon: 'text-blue-600'
+      }
+    },
+    {
+      id: 'tables',
+      name: 'Tables',
+      description: 'Organize data in Airtable-like tables',
+      icon: Table,
+      category: 'core',
+      premium: false,
+      color: {
+        bg: 'bg-emerald-50',
+        border: 'border-emerald-200',
+        icon: 'text-emerald-600'
+      }
+    },
+    {
+      id: 'request-hubs',
+      name: 'Request Hubs',
+      description: 'Manage request workflows with custom tabs',
+      icon: Layout,
+      category: 'core',
+      premium: false,
+      color: {
+        bg: 'bg-purple-50',
+        border: 'border-purple-200',
+        icon: 'text-purple-600'
       }
     },
     {
@@ -216,9 +258,9 @@ export const NAV_CONFIG = {
       category: 'communication',
       premium: true,
       color: {
-        bg: 'bg-purple-50',
-        border: 'border-purple-200',
-        icon: 'text-purple-600'
+        bg: 'bg-cyan-50',
+        border: 'border-cyan-200',
+        icon: 'text-cyan-600'
       }
     },
     {
