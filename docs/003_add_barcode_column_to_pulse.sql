@@ -34,5 +34,3 @@ BEGIN
     RAISE EXCEPTION '❌ Migration failed! barcode_column_id column was not created';
   END IF;
 END $$;
-
-

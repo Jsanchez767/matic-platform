@@ -52,8 +52,10 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
       setIsPulseEnabled(true);
       setShowEnableDialog(false);
       
-      // Redirect to Pulse dashboard
-      router.push(`/pulse/${tableId}`);
+      // Redirect to Pulse dashboard using window.location for reliability
+      setTimeout(() => {
+        window.location.href = `/pulse/${tableId}`;
+      }, 500);
     } catch (error: any) {
       console.error("❌ Error enabling Pulse:", error);
       toast.error(error.message || "Failed to enable Pulse");
@@ -63,7 +65,12 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
   };
 
   const handleOpenDashboard = () => {
-    router.push(`/pulse/${tableId}`);
+    const dashboardUrl = `/pulse/${tableId}`;
+    console.log('🎯 Opening Pulse dashboard:', dashboardUrl);
+    console.log('🔍 Current location:', window.location.href);
+    
+    // Use window.location for more reliable navigation
+    window.location.href = dashboardUrl;
   };
 
   if (isLoading) {
