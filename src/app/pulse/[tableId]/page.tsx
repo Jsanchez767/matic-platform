@@ -248,8 +248,15 @@ export default function PulseDashboard() {
   };
 
   const loadConfig = async () => {
-    const data = await pulseClient.getPulseConfig(tableId);
-    setConfig(data);
+    try {
+      console.log('🔍 Loading Pulse config for table:', tableId);
+      const data = await pulseClient.getPulseConfig(tableId);
+      console.log('✅ Pulse config loaded:', data);
+      setConfig(data);
+    } catch (error: any) {
+      console.error('❌ Failed to load Pulse config:', error);
+      throw error; // Re-throw to trigger error state
+    }
   };
 
   const loadStats = async () => {
@@ -315,10 +322,16 @@ export default function PulseDashboard() {
   if (!config || !stats) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Pulse Not Found</h2>
-          <p className="text-gray-600 mb-4">This table doesn't have Pulse enabled.</p>
+          <p className="text-gray-600 mb-2">This table doesn't have Pulse enabled.</p>
+          <p className="text-sm text-gray-500 mb-4">
+            Table ID: <code className="bg-gray-100 px-2 py-1 rounded">{tableId}</code>
+          </p>
+          <p className="text-sm text-gray-500 mb-4">
+            If you just enabled Pulse, try refreshing the page or go back to the table and click "Pulse Dashboard" again.
+          </p>
           <Button onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go Back

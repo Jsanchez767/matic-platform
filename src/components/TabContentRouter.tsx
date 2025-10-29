@@ -5,6 +5,7 @@ import { useTabContext } from './WorkspaceTabProvider'
 import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock } from 'lucide-react'
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
+import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -26,7 +27,7 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
     case 'form':
       // Check if it's the forms list page or a specific form
       if (tab.url?.includes('/forms') && !tab.url?.includes('/forms/')) {
-        return <FormsListPage workspaceId={workspaceId} />
+        return <FormsListComponent workspaceId={workspaceId} />
       }
       return (
         <div className="h-full p-6 bg-gray-50">
@@ -493,34 +494,4 @@ function QuickActionCard({
       <p className="text-sm text-gray-600">{description}</p>
     </div>
   )
-}
-
-// Forms List Page
-function FormsListPage({ workspaceId }: { workspaceId: string }) {
-  return (
-    <div className="h-full bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Forms</h1>
-            <p className="text-gray-600 mt-1">Create and manage your forms</p>
-          </div>
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            <Plus className="w-4 h-4" />
-            <span>New Form</span>
-          </button>
-        </div>
-        
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No forms yet</h3>
-          <p className="text-gray-600 mb-4">Get started by creating your first form</p>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Create Form
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 }
