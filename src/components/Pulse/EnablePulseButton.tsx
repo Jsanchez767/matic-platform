@@ -81,7 +81,10 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
     // Pulse is enabled - show dashboard button
     return (
       <Button
-        onClick={handleOpenDashboard}
+        onClick={(e) => {
+          console.log('🖱️ Pulse Dashboard button clicked!', { tableId, e });
+          handleOpenDashboard();
+        }}
         className="bg-green-600 hover:bg-green-700 text-white"
       >
         <Activity className="h-4 w-4 mr-2" />

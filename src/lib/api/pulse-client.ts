@@ -360,7 +360,7 @@ class PulseClient {
     const token = await getSessionToken();
     const params = new URLSearchParams({
       table_id: tableId,
-      active_only: activeOnly.toString(),
+      active_only: activeOnly ? 'true' : 'false', // FastAPI expects lowercase 'true'/'false'
     });
 
     const response = await fetch(`${API_BASE}/pulse/sessions?${params}`, {
@@ -370,7 +370,8 @@ class PulseClient {
     });
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
+      console.error('❌ Failed to get scanner sessions:', error);
       throw new Error(error.detail || 'Failed to get scanner sessions');
     }
 
