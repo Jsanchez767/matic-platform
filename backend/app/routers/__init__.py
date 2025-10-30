@@ -9,6 +9,7 @@ from .table_links import router as table_links_router
 from .scans import router as scan_history_router
 from .pulse import router as pulse_router
 from .health import router as health_router
+from .request_hubs import router as request_hubs_router
 
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
@@ -18,4 +19,5 @@ api_router.include_router(data_tables_router, prefix="/tables", tags=["tables"])
 api_router.include_router(table_links_router, prefix="/tables", tags=["table-links"])
 api_router.include_router(scan_history_router, tags=["scans"])
 api_router.include_router(pulse_router, tags=["pulse"])
+api_router.include_router(request_hubs_router, tags=["request-hubs"])
 # Note: Realtime WebSocket router removed - using Supabase Realtime instead

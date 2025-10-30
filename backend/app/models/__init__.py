@@ -16,3 +16,4 @@ from .data_table import (
 )
 from .scan_history import ScanHistory
 from .pulse import PulseEnabledTable, PulseCheckIn, PulseScannerSession
+from .request_hub import RequestHub, RequestHubTab

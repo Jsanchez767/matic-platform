@@ -43,6 +43,9 @@ class Workspace(Base):
     data_tables: Mapped[list["DataTable"]] = relationship(
         back_populates="workspace", cascade="all, delete-orphan"
     )
+    request_hubs: Mapped[list["RequestHub"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
 
 
 class WorkspaceMember(Base):
