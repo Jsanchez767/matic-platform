@@ -11,3 +11,4 @@ export { RequestDetailsModal } from './RequestDetailsModal';
 export { RequestsByTypeChart, StatusDistributionChart, RequestTrendsChart } from './RequestsChart';
 export { FormBuilder } from './FormBuilder';
 export { WorkflowBuilder } from './WorkflowBuilder';
+export { AdminSettings } from './AdminSettings';

@@ -1,11 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Settings, Plus, GripVertical } from "lucide-react";
+import { ArrowLeft, Settings, Plus } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Badge } from "@/ui-components/badge";
 import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
 import type { RequestHub, RequestHubTab } from "@/types/request-hub";
+import { DashboardMetrics } from "./DashboardMetrics";
+import { RequestList } from "./RequestList";
+import { DynamicForm } from "./DynamicForm";
+import { ApprovalQueue } from "./ApprovalQueue";
+import { RequestsByTypeChart, StatusDistributionChart, RequestTrendsChart } from "./RequestsChart";
+import type { Request, RequestUser, RequestDetail, FormTemplate, WorkflowTemplate, ApprovalAction } from "@/types/request";
 
 interface RequestHubViewerProps {
   hubId?: string;
@@ -195,7 +201,7 @@ function TabContent({ tab, hub }: { tab: RequestHubTab; hub: RequestHub }) {
   }
 }
 
-// Tab Content Components (Placeholders for now)
+// Tab Content Components
 function DashboardTabContent({
   tab,
   hub,
@@ -203,32 +209,24 @@ function DashboardTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
-  return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Metric Cards */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">
-            Total Requests
-          </div>
-          <div className="text-3xl font-bold text-gray-900">0</div>
-          <div className="text-sm text-gray-500 mt-1">No requests yet</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">Pending</div>
-          <div className="text-3xl font-bold text-gray-900">0</div>
-          <div className="text-sm text-gray-500 mt-1">Awaiting review</div>
-        </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="text-sm font-medium text-gray-600 mb-2">
-            Approved
-          </div>
-          <div className="text-3xl font-bold text-gray-900">0</div>
-          <div className="text-sm text-green-600 mt-1">All time</div>
-        </div>
-      </div>
+  // Mock data - will be replaced with real API calls
+  const mockMetrics = {
+    totalRequests: 0,
+    pendingApprovals: 0,
+    averageApprovalTime: 0,
+    approvalRate: 0,
+  };
 
-      {/* Recent Activity */}
+  const mockRequests: Request[] = [];
+  const mockUsers: RequestUser[] = [];
+  const mockRequestDetails: RequestDetail[] = [];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Metrics */}
+      <DashboardMetrics {...mockMetrics} />
+
+      {/* Recent Requests */}
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
@@ -236,12 +234,21 @@ function DashboardTabContent({
           </h3>
         </div>
         <div className="p-6">
-          <div className="text-center text-gray-500 py-8">
-            <p>No recent requests</p>
-            <p className="text-sm mt-2">
-              Requests will appear here once they're submitted
-            </p>
-          </div>
+          {mockRequests.length === 0 ? (
+            <div className="text-center text-gray-500 py-8">
+              <p>No recent requests</p>
+              <p className="text-sm mt-2">
+                Requests will appear here once they're submitted
+              </p>
+            </div>
+          ) : (
+            <RequestList
+              requests={mockRequests.slice(0, 5)}
+              users={mockUsers}
+              requestDetails={mockRequestDetails}
+              currentUserId="current-user-id"
+            />
+          )}
         </div>
       </div>
     </div>
@@ -255,16 +262,28 @@ function MyRequestsTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
+  // Mock data - will be replaced with real API calls filtered by current user
+  const mockRequests: Request[] = [];
+  const mockUsers: RequestUser[] = [];
+  const mockRequestDetails: RequestDetail[] = [];
+
   return (
     <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          My Requests
-        </h3>
-        <p className="text-gray-600 mb-4">
-          View and track your submitted requests
-        </p>
-        <p className="text-sm text-gray-500">Coming soon</p>
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">My Requests</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            View and track your submitted requests
+          </p>
+        </div>
+        <div className="p-6">
+          <RequestList
+            requests={mockRequests}
+            users={mockUsers}
+            requestDetails={mockRequestDetails}
+            currentUserId="current-user-id"
+          />
+        </div>
       </div>
     </div>
   );
@@ -277,18 +296,53 @@ function NewRequestTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
+  // Mock form template - will be loaded from tab.config.form_table_id
+  const mockFormTemplate: FormTemplate = {
+    id: "form-1",
+    hub_id: hub.id,
+    request_type: "general_request",
+    name: "General Request Form",
+    description: "Submit a general request",
+    fields: [
+      {
+        id: "f1",
+        name: "title",
+        label: "Request Title",
+        type: "text",
+        required: true,
+        placeholder: "Enter a brief title",
+      },
+      {
+        id: "f2",
+        name: "description",
+        label: "Description",
+        type: "textarea",
+        required: true,
+        placeholder: "Provide detailed information",
+      },
+      {
+        id: "f3",
+        name: "priority",
+        label: "Priority",
+        type: "select",
+        required: true,
+        options: ["low", "medium", "high"],
+      },
+    ],
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const handleSubmit = async (data: Record<string, any>, isDraft: boolean) => {
+    console.log("Form submitted:", { data, isDraft });
+    alert(`Form ${isDraft ? "saved as draft" : "submitted"}!`);
+    // TODO: Implement actual API call to create request
+  };
+
   return (
     <div className="p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Submit New Request
-          </h3>
-          <p className="text-gray-600 mb-4">
-            Fill out a form to submit a new request
-          </p>
-          <p className="text-sm text-gray-500">Coming soon</p>
-        </div>
+      <div className="max-w-3xl mx-auto">
+        <DynamicForm formTemplate={mockFormTemplate} onSubmit={handleSubmit} />
       </div>
     </div>
   );
@@ -301,16 +355,53 @@ function ApprovalsTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
+  // Mock data - will be replaced with real API calls
+  const mockCurrentUser: RequestUser = {
+    id: "user-1",
+    name: "Current User",
+    email: "user@example.com",
+    role: "supervisor",
+    department: "Operations",
+  };
+
+  const mockRequests: Request[] = [];
+  const mockUsers: RequestUser[] = [mockCurrentUser];
+  const mockRequestDetails: RequestDetail[] = [];
+  const mockFormTemplates: FormTemplate[] = [];
+  const mockWorkflowTemplates: WorkflowTemplate[] = [];
+
+  const handleApprovalAction = async (
+    requestId: string,
+    action: ApprovalAction,
+    comments?: string
+  ) => {
+    console.log("Approval action:", { requestId, action, comments });
+    alert(`Request ${action}d successfully!`);
+    // TODO: Implement actual API call
+  };
+
   return (
     <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Approval Queue
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Review and approve pending requests
-        </p>
-        <p className="text-sm text-gray-500">Coming soon</p>
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Approval Queue
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Review and approve pending requests
+          </p>
+        </div>
+        <div className="p-6">
+          <ApprovalQueue
+            requests={mockRequests}
+            currentUser={mockCurrentUser}
+            users={mockUsers}
+            requestDetails={mockRequestDetails}
+            formTemplates={mockFormTemplates}
+            workflowTemplates={mockWorkflowTemplates}
+            onApprovalAction={handleApprovalAction}
+          />
+        </div>
       </div>
     </div>
   );
@@ -323,16 +414,35 @@ function AllRequestsTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
+  // Mock data - will be replaced with real API calls
+  const mockRequests: Request[] = [];
+  const mockUsers: RequestUser[] = [];
+  const mockRequestDetails: RequestDetail[] = [];
+
   return (
     <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          All Requests
-        </h3>
-        <p className="text-gray-600 mb-4">
-          View all requests across the organization
-        </p>
-        <p className="text-sm text-gray-500">Coming soon</p>
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              All Requests
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              View all requests across the organization
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {/* TODO: Add filter and sort options */}
+          </div>
+        </div>
+        <div className="p-6">
+          <RequestList
+            requests={mockRequests}
+            users={mockUsers}
+            requestDetails={mockRequestDetails}
+            currentUserId="current-user-id"
+          />
+        </div>
       </div>
     </div>
   );
@@ -345,15 +455,57 @@ function AnalyticsTabContent({
   tab: RequestHubTab;
   hub: RequestHub;
 }) {
+  // Mock data - will be replaced with real API calls
+  const mockByType = [
+    { request_type: "budget_request", count: 0 },
+    { request_type: "supply_request", count: 0 },
+    { request_type: "time_off", count: 0 },
+  ];
+
+  const mockByStatus = [
+    { status: "Draft", count: 0 },
+    { status: "Submitted", count: 0 },
+    { status: "Under Review", count: 0 },
+    { status: "Approved", count: 0 },
+    { status: "Denied", count: 0 },
+    { status: "Completed", count: 0 },
+  ];
+
+  const mockTrends = Array.from({ length: 30 }, (_, i) => ({
+    date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0],
+    count: 0,
+  }));
+
   return (
-    <div className="p-6">
-      <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics</h3>
-        <p className="text-gray-600 mb-4">
-          View charts and insights for your requests
-        </p>
-        <p className="text-sm text-gray-500">Coming soon</p>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
+          <p className="text-sm text-gray-600 mt-1">
+            View charts and insights for your requests
+          </p>
+        </div>
       </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <RequestsByTypeChart data={mockByType} />
+        <StatusDistributionChart data={mockByStatus} />
+      </div>
+
+      <RequestTrendsChart data={mockTrends} />
+
+      {/* Empty state when no data */}
+      {mockByType.every((d) => d.count === 0) && (
+        <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <p className="text-gray-500">
+            No data available yet. Charts will appear once requests are
+            submitted.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
