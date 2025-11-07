@@ -1,20 +1,27 @@
 services:
-  # Backend - FastAPI Application  
+  # Go Backend API
   - type: web
     name: matic-backend
-    runtime: python
+    runtime: docker
+    dockerfilePath: ./go-backend/Dockerfile
+    dockerContext: ./go-backend
+    env: docker
     region: oregon
     plan: free
     branch: main
-    rootDir: backend
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         sync: false
-      - key: DEBUG
-        value: false
-      - key: PYTHON_VERSION
-        value: "3.11"
-      - key: PYTHONPATH
-        value: "."
+      - key: PORT
+        value: 8000
+      - key: GIN_MODE
+        value: release
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
