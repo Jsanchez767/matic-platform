@@ -1,0 +1,52 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/Jsanchez767/matic-platform/config"
+	"github.com/Jsanchez767/matic-platform/database"
+	"github.com/Jsanchez767/matic-platform/router"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
+	}
+
+	// Load configuration
+	cfg := config.LoadConfig()
+
+	// Set Gin mode
+	if cfg.GinMode == "release" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Initialize database with direct PostgreSQL connection (IPv4 enabled)
+	if err := database.InitDB(cfg.DatabaseURL); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+
+	// Skip auto-migration since tables already exist in Supabase
+	log.Println("📝 Using existing database schema (managed by Supabase migrations)")
+
+	// Setup router
+	r := router.SetupRouter(cfg)
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8000"
+	}
+
+	log.Printf("🚀 Server starting on port %s", port)
+	log.Printf("� API: http://localhost:%s/api/v1", port)
+	log.Printf("❤️  Health: http://localhost:%s/health", port)
+
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
+}
