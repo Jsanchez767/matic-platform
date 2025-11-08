@@ -1,5 +1,10 @@
 # Deployment Guide
 
+**⚠️ IMPORTANT**: This is a **monorepo** with both frontend (Next.js) and backend (Go). Make sure to configure each service correctly!
+
+- **Backend**: Deploy from `go-backend/` directory using Docker
+- **Frontend**: Deploy from root using Next.js (Vercel)
+
 This guide will walk you through deploying Matic Platform to production.
 
 ---
@@ -23,21 +28,23 @@ This guide will walk you through deploying Matic Platform to production.
 ### Step 2: Create New Web Service
 
 1. Click **"New +"** → **"Web Service"**
-2. Select **"Connect a repository"**
-3. Find and select `matic-platform` repository
-4. Click **"Connect"**
+2. Select **"Build and deploy from a Git repository"**
+3. Click **"Next"**
+4. Find and select `matic-platform` repository
+5. Click **"Connect"**
 
-### Step 3: Configure Service
+### Step 3: Configure Service (IMPORTANT!)
 
-Use these settings:
+Render will auto-detect Node.js - **ignore this**. Manually configure:
 
-- **Name**: `matic-backend` (or your preferred name)
-- **Region**: Choose closest to your users (e.g., Oregon)
+- **Name**: `matic-backend`
+- **Region**: Choose closest to your users (e.g., Oregon)  
 - **Branch**: `main`
-- **Runtime**: **Docker**
-- **Dockerfile Path**: `./go-backend/Dockerfile`
-- **Docker Context**: `./go-backend`
+- **Root Directory**: `go-backend` ⚠️ **CRITICAL**
+- **Environment**: **Docker** ⚠️ **CRITICAL - Select from dropdown**
 - **Instance Type**: **Free** (or upgrade as needed)
+
+**Do NOT use** the auto-detected build command. Select **Docker** as the environment.
 
 ### Step 4: Add Environment Variables
 
