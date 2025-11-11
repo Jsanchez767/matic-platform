@@ -44,7 +44,7 @@ export function FormsListPage({ workspaceId }: FormsListPageProps) {
     if (!confirm(`Are you sure you want to delete "${formName}"?`)) return
 
     try {
-      await formsSupabase.delete(formId)
+      await formsSupabase.deleteForm(formId)
       toast.success('Form deleted')
       loadForms()
     } catch (error) {

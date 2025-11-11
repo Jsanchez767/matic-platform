@@ -155,7 +155,7 @@ export function WorkspaceSettingsModal({ isOpen, onClose, workspace, onUpdate }:
         logo_url: logoUrl || undefined,
       }
 
-      const updatedWorkspace = await workspacesSupabase.update(workspace.id, updates)
+      const updatedWorkspace = await workspacesSupabase.updateWorkspace(workspace.id, updates)
       
       onUpdate(updatedWorkspace)
       toast.success('Workspace settings saved!')

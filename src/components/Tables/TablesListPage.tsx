@@ -101,7 +101,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
 
       // Create the table via Supabase
       toast.loading('Creating table...')
-      const newTable = await tablesSupabase.create({
+      const newTable = await tablesSupabase.createTable({
         workspace_id: workspaceId,
         name: tableName,
         slug: tableName.toLowerCase().replace(/\s+/g, '-'),
@@ -205,7 +205,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     try {
       console.log('Creating table with data:', data)
       
-      const newTable = await tablesSupabase.create(data as any)
+      const newTable = await tablesSupabase.createTable(data as any)
       console.log('Table created:', newTable)
       
       // Reload tables list
@@ -256,7 +256,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     }
     
     try {
-      await tablesSupabase.delete(tableId)
+      await tablesSupabase.deleteTable(tableId)
       await loadTables()
     } catch (error) {
       console.error('Error deleting table:', error)

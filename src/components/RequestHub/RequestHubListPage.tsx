@@ -73,7 +73,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
         return;
       }
       
-      const newHub = await requestHubsSupabase.create({
+      const newHub = await requestHubsSupabase.createRequestHub({
         workspace_id: workspaceId,
         name: newHubName.trim(),
         slug: newHubSlug.trim(),
@@ -141,7 +141,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
 
     try {
       setDeleting(true);
-      await requestHubsSupabase.delete(selectedHub.id);
+      await requestHubsSupabase.deleteRequestHub(selectedHub.id);
       setHubs(hubs.filter((h) => h.id !== selectedHub.id));
       setDeleteDialogOpen(false);
       setSelectedHub(null);

@@ -23,7 +23,7 @@ export default function WorkspacePage() {
   async function loadWorkspace() {
     try {
       setLoading(true)
-      const data = await workspacesSupabase.getBySlug(slug)
+      const data = await workspacesSupabase.getWorkspaceBySlug(slug)
       setWorkspace(data)
       
       // Save this as the last visited workspace

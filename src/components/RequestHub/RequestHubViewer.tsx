@@ -40,9 +40,9 @@ export function RequestHubViewer({
       let data: RequestHub;
 
       if (hubId) {
-        data = await requestHubsSupabase.get(hubId);
+        data = await requestHubsSupabase.getRequestHubById(hubId);
       } else if (hubSlug) {
-        data = await requestHubsSupabase.getBySlug(workspaceId, hubSlug);
+        data = await requestHubsSupabase.getRequestHubBySlug(workspaceId, hubSlug);
       } else {
         throw new Error("Either hubId or hubSlug is required");
       }

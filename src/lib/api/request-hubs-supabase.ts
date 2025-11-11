@@ -42,6 +42,24 @@ export const requestHubsSupabase = {
   },
 
   /**
+   * Get a request hub by slug
+   */
+  async getRequestHubBySlug(workspaceId: string, slug: string) {
+    const { data, error } = await supabase
+      .from('request_hubs')
+      .select(`
+        *,
+        types:request_hub_types(*)
+      `)
+      .eq('workspace_id', workspaceId)
+      .eq('slug', slug)
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  /**
    * Create a new request hub
    */
   async createRequestHub(hubData: any) {

@@ -63,7 +63,7 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
     
     try {
       // Fetch full workspace data
-      const workspace = await workspacesSupabase.get(currentWorkspace.id)
+      const workspace = await workspacesSupabase.getWorkspaceById(currentWorkspace.id)
       setFullWorkspace(workspace)
       setShowSettingsModal(true)
       setShowUserMenu(false)

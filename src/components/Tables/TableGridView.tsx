@@ -228,7 +228,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     }
 
     try {
-      await tablesSupabase.update(tableId, { name: tempTableName })
+      await tablesSupabase.updateTable(tableId, { name: tempTableName })
       setTableName(tempTableName)
       setIsEditingTableName(false)
     } catch (error) {
@@ -356,9 +356,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         return
       }
       
-      await rowsSupabase.update(tableId, rowId, { 
+      await rowsSupabase.updateRow(rowId, { 
         data: updatedData,
-        updated_by: user.id
       })
       
       console.log('Cell updated successfully via Supabase')
