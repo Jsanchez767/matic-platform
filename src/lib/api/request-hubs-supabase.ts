@@ -15,7 +15,7 @@ export const requestHubsSupabase = {
       .from('request_hubs')
       .select(`
         *,
-        types:request_hub_types(*)
+        tabs:request_hub_tabs(*)
       `)
       .eq('workspace_id', workspaceId)
       .order('created_at', { ascending: false })
@@ -32,7 +32,7 @@ export const requestHubsSupabase = {
       .from('request_hubs')
       .select(`
         *,
-        types:request_hub_types(*)
+        tabs:request_hub_tabs(*)
       `)
       .eq('id', hubId)
       .single()
@@ -49,7 +49,7 @@ export const requestHubsSupabase = {
       .from('request_hubs')
       .select(`
         *,
-        types:request_hub_types(*)
+        tabs:request_hub_tabs(*)
       `)
       .eq('workspace_id', workspaceId)
       .eq('slug', slug)
@@ -96,61 +96,6 @@ export const requestHubsSupabase = {
       .from('request_hubs')
       .delete()
       .eq('id', hubId)
-
-    if (error) throw error
-  },
-
-  /**
-   * Get request hub types
-   */
-  async getRequestHubTypes(hubId: string) {
-    const { data, error } = await supabase
-      .from('request_hub_types')
-      .select('*')
-      .eq('request_hub_id', hubId)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
-    return data
-  },
-
-  /**
-   * Create a request hub type
-   */
-  async createRequestHubType(typeData: any) {
-    const { data, error } = await supabase
-      .from('request_hub_types')
-      .insert(typeData)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  },
-
-  /**
-   * Update a request hub type
-   */
-  async updateRequestHubType(typeId: string, updates: any) {
-    const { data, error } = await supabase
-      .from('request_hub_types')
-      .update(updates)
-      .eq('id', typeId)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  },
-
-  /**
-   * Delete a request hub type
-   */
-  async deleteRequestHubType(typeId: string) {
-    const { error } = await supabase
-      .from('request_hub_types')
-      .delete()
-      .eq('id', typeId)
 
     if (error) throw error
   },

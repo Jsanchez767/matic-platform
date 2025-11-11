@@ -59,6 +59,13 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
       }
     } catch (error: any) {
       console.error('❌ Error loading request hubs:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        full: error
+      });
       toast.error(`Failed to load request hubs: ${error.message}`)
     } finally {
       setLoading(false);
