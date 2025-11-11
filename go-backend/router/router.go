@@ -56,6 +56,57 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// API v1 routes
 	api := r.Group("/api/v1")
 	{
+		// API v1 root endpoint - same as /docs
+		api.GET("", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"api_version": "v1",
+				"status":      "running",
+				"service":     "Matic Platform API",
+				"endpoints": gin.H{
+					"workspaces": gin.H{
+						"list":   "GET /api/v1/workspaces",
+						"create": "POST /api/v1/workspaces",
+						"get":    "GET /api/v1/workspaces/:id",
+						"update": "PATCH /api/v1/workspaces/:id",
+						"delete": "DELETE /api/v1/workspaces/:id",
+					},
+					"request_hubs": gin.H{
+						"list":         "GET /api/v1/request-hubs",
+						"create":       "POST /api/v1/request-hubs",
+						"get":          "GET /api/v1/request-hubs/:hub_id",
+						"get_by_slug":  "GET /api/v1/request-hubs/by-slug/:slug",
+						"update":       "PATCH /api/v1/request-hubs/:hub_id",
+						"delete":       "DELETE /api/v1/request-hubs/:hub_id",
+						"list_tabs":    "GET /api/v1/request-hubs/:hub_id/tabs",
+						"create_tab":   "POST /api/v1/request-hubs/:hub_id/tabs",
+						"update_tab":   "PATCH /api/v1/request-hubs/:hub_id/tabs/:tab_id",
+						"delete_tab":   "DELETE /api/v1/request-hubs/:hub_id/tabs/:tab_id",
+						"reorder_tabs": "POST /api/v1/request-hubs/:hub_id/tabs/reorder",
+					},
+					"tables": gin.H{
+						"list":        "GET /api/v1/tables",
+						"create":      "POST /api/v1/tables",
+						"get":         "GET /api/v1/tables/:id",
+						"update":      "PATCH /api/v1/tables/:id",
+						"delete":      "DELETE /api/v1/tables/:id",
+						"list_rows":   "GET /api/v1/tables/:id/rows",
+						"create_row":  "POST /api/v1/tables/:id/rows",
+						"update_row":  "PATCH /api/v1/tables/:id/rows/:row_id",
+						"delete_row":  "DELETE /api/v1/tables/:id/rows/:row_id",
+					},
+					"forms": gin.H{
+						"list":              "GET /api/v1/forms",
+						"create":            "POST /api/v1/forms",
+						"get":               "GET /api/v1/forms/:id",
+						"update":            "PATCH /api/v1/forms/:id",
+						"delete":            "DELETE /api/v1/forms/:id",
+						"list_submissions":  "GET /api/v1/forms/:id/submissions",
+						"submit":            "POST /api/v1/forms/:id/submit",
+					},
+				},
+			})
+		})
+
 		// API Documentation
 		api.GET("/docs", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{
