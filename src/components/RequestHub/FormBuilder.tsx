@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FormField, FieldType, FormTemplate } from '@/types/request';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui-components/card';
+import { Card } from '@/ui-components/card';
 import { Button } from '@/ui-components/button';
 import { Input } from '@/ui-components/input';
 import { Label } from '@/ui-components/label';
@@ -116,20 +116,20 @@ export function FormBuilder({ onSave, onCancel, template, workflows = [] }: Form
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="p-6">
+      <div className="mb-6">
         <div className="flex items-center justify-between">
-          <CardTitle>
+          <h3 className="text-xl font-semibold">
             {template ? 'Edit Form Template' : 'Create New Form Template'}
-          </CardTitle>
+          </h3>
           {onCancel && (
             <Button variant="ghost" size="sm" onClick={handleCancel}>
               <X className="h-4 w-4" />
             </Button>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      </div>
+      <div className="space-y-6">
         {/* Basic Settings */}
         <div className="space-y-4 p-4 border rounded-lg">
           <h4 className="font-semibold">Basic Settings</h4>
@@ -324,7 +324,7 @@ export function FormBuilder({ onSave, onCancel, template, workflows = [] }: Form
             {template ? 'Update Form' : 'Create Form'}
           </Button>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 }
