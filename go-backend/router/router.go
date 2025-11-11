@@ -22,8 +22,16 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	}
 	r.Use(cors.New(corsConfig))
 
-	// Root route - API documentation
+	// Load HTML templates
+	r.LoadHTMLGlob("templates/*")
+
+	// Root route - API documentation (HTML)
 	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "api-docs.html", nil)
+	})
+
+	// JSON API info endpoint
+	r.GET("/api-info", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"service":     "Matic Platform API",
 			"version":     "1.0.0",
@@ -38,7 +46,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 				"request_hubs": "/api/v1/request-hubs",
 			},
 			"documentation": gin.H{
-				"swagger": "/api/v1/docs",
+				"html": "/",
+				"json": "/api/v1/docs",
 				"health":  "/health",
 			},
 		})

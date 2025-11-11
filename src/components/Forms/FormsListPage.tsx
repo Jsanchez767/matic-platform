@@ -23,13 +23,19 @@ export function FormsListPage({ workspaceId }: FormsListPageProps) {
     loadForms()
   }, [workspaceId])
 
-  const loadForms = async () => {
+    const loadForms = async () => {
     try {
+      setLoading(true)
+      console.log('🔍 Loading forms for workspace:', workspaceId)
       const data = await formsSupabase.getFormsByWorkspace(workspaceId)
+      console.log('✅ Forms loaded:', data.length, data)
       setForms(data)
-    } catch (error) {
-      console.error('Error loading forms:', error)
-      toast.error('Failed to load forms')
+      if (data.length === 0) {
+        toast.info('No forms found in this workspace. Create your first form!')
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading forms:', error)
+      toast.error(`Failed to load forms: ${error.message}`)
     } finally {
       setLoading(false)
     }

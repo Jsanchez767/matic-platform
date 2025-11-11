@@ -27,6 +27,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const { tabManager } = useTabContext()
 
   useEffect(() => {
@@ -36,10 +37,18 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const loadTables = async () => {
     try {
       setLoading(true)
+      setError(null)
+      console.log('🔍 Loading tables for workspace:', workspaceId)
       const data = await tablesSupabase.getTablesByWorkspace(workspaceId)
+      console.log('✅ Tables loaded:', data.length, data)
       setTables(data)
-    } catch (error) {
-      console.error('Error loading tables:', error)
+      if (data.length === 0) {
+        toast.info('No tables found in this workspace. Create your first table!')
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading tables:', error)
+      setError(error.message || 'Failed to load tables')
+      toast.error(`Failed to load tables: ${error.message}`)
     } finally {
       setLoading(false)
     }

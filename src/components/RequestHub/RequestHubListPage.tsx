@@ -10,6 +10,7 @@ import { Input } from "@/ui-components/input";
 import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
 import { supabase } from "@/lib/supabase";
 import { useTabContext } from "@/components/WorkspaceTabProvider";
+import { toast } from "sonner";
 import type { RequestHub } from "@/types/request-hub";
 
 interface RequestHubListPageProps {
@@ -49,10 +50,16 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
   const loadHubs = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading request hubs for workspace:', workspaceId)
       const data = await requestHubsSupabase.getRequestHubsByWorkspace(workspaceId);
+      console.log('✅ Request hubs loaded:', data.length, data)
       setHubs(data);
-    } catch (error) {
-      console.error("Failed to load request hubs:", error);
+      if (data.length === 0) {
+        toast.info('No request hubs found. Create your first hub!')
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading request hubs:', error);
+      toast.error(`Failed to load request hubs: ${error.message}`)
     } finally {
       setLoading(false);
     }
