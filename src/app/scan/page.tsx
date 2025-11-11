@@ -717,9 +717,8 @@ function ScanPageContent() {
               }
               
               try {
-                await rowsSupabase.update(tableId, row.id, { 
+                await rowsSupabase.updateRow(row.id, { 
                   data: updatedData,
-                  updated_by: userId // Use authenticated user or guest system user
                 })
                 console.log(`✅ Updated row ${row.id} scan count to ${currentScanCount + 1}`)
               } catch (updateError) {
