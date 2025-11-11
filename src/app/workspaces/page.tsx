@@ -34,7 +34,7 @@ export default function WorkspacesPage() {
       console.log('Fetching workspaces for user:', user.id)
       
       // Fetch workspaces from Supabase Direct (instant!)
-      const fetchedWorkspaces = await workspacesSupabase.list()
+      const fetchedWorkspaces = await workspacesSupabase.getWorkspacesForUser(user.id)
       
       console.log('Workspaces loaded:', fetchedWorkspaces)
       setWorkspaces(fetchedWorkspaces)
