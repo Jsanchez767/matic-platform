@@ -18,3 +18,20 @@ services:
         value: "3.11"
       - key: PYTHONPATH
         value: "."
+
+  # Go Backend - API Documentation Service (Optional)
+  - type: web
+    name: matic-go-backend
+    runtime: docker
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: go-backend
+    dockerfilePath: go-backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        value: "8000"
+      - key: GIN_MODE
+        value: release
