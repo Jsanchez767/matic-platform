@@ -35,8 +35,11 @@ WORKDIR /root/
 # Copy binary from builder
 COPY --from=builder /app/main .
 
+# Copy templates directory
+COPY --from=builder /app/templates ./templates
+
 # Change ownership
-RUN chown app:app main
+RUN chown -R app:app main templates
 
 # Switch to non-root user
 USER app
