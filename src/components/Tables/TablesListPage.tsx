@@ -36,7 +36,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
   const loadTables = async () => {
     try {
       setLoading(true)
-      const data = await tablesSupabase.list(workspaceId)
+      const data = await tablesSupabase.getTablesByWorkspace(workspaceId)
       setTables(data)
     } catch (error) {
       console.error('Error loading tables:', error)

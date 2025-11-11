@@ -49,7 +49,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
   const loadHubs = async () => {
     try {
       setLoading(true);
-      const data = await requestHubsSupabase.list(workspaceId);
+      const data = await requestHubsSupabase.getRequestHubsByWorkspace(workspaceId);
       setHubs(data);
     } catch (error) {
       console.error("Failed to load request hubs:", error);

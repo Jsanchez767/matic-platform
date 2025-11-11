@@ -25,7 +25,7 @@ export function FormsListPage({ workspaceId }: FormsListPageProps) {
 
   const loadForms = async () => {
     try {
-      const data = await formsSupabase.list(workspaceId)
+      const data = await formsSupabase.getFormsByWorkspace(workspaceId)
       setForms(data)
     } catch (error) {
       console.error('Error loading forms:', error)
