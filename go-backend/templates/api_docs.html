@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matic Platform API - Interactive Documentation</title>
+    <title>Matic Platform API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,97 +15,120 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #fafafa;
-            color: #3c4043;
-        }
-
-        .topbar {
-            background: #fff;
-            border-bottom: 1px solid #e8e8e8;
-            padding: 1rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .topbar h1 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #3c4043;
-        }
-
-        .topbar .version {
-            background: #49cc90;
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1a202c;
+            line-height: 1.6;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
 
-        .info-section {
-            background: #fff;
-            border-radius: 8px;
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1.25rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .base-url-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .base-url-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #718096;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .base-url-card .url {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 20px;
             padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
         }
 
-        .info-section h2 {
+        .section-header {
             font-size: 1.75rem;
-            margin-bottom: 1rem;
-            color: #3c4043;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #1a202c;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
         }
 
-        .info-section p {
-            color: #5f6368;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .base-url {
-            background: #f5f5f5;
-            padding: 1rem;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            color: #3c4043;
-            border-left: 4px solid #49cc90;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin: 2rem 0 1rem 0;
-            color: #3c4043;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e8e8e8;
+        .section-header::before {
+            content: '';
+            width: 4px;
+            height: 32px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
         }
 
         .endpoint {
-            background: #fff;
-            border: 1px solid #e8e8e8;
-            border-radius: 8px;
-            margin-bottom: 1rem;
+            background: #f7fafc;
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
             overflow: hidden;
-            transition: box-shadow 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
         }
 
         .endpoint:hover {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+            border-color: #e2e8f0;
         }
 
         .endpoint-header {
-            padding: 1rem 1.5rem;
+            padding: 1.25rem 1.5rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -110,40 +136,57 @@
             user-select: none;
         }
 
-        .endpoint-header:hover {
-            background: #f9f9f9;
-        }
-
-        .method-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 4px;
+        .method {
+            padding: 0.375rem 0.875rem;
+            border-radius: 6px;
             font-weight: 600;
             font-size: 0.75rem;
             text-transform: uppercase;
-            min-width: 70px;
+            letter-spacing: 0.5px;
+            min-width: 65px;
             text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .method-get { background: #61affe; color: white; }
-        .method-post { background: #49cc90; color: white; }
-        .method-patch { background: #fca130; color: white; }
-        .method-delete { background: #f93e3e; color: white; }
+        .method-get {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
 
-        .endpoint-path {
-            font-family: 'Courier New', monospace;
+        .method-post {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+
+        .method-patch {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+        }
+
+        .method-delete {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+        }
+
+        .path {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
             font-weight: 500;
             flex: 1;
-            color: #3c4043;
+            color: #2d3748;
+            font-size: 0.95rem;
         }
 
-        .endpoint-summary {
-            color: #5f6368;
+        .summary {
+            color: #718096;
             font-size: 0.9rem;
+            margin-right: auto;
         }
 
         .expand-icon {
-            transition: transform 0.2s;
-            color: #9e9e9e;
+            transition: transform 0.3s ease;
+            color: #cbd5e0;
+            font-size: 1.25rem;
+            font-weight: 300;
         }
 
         .endpoint.expanded .expand-icon {
@@ -151,541 +194,537 @@
         }
 
         .endpoint-body {
-            display: none;
-            padding: 0 1.5rem 1.5rem 1.5rem;
-            border-top: 1px solid #e8e8e8;
-            background: #fafafa;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
         }
 
         .endpoint.expanded .endpoint-body {
-            display: block;
+            max-height: 2000px;
         }
 
-        .endpoint-details {
-            padding: 1rem 0;
+        .endpoint-content {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-top: 1px solid #e2e8f0;
         }
 
         .detail-section {
-            margin-bottom: 1.5rem;
+            margin-top: 1.5rem;
         }
 
-        .detail-section h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #3c4043;
-            margin-bottom: 0.5rem;
+        .detail-title {
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
+            color: #718096;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
         }
 
         .params-table {
             width: 100%;
-            background: white;
-            border-radius: 4px;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #f7fafc;
+            border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #e8e8e8;
         }
 
         .params-table th {
-            background: #f5f5f5;
-            padding: 0.75rem;
+            background: #edf2f7;
+            padding: 0.875rem 1rem;
             text-align: left;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: #3c4043;
-            border-bottom: 1px solid #e8e8e8;
+            color: #4a5568;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .params-table td {
-            padding: 0.75rem;
-            border-bottom: 1px solid #f5f5f5;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
             font-size: 0.9rem;
-        }
-
-        .params-table tr:last-child td {
-            border-bottom: none;
         }
 
         .param-name {
-            font-family: 'Courier New', monospace;
-            color: #3c4043;
+            font-family: 'Menlo', 'Monaco', monospace;
+            color: #2d3748;
             font-weight: 500;
-        }
-
-        .param-type {
-            color: #5f6368;
-            font-size: 0.85rem;
-        }
-
-        .required-badge {
-            background: #f93e3e;
-            color: white;
-            padding: 0.15rem 0.4rem;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-        }
-
-        .response-code {
-            background: #1e1e1e;
-            color: #d4d4d4;
-            padding: 1rem;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            overflow-x: auto;
-            line-height: 1.5;
-        }
-
-        .json-key { color: #9cdcfe; }
-        .json-string { color: #ce9178; }
-        .json-number { color: #b5cea8; }
-        .json-boolean { color: #569cd6; }
-
-        .footer {
-            text-align: center;
-            padding: 2rem;
-            color: #9e9e9e;
             font-size: 0.9rem;
         }
 
+        .param-type {
+            color: #718096;
+            font-size: 0.85rem;
+            font-family: 'Menlo', 'Monaco', monospace;
+        }
+
+        .required {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            line-height: 1.7;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .json-key { color: #90cdf4; }
+        .json-string { color: #f6ad55; }
+        .json-number { color: #9ae6b4; }
+        .json-boolean { color: #fc8181; }
+
+        .footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: white;
+            opacity: 0.9;
+        }
+
+        .footer p {
+            margin: 0.5rem 0;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+            transition: border-color 0.3s;
+        }
+
+        .footer a:hover {
+            border-bottom-color: white;
+        }
+
         @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
+            .hero h1 {
+                font-size: 2.5rem;
             }
-            
+
             .endpoint-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+                flex-wrap: wrap;
             }
+
+            .summary {
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-section {
+            animation: fadeIn 0.6s ease-out;
         }
     </style>
 </head>
 <body>
-    <div class="topbar">
-        <h1>🚀 Matic Platform API</h1>
-        <span class="version">v1.0.0</span>
+    <div class="hero">
+        <h1>Matic Platform API</h1>
+        <p>High-performance RESTful API for workspace management, data tables, forms, and request hubs</p>
+        <span class="badge">v1.0.0</span>
     </div>
 
     <div class="container">
-        <div class="info-section">
-            <h2>Matic Platform API Documentation</h2>
-            <p>RESTful API for managing workspaces, data tables, forms, and request hubs. Built with Go and Gin framework for high performance and reliability.</p>
-            <div class="base-url">
-                <strong>Base URL:</strong> https://backend.maticslab.com/api/v1
-            </div>
+        <div class="base-url-card">
+            <div class="label">Base URL</div>
+            <div class="url">https://backend.maticslab.com/api/v1</div>
         </div>
 
-        <!-- Workspaces Section -->
-        <h3 class="section-title">Workspaces</h3>
+        <!-- Workspaces -->
+        <div class="content-section">
+            <div class="section-header">Workspaces</div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/workspaces</span>
-                <span class="endpoint-summary">List all workspaces</span>
-                <span class="expand-icon">▶</span>
-            </div>
-            <div class="endpoint-body">
-                <div class="endpoint-details">
-                    <div class="detail-section">
-                        <h4>Query Parameters</h4>
-                        <table class="params-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">organization_id</span></td>
-                                    <td><span class="param-type">string (UUID)</span></td>
-                                    <td>Filter workspaces by organization</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="param-name">is_archived</span></td>
-                                    <td><span class="param-type">boolean</span></td>
-                                    <td>Filter archived workspaces</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="detail-section">
-                        <h4>Response 200</h4>
-                        <div class="response-code">[
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/workspaces</span>
+                    <span class="summary">List all workspaces</span>
+                    <span class="expand-icon">›</span>
+                </div>
+                <div class="endpoint-body">
+                    <div class="endpoint-content">
+                        <div class="detail-section">
+                            <div class="detail-title">Query Parameters</div>
+                            <table class="params-table">
+                                <thead>
+                                    <tr>
+                                        <th>Parameter</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="param-name">organization_id</span></td>
+                                        <td><span class="param-type">UUID</span></td>
+                                        <td>Filter by organization</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="param-name">is_archived</span></td>
+                                        <td><span class="param-type">boolean</span></td>
+                                        <td>Show archived workspaces</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="detail-section">
+                            <div class="detail-title">Response Example</div>
+                            <div class="code-block">[
   {
-    <span class="json-key">"id"</span>: <span class="json-string">"uuid"</span>,
+    <span class="json-key">"id"</span>: <span class="json-string">"550e8400-e29b-41d4-a716-446655440000"</span>,
     <span class="json-key">"name"</span>: <span class="json-string">"My Workspace"</span>,
     <span class="json-key">"slug"</span>: <span class="json-string">"my-workspace"</span>,
-    <span class="json-key">"description"</span>: <span class="json-string">"Workspace description"</span>,
-    <span class="json-key">"color"</span>: <span class="json-string">"#3B82F6"</span>,
-    <span class="json-key">"icon"</span>: <span class="json-string">"folder"</span>,
+    <span class="json-key">"color"</span>: <span class="json-string">"#667eea"</span>,
     <span class="json-key">"is_archived"</span>: <span class="json-boolean">false</span>
   }
 ]</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/workspaces</span>
-                <span class="endpoint-summary">Create a new workspace</span>
-                <span class="expand-icon">▶</span>
-            </div>
-            <div class="endpoint-body">
-                <div class="endpoint-details">
-                    <div class="detail-section">
-                        <h4>Request Body</h4>
-                        <div class="response-code">{
-  <span class="json-key">"organization_id"</span>: <span class="json-string">"uuid"</span><span class="required-badge">REQUIRED</span>,
-  <span class="json-key">"name"</span>: <span class="json-string">"My Workspace"</span><span class="required-badge">REQUIRED</span>,
-  <span class="json-key">"slug"</span>: <span class="json-string">"my-workspace"</span><span class="required-badge">REQUIRED</span>,
-  <span class="json-key">"description"</span>: <span class="json-string">"Optional description"</span>,
-  <span class="json-key">"color"</span>: <span class="json-string">"#3B82F6"</span>,
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/workspaces</span>
+                    <span class="summary">Create new workspace</span>
+                    <span class="expand-icon">›</span>
+                </div>
+                <div class="endpoint-body">
+                    <div class="endpoint-content">
+                        <div class="detail-section">
+                            <div class="detail-title">Request Body</div>
+                            <div class="code-block">{
+  <span class="json-key">"organization_id"</span>: <span class="json-string">"uuid"</span><span class="required">required</span>,
+  <span class="json-key">"name"</span>: <span class="json-string">"My Workspace"</span><span class="required">required</span>,
+  <span class="json-key">"slug"</span>: <span class="json-string">"my-workspace"</span><span class="required">required</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"Optional"</span>,
+  <span class="json-key">"color"</span>: <span class="json-string">"#667eea"</span>,
   <span class="json-key">"icon"</span>: <span class="json-string">"folder"</span>
 }</div>
+                        </div>
                     </div>
-                    <div class="detail-section">
-                        <h4>Response 201</h4>
-                        <div class="response-code">{
-  <span class="json-key">"id"</span>: <span class="json-string">"generated-uuid"</span>,
-  <span class="json-key">"name"</span>: <span class="json-string">"My Workspace"</span>,
-  <span class="json-key">"slug"</span>: <span class="json-string">"my-workspace"</span>
-}</div>
-                    </div>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/workspaces/{id}</span>
+                    <span class="summary">Get workspace by ID</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/workspaces/{id}</span>
+                    <span class="summary">Update workspace</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/workspaces/{id}</span>
+                    <span class="summary">Delete workspace</span>
+                    <span class="expand-icon">›</span>
                 </div>
             </div>
         </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/workspaces/{id}</span>
-                <span class="endpoint-summary">Get workspace by ID</span>
-                <span class="expand-icon">▶</span>
+        <!-- Request Hubs -->
+        <div class="content-section">
+            <div class="section-header">Request Hubs</div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/request-hubs</span>
+                    <span class="summary">List all request hubs</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-            <div class="endpoint-body">
-                <div class="endpoint-details">
-                    <div class="detail-section">
-                        <h4>Path Parameters</h4>
-                        <table class="params-table">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">id</span><span class="required-badge">REQUIRED</span></td>
-                                    <td><span class="param-type">string (UUID)</span></td>
-                                    <td>Workspace ID</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/request-hubs</span>
+                    <span class="summary">Create new request hub</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}</span>
+                    <span class="summary">Get request hub by ID</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/request-hubs/by-slug/{slug}</span>
+                    <span class="summary">Get by slug</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}</span>
+                    <span class="summary">Update request hub</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}</span>
+                    <span class="summary">Delete request hub</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}/tabs</span>
+                    <span class="summary">List all tabs</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}/tabs</span>
+                    <span class="summary">Create new tab</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}/tabs/{tab_id}</span>
+                    <span class="summary">Update tab</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}/tabs/{tab_id}</span>
+                    <span class="summary">Delete tab</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/request-hubs/{hub_id}/tabs/reorder</span>
+                    <span class="summary">Reorder tabs</span>
+                    <span class="expand-icon">›</span>
                 </div>
             </div>
         </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/workspaces/{id}</span>
-                <span class="endpoint-summary">Update workspace</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
+        <!-- Data Tables -->
+        <div class="content-section">
+            <div class="section-header">Data Tables</div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/workspaces/{id}</span>
-                <span class="endpoint-summary">Delete workspace (soft delete)</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/tables</span>
+                    <span class="summary">List all tables</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <!-- Request Hubs Section -->
-        <h3 class="section-title">Request Hubs</h3>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/request-hubs</span>
-                <span class="endpoint-summary">List all request hubs</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/tables</span>
+                    <span class="summary">Create new table</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-            <div class="endpoint-body">
-                <div class="endpoint-details">
-                    <div class="detail-section">
-                        <h4>Query Parameters</h4>
-                        <table class="params-table">
-                            <tbody>
-                                <tr>
-                                    <td><span class="param-name">workspace_id</span><span class="required-badge">REQUIRED</span></td>
-                                    <td><span class="param-type">string (UUID)</span></td>
-                                    <td>Filter by workspace ID</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/tables/{id}</span>
+                    <span class="summary">Get table by ID</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/tables/{id}</span>
+                    <span class="summary">Update table</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/tables/{id}</span>
+                    <span class="summary">Delete table</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/tables/{id}/rows</span>
+                    <span class="summary">List all rows</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/tables/{id}/rows</span>
+                    <span class="summary">Create new row</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/tables/{id}/rows/{row_id}</span>
+                    <span class="summary">Update row</span>
+                    <span class="expand-icon">›</span>
+                </div>
+            </div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/tables/{id}/rows/{row_id}</span>
+                    <span class="summary">Delete row</span>
+                    <span class="expand-icon">›</span>
                 </div>
             </div>
         </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/request-hubs</span>
-                <span class="endpoint-summary">Create a new request hub</span>
-                <span class="expand-icon">▶</span>
+        <!-- Forms -->
+        <div class="content-section">
+            <div class="section-header">Forms</div>
+
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/forms</span>
+                    <span class="summary">List all forms</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}</span>
-                <span class="endpoint-summary">Get request hub by ID</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/forms</span>
+                    <span class="summary">Create new form</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/request-hubs/by-slug/{slug}</span>
-                <span class="endpoint-summary">Get request hub by slug</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/forms/{id}</span>
+                    <span class="summary">Get form by ID</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}</span>
-                <span class="endpoint-summary">Update request hub</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/api/v1/forms/{id}</span>
+                    <span class="summary">Update form</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}</span>
-                <span class="endpoint-summary">Delete request hub</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/api/v1/forms/{id}</span>
+                    <span class="summary">Delete form</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}/tabs</span>
-                <span class="endpoint-summary">List all tabs in request hub</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/api/v1/forms/{id}/submissions</span>
+                    <span class="summary">List submissions</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
-        </div>
 
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}/tabs</span>
-                <span class="endpoint-summary">Create a new tab</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}/tabs/{tab_id}</span>
-                <span class="endpoint-summary">Update tab</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}/tabs/{tab_id}</span>
-                <span class="endpoint-summary">Delete tab</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/request-hubs/{hub_id}/tabs/reorder</span>
-                <span class="endpoint-summary">Reorder tabs (batch update)</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <!-- Data Tables Section -->
-        <h3 class="section-title">Data Tables</h3>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/tables</span>
-                <span class="endpoint-summary">List all tables</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/tables</span>
-                <span class="endpoint-summary">Create a new table</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/tables/{id}</span>
-                <span class="endpoint-summary">Get table by ID</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/tables/{id}</span>
-                <span class="endpoint-summary">Update table</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/tables/{id}</span>
-                <span class="endpoint-summary">Delete table</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/tables/{id}/rows</span>
-                <span class="endpoint-summary">List all rows in table</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/tables/{id}/rows</span>
-                <span class="endpoint-summary">Create a new row</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/tables/{id}/rows/{row_id}</span>
-                <span class="endpoint-summary">Update row</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/tables/{id}/rows/{row_id}</span>
-                <span class="endpoint-summary">Delete row</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <!-- Forms Section -->
-        <h3 class="section-title">Forms</h3>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/forms</span>
-                <span class="endpoint-summary">List all forms</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/forms</span>
-                <span class="endpoint-summary">Create a new form</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/forms/{id}</span>
-                <span class="endpoint-summary">Get form by ID</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-patch">PATCH</span>
-                <span class="endpoint-path">/api/v1/forms/{id}</span>
-                <span class="endpoint-summary">Update form</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-delete">DELETE</span>
-                <span class="endpoint-path">/api/v1/forms/{id}</span>
-                <span class="endpoint-summary">Delete form</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-get">GET</span>
-                <span class="endpoint-path">/api/v1/forms/{id}/submissions</span>
-                <span class="endpoint-summary">List all form submissions</span>
-                <span class="expand-icon">▶</span>
-            </div>
-        </div>
-
-        <div class="endpoint" onclick="toggleEndpoint(this)">
-            <div class="endpoint-header">
-                <span class="method-badge method-post">POST</span>
-                <span class="endpoint-path">/api/v1/forms/{id}/submit</span>
-                <span class="endpoint-summary">Submit form data (public endpoint)</span>
-                <span class="expand-icon">▶</span>
+            <div class="endpoint" onclick="toggleEndpoint(this)">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/api/v1/forms/{id}/submit</span>
+                    <span class="summary">Submit form</span>
+                    <span class="expand-icon">›</span>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <p>Built with ❤️ using Go + Gin Framework | <a href="/health" style="color: #49cc90;">Health Check</a></p>
-        <p style="margin-top: 0.5rem;">© 2025 Matic Platform. All rights reserved.</p>
+        <p>Built with ❤️ using Go + Gin Framework</p>
+        <p><a href="/health">API Health Check</a></p>
+        <p style="margin-top: 1rem; opacity: 0.8;">© 2025 Matic Platform</p>
     </div>
 
     <script>
