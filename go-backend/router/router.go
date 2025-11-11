@@ -12,6 +12,9 @@ import (
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
+	// Load HTML templates
+	r.LoadHTMLGlob("templates/*")
+
 	// CORS configuration
 	corsConfig := cors.Config{
 		AllowOrigins:     cfg.AllowedOrigins,
@@ -21,6 +24,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		AllowCredentials: true,
 	}
 	r.Use(cors.New(corsConfig))
+
+	// API Documentation (root page)
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "api_docs.html", nil)
+	})
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {

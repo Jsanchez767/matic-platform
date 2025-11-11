@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matic Platform API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .status {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .endpoint {
+            background: #f9fafb;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 6px;
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-right: 1rem;
+        }
+
+        .method.get { background: #10b981; color: white; }
+        .method.post { background: #3b82f6; color: white; }
+        .method.patch { background: #f59e0b; color: white; }
+        .method.delete { background: #ef4444; color: white; }
+
+        .path {
+            font-family: 'Courier New', monospace;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .description {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .info-card {
+            background: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card p {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        code {
+            background: #1f2937;
+            color: #10b981;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Matic Platform API</h1>
+            <p>RESTful API for Workspace Management, Data Tables, Forms & Request Hubs</p>
+            <span class="status">✅ Service Healthy</span>
+        </header>
+
+        <div class="content">
+            <!-- Quick Info -->
+            <div class="info-grid">
+                <div class="info-card">
+                    <h3>📍 Base URL</h3>
+                    <p><code>https://backend.maticslab.com/api/v1</code></p>
+                </div>
+                <div class="info-card">
+                    <h3>🔒 Authentication</h3>
+                    <p>Bearer token in Authorization header</p>
+                </div>
+                <div class="info-card">
+                    <h3>📄 Content Type</h3>
+                    <p><code>application/json</code></p>
+                </div>
+                <div class="info-card">
+                    <h3>⚡ Version</h3>
+                    <p>v1.0.0 (Go/Gin)</p>
+                </div>
+            </div>
+
+            <!-- Workspaces -->
+            <div class="section">
+                <h2>Workspaces</h2>
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/workspaces</span>
+                    </div>
+                    <div class="description">List all workspaces. Query params: organization_id, is_archived</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/workspaces</span>
+                    </div>
+                    <div class="description">Create a new workspace</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/workspaces/:id</span>
+                    </div>
+                    <div class="description">Get workspace details with members, tables, forms, and hubs</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/workspaces/:id</span>
+                    </div>
+                    <div class="description">Update workspace details</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/workspaces/:id</span>
+                    </div>
+                    <div class="description">Soft delete a workspace</div>
+                </div>
+            </div>
+
+            <!-- Request Hubs -->
+            <div class="section">
+                <h2>Request Hubs</h2>
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/request-hubs</span>
+                    </div>
+                    <div class="description">List request hubs. Query param: workspace_id (required)</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/request-hubs</span>
+                    </div>
+                    <div class="description">Create a new request hub</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id</span>
+                    </div>
+                    <div class="description">Get request hub details with tabs</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/request-hubs/by-slug/:slug</span>
+                    </div>
+                    <div class="description">Get request hub by slug. Query param: workspace_id</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id</span>
+                    </div>
+                    <div class="description">Update request hub</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id</span>
+                    </div>
+                    <div class="description">Delete request hub</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id/tabs</span>
+                    </div>
+                    <div class="description">List all tabs in a request hub</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id/tabs</span>
+                    </div>
+                    <div class="description">Create a new tab in request hub</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id/tabs/:tab_id</span>
+                    </div>
+                    <div class="description">Update a tab</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id/tabs/:tab_id</span>
+                    </div>
+                    <div class="description">Delete a tab</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/request-hubs/:hub_id/tabs/reorder</span>
+                    </div>
+                    <div class="description">Reorder tabs (batch update)</div>
+                </div>
+            </div>
+
+            <!-- Data Tables -->
+            <div class="section">
+                <h2>Data Tables</h2>
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/tables</span>
+                    </div>
+                    <div class="description">List data tables. Query param: workspace_id</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/tables</span>
+                    </div>
+                    <div class="description">Create a new data table</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/tables/:id</span>
+                    </div>
+                    <div class="description">Get table details with columns and views</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/tables/:id</span>
+                    </div>
+                    <div class="description">Update table details</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/tables/:id</span>
+                    </div>
+                    <div class="description">Delete a table</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/tables/:id/rows</span>
+                    </div>
+                    <div class="description">List all rows in a table</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/tables/:id/rows</span>
+                    </div>
+                    <div class="description">Create a new row</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/tables/:id/rows/:row_id</span>
+                    </div>
+                    <div class="description">Update a row</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/tables/:id/rows/:row_id</span>
+                    </div>
+                    <div class="description">Delete a row</div>
+                </div>
+            </div>
+
+            <!-- Forms -->
+            <div class="section">
+                <h2>Forms</h2>
+                
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/forms</span>
+                    </div>
+                    <div class="description">List forms. Query param: workspace_id</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/forms</span>
+                    </div>
+                    <div class="description">Create a new form</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/forms/:id</span>
+                    </div>
+                    <div class="description">Get form details with fields</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method patch">PATCH</span>
+                        <span class="path">/api/v1/forms/:id</span>
+                    </div>
+                    <div class="description">Update form details</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method delete">DELETE</span>
+                        <span class="path">/api/v1/forms/:id</span>
+                    </div>
+                    <div class="description">Delete a form</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method get">GET</span>
+                        <span class="path">/api/v1/forms/:id/submissions</span>
+                    </div>
+                    <div class="description">List all form submissions</div>
+                </div>
+
+                <div class="endpoint">
+                    <div class="endpoint-header">
+                        <span class="method post">POST</span>
+                        <span class="path">/api/v1/forms/:id/submit</span>
+                    </div>
+                    <div class="description">Submit form data (public endpoint)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Built with ❤️ using Go + Gin | <a href="/health">Health Check</a></p>
+            <p style="margin-top: 0.5rem; font-size: 0.85rem;">© 2025 Matic Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
