@@ -646,7 +646,7 @@ function ScanPageContent() {
           const { rowsSupabase } = await import('@/lib/api/rows-supabase')
           
           // Use Supabase Direct for barcode matching (instant!)
-          if (resolvedColumnId) {
+          if (resolvedColumnId && columnName) {
             try {
               console.log('🚀 Using Supabase Direct search...')
               const searchResults = await rowsSupabase.searchRows(tableId, columnName, decodedText)
