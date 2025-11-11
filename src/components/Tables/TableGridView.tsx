@@ -202,7 +202,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       setTableName(tableData.name)
       setColumns(tableData.columns as any || [])
       
-      const rowsData = await rowsSupabase.list(tableId)
+      const rowsData = await rowsSupabase.getRowsByTable(tableId)
       setRows(rowsData as any)
     } catch (error) {
       console.error('Error loading table data:', error)
@@ -246,7 +246,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: true }))
     
     try {
-      const records = await rowsSupabase.list(linkedTableId)
+      const records = await rowsSupabase.getRowsByTable(linkedTableId)
       // Convert TableRow[] to Row[] format
       const convertedRecords: Row[] = records.map((record: TableRow) => ({
         id: record.id || '',

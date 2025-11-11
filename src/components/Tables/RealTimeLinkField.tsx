@@ -62,7 +62,7 @@ export function RealTimeLinkField({
     
     try {
       console.log('🎯 Loading linked records for display mode')
-      const allRecords = await rowsSupabase.list(linkedTableId)
+      const allRecords = await rowsSupabase.getRowsByTable(linkedTableId)
       const linkedRecordsData = allRecords.filter((record: any) => value.includes(record.id!))
       
       const formattedRecords: LinkedRecord[] = linkedRecordsData.map((record: any) => ({
@@ -102,7 +102,7 @@ export function RealTimeLinkField({
       console.log('🔄 Loading all records from linked table (one time only)')
       
       // Fetch all records from the linked table ONCE
-      const allRecords = await rowsSupabase.list(linkedTableId)
+      const allRecords = await rowsSupabase.getRowsByTable(linkedTableId)
       
       // Convert to LinkedRecord format with display names
       const formattedRecords: LinkedRecord[] = allRecords.map((record: any) => ({

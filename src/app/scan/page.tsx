@@ -649,7 +649,7 @@ function ScanPageContent() {
           if (resolvedColumnId) {
             try {
               console.log('🚀 Using Supabase Direct search...')
-              const searchResults = await rowsSupabase.searchByBarcode(tableId, resolvedColumnId, decodedText)
+              const searchResults = await rowsSupabase.searchRows(tableId, columnName, decodedText)
               foundRows = searchResults
               console.log(`✅ Supabase search found ${foundRows.length} matching records`)
             } catch (searchError) {
@@ -659,7 +659,7 @@ function ScanPageContent() {
 
           if (!resolvedColumnId || foundRows.length === 0) {
             if (columnName) {
-              const allRows = await rowsSupabase.list(tableId, { archived: false })
+              const allRows = await rowsSupabase.getRowsByTable(tableId)
               console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
               console.log('🔍 Looking in column:', columnName)
 
