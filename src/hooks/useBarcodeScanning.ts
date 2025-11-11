@@ -255,11 +255,11 @@ export function useBarcodeScanning(
         console.warn('⚠️ Supabase search failed, falling back to client-side search:', searchError)
         
         // Fallback to client-side search if search endpoint fails
-        const allRows = await rowsSupabase.list(tableId)
+        const allRows = await rowsSupabase.getRowsByTable(tableId)
         console.log(`📊 Total rows fetched: ${allRows.length}`)
         console.log(`🔍 Looking for barcode "${barcode}" in column "${columnName}"`)
         
-        matchingRow = allRows.find(row => {
+        matchingRow = allRows.find((row: any) => {
           console.log(`🔎 Checking row:`, row.data)
           
           // Try both column name and column ID as keys

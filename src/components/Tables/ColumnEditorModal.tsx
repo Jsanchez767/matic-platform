@@ -72,9 +72,9 @@ export function ColumnEditorModal({ isOpen, onClose, onSubmit, column, mode, wor
     try {
       setLoadingTables(true)
       const { tablesSupabase } = await import('@/lib/api/tables-supabase')
-      const tables = await tablesSupabase.list(workspaceId)
+      const tables = await tablesSupabase.getTablesByWorkspace(workspaceId)
       // Filter out the current table
-      setAvailableTables(tables.filter(t => t.id !== currentTableId))
+      setAvailableTables(tables.filter((t: any) => t.id !== currentTableId))
     } catch (error) {
       console.error('Error loading tables:', error)
     } finally {

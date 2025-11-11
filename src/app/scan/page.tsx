@@ -194,7 +194,7 @@ function ScanPageContent() {
             // Use barcode_column_id from Pulse config
             if (config && config.barcode_column_id) {
               setResolvedColumnId(config.barcode_column_id)
-              const barcodeColumn = table.columns.find(col => col.id === config.barcode_column_id)
+              const barcodeColumn = table.columns.find((col: any) => col.id === config.barcode_column_id)
               if (barcodeColumn) {
                 setColumnLabel(barcodeColumn.label || barcodeColumn.name)
               }
@@ -213,11 +213,11 @@ function ScanPageContent() {
           let resolved: TableColumn | undefined
 
           if (columnIdParam) {
-            resolved = table.columns.find(col => col.id === columnIdParam)
+            resolved = table.columns.find((col: any) => col.id === columnIdParam)
           }
 
           if (!resolved && columnName) {
-            resolved = table.columns.find(col => col.name === columnName || col.id === columnName)
+            resolved = table.columns.find((col: any) => col.name === columnName || col.id === columnName)
           }
 
           if (resolved?.id) {
@@ -663,7 +663,7 @@ function ScanPageContent() {
               console.log(`📊 Fetched ${allRows.length} total rows for fallback search`)
               console.log('🔍 Looking in column:', columnName)
 
-              const matchingRows = allRows.filter(row => {
+              const matchingRows = allRows.filter((row: any) => {
                 const value = row.data?.[columnName]
                 const matches = value && value.toString().toLowerCase() === decodedText.toLowerCase()
                 return matches
