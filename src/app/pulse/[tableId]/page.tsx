@@ -284,7 +284,7 @@ export default function PulseDashboard() {
 
   const loadColumns = async () => {
     try {
-      const table = await tablesSupabase.get(tableId);
+      const table = await tablesSupabase.getTableById(tableId);
       if (table?.columns) {
         setColumns(table.columns);
       }
