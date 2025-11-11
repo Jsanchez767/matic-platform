@@ -1878,10 +1878,9 @@ function ScanPageContent() {
                           throw new Error('Unable to determine creator. Please ensure the scanner is properly configured.');
                         }
                         
-                        const newRow = await rowsSupabase.create(tableId, {
+                        const newRow = await rowsSupabase.createRow({
                           table_id: tableId,
                           data: rowData,
-                          created_by: userId,
                         });
                         
                         console.log('✅ Walk-in row created:', newRow.id);
