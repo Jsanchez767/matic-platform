@@ -12,3 +12,11 @@ export { RequestsByTypeChart, StatusDistributionChart, RequestTrendsChart } from
 export { FormBuilder } from './FormBuilder';
 export { WorkflowBuilder } from './WorkflowBuilder';
 export { AdminSettings } from './AdminSettings';
+
+// Enhanced Components
+export { MyRequestsPage } from './MyRequestsPage';
+export { NewRequestForm } from './NewRequestForm';
+export { EnhancedDashboard } from './EnhancedDashboard';
+export { SettingsPage } from './SettingsPage';
+export { AdminApprovalQueue } from './AdminApprovalQueue';
+export { FormFieldRenderer } from './FormFieldRenderer';

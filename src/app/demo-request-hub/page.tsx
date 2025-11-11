@@ -3,35 +3,82 @@
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui-components/select';
 import { Button } from '@/ui-components/button';
-import { Card } from '@/ui-components/card';
-import { Badge } from '@/ui-components/badge';
 import { 
   LayoutDashboard, 
   FileText, 
   PlusCircle, 
   CheckSquare,
   User,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  Eye,
-  ChevronUp
+  Settings as SettingsIcon
 } from 'lucide-react';
-import { DashboardMetrics } from '@/components/RequestHub/DashboardMetrics';
-import { RequestsByTypeChart, StatusDistributionChart } from '@/components/RequestHub/RequestsChart';
-import { RequestList } from '@/components/RequestHub/RequestList';
-import { StatusBadge } from '@/components/RequestHub/StatusBadge';
-import type { Request, RequestUser, RequestDetail } from '@/types/request';
+import { MyRequestsPage } from '@/components/RequestHub/MyRequestsPage';
+import { NewRequestForm } from '@/components/RequestHub/NewRequestForm';
+import { EnhancedDashboard } from '@/components/RequestHub/EnhancedDashboard';
+import { SettingsPage } from '@/components/RequestHub/SettingsPage';
+import { AdminApprovalQueue } from '@/components/RequestHub/AdminApprovalQueue';
+import { ToastContainer, showToast } from '@/lib/toast';
+import type { Request, RequestUser, FormTemplate, RequestMetrics, ApprovalAction } from '@/types/request';
 
-type TabType = 'dashboard' | 'my-requests' | 'new-request' | 'approvals';
+type TabType = 'dashboard' | 'my-requests' | 'new-request' | 'approvals' | 'settings';
 
-// Mock data matching the screenshots
+// Mock data
 const mockUsers: RequestUser[] = [
   { id: 'u1', name: 'John Smith', email: 'john@example.com', role: 'staff', department: 'Education' },
-  { id: 'u2', name: 'Jane Doe', email: 'jane@example.com', role: 'supervisor', department: 'Education' },
+  { id: 'u2', name: 'Jane Doe', email: 'jane@example.com', role: 'admin', department: 'Administration' },
+  { id: 'u3', name: 'Bob Johnson', email: 'bob@example.com', role: 'supervisor', department: 'Education' },
 ];
 
-const mockRequests: Request[] = [
+const mockFormTemplates: FormTemplate[] = [
+  {
+    id: 'program_supplies',
+    hub_id: 'hub1',
+    request_type: 'program_supplies',
+    name: 'Program Supplies Request',
+    description: 'Request supplies for your program',
+    fields: [
+      { id: 'f1', name: 'program_name', label: 'Program Name', type: 'text', required: true },
+      { id: 'f2', name: 'supplies_needed', label: 'Supplies Needed', type: 'textarea', required: true },
+      { id: 'f3', name: 'estimated_cost', label: 'Estimated Cost', type: 'number', required: true },
+      { id: 'f4', name: 'date_needed', label: 'Date Needed', type: 'date', required: true },
+    ],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'field_trip',
+    hub_id: 'hub1',
+    request_type: 'field_trip',
+    name: 'Field Trip Request',
+    description: 'Request approval for a field trip',
+    fields: [
+      { id: 'f1', name: 'destination', label: 'Destination', type: 'text', required: true },
+      { id: 'f2', name: 'date', label: 'Trip Date', type: 'date', required: true },
+      { id: 'f3', name: 'purpose', label: 'Purpose', type: 'textarea', required: true },
+      { id: 'f4', name: 'number_of_students', label: 'Number of Students', type: 'number', required: true },
+      { id: 'f5', name: 'transportation', label: 'Transportation Needed', type: 'select', required: true, options: ['Bus', 'Van', 'Walking', 'Parent Drivers'] },
+    ],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: 'professional_development',
+    hub_id: 'hub1',
+    request_type: 'professional_development',
+    name: 'Professional Development Request',
+    description: 'Request to attend a workshop or conference',
+    fields: [
+      { id: 'f1', name: 'event_name', label: 'Event Name', type: 'text', required: true },
+      { id: 'f2', name: 'event_date', label: 'Event Date', type: 'date', required: true },
+      { id: 'f3', name: 'location', label: 'Location', type: 'text', required: true },
+      { id: 'f4', name: 'cost', label: 'Registration Cost', type: 'number', required: true },
+      { id: 'f5', name: 'justification', label: 'Justification', type: 'textarea', required: true },
+    ],
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  },
+];
+
+const initialMockRequests: Request[] = [
   {
     id: 'r1',
     hub_id: 'hub1',
@@ -58,6 +105,30 @@ const mockRequests: Request[] = [
     updated_at: '2024-10-25T09:00:00Z',
   },
   {
+    id: 'r3',
+    hub_id: 'hub1',
+    staff_user_id: 'u3',
+    request_type: 'professional_development',
+    status: 'Submitted',
+    submitted_date: '2024-11-01T14:00:00Z',
+    priority: 'low',
+    current_step: 0,
+    created_at: '2024-11-01T14:00:00Z',
+    updated_at: '2024-11-01T14:00:00Z',
+  },
+  {
+    id: 'r4',
+    hub_id: 'hub1',
+    staff_user_id: 'u1',
+    request_type: 'program_supplies',
+    status: 'Draft',
+    submitted_date: '2024-11-05T11:00:00Z',
+    priority: 'medium',
+    current_step: 0,
+    created_at: '2024-11-05T11:00:00Z',
+    updated_at: '2024-11-05T11:00:00Z',
+  },
+  {
     id: 'r5',
     hub_id: 'hub1',
     staff_user_id: 'u1',
@@ -72,335 +143,306 @@ const mockRequests: Request[] = [
   },
 ];
 
-const mockRequestDetails: RequestDetail[] = [];
-
-const requestTypes = [
-  {
-    id: 'program_supplies',
-    name: 'Program Supplies Request',
-    description: 'Request supplies for your program',
-    icon: FileText,
-  },
-  {
-    id: 'field_trip',
-    name: 'Field Trip Request',
-    description: 'Request approval for a field trip',
-    icon: FileText,
-  },
-  {
-    id: 'professional_development',
-    name: 'Professional Development Request',
-    description: 'Request to attend a workshop or conference',
-    icon: FileText,
-  },
-];
-
 export default function DemoRequestHubPage() {
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [currentUser, setCurrentUser] = useState('u1');
+  const [isAdminView, setIsAdminView] = useState(false);
+  const [requests, setRequests] = useState<Request[]>(initialMockRequests);
 
   const currentUserData = mockUsers.find(u => u.id === currentUser) || mockUsers[0];
 
+  // Filter requests based on user and admin view
+  const visibleRequests = isAdminView 
+    ? requests 
+    : requests.filter(r => r.staff_user_id === currentUser);
+
   // Calculate metrics
-  const totalRequests = 7;
-  const pendingApprovals = 2;
-  const averageApprovalTime = 97; // hours
-  const approvalRate = 29; // percentage
+  const metrics: RequestMetrics = {
+    total_requests: visibleRequests.length,
+    pending_approvals: visibleRequests.filter(r => r.status === 'Submitted' || r.status === 'Under Review').length,
+    average_approval_time: 97,
+    approval_rate: 29,
+    denial_rate: 14,
+  };
 
-  // Chart data
-  const requestsByType = [
-    { request_type: 'Budget Request', count: 4 },
-    { request_type: 'Field Trip', count: 2 },
-    { request_type: 'Professional Development Request', count: 1 },
-  ];
+  // Request type mapping
+  const requestTypesMap = mockFormTemplates.reduce((acc, template) => {
+    acc[template.request_type] = { name: template.name };
+    return acc;
+  }, {} as Record<string, { name: string }>);
 
-  const statusDistribution = [
-    { status: 'Submitted', count: 1 },
-    { status: 'Approved', count: 2 },
-    { status: 'Denied', count: 1 },
-    { status: 'Draft', count: 1 },
-    { status: 'Completed', count: 1 },
-  ];
+  // Users mapping
+  const usersMap = mockUsers.reduce((acc, user) => {
+    acc[user.id] = { name: user.name, email: user.email };
+    return acc;
+  }, {} as Record<string, { name: string; email: string }>);
+
+  // Handlers
+  const handleNewRequest = () => {
+    setActiveTab('new-request');
+  };
+
+  const handleSubmitRequest = async (data: {
+    request_type: string;
+    form_data: Record<string, any>;
+    status: 'Draft' | 'Submitted';
+  }) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const newRequest: Request = {
+      id: `r${requests.length + 1}`,
+      hub_id: 'hub1',
+      staff_user_id: currentUser,
+      request_type: data.request_type,
+      status: data.status,
+      submitted_date: new Date().toISOString(),
+      priority: 'medium',
+      current_step: data.status === 'Draft' ? 0 : 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    setRequests([...requests, newRequest]);
+    
+    if (data.status === 'Draft') {
+      showToast('Request saved as draft', 'success');
+    } else {
+      showToast('Request submitted successfully!', 'success');
+    }
+    
+    setActiveTab('my-requests');
+  };
+
+  const handleApprove = async (requestIds: string[], action: ApprovalAction) => {
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setRequests(requests.map(r => {
+      if (requestIds.includes(r.id)) {
+        return {
+          ...r,
+          status: action === 'approve' ? 'Approved' : action === 'deny' ? 'Denied' : r.status,
+          completed_date: action === 'approve' || action === 'deny' ? new Date().toISOString() : r.completed_date,
+          updated_at: new Date().toISOString(),
+        };
+      }
+      return r;
+    }));
+
+    const actionText = action === 'approve' ? 'approved' : action === 'deny' ? 'denied' : 'processed';
+    showToast(`${requestIds.length} request${requestIds.length > 1 ? 's' : ''} ${actionText}`, 'success');
+  };
+
+  const handleViewRequest = (id: string) => {
+    showToast(`Viewing request ${id}`, 'info');
+  };
+
+  const handleEditRequest = (id: string) => {
+    showToast(`Editing request ${id}`, 'info');
+  };
+
+  const handleDeleteRequest = (id: string) => {
+    if (confirm('Are you sure you want to delete this request?')) {
+      setRequests(requests.filter(r => r.id !== id));
+      showToast('Request deleted', 'success');
+    }
+  };
+
+  const handleSaveSettings = async (settings: any) => {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    showToast('Settings saved successfully!', 'success');
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b sticky top-0 z-10">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Request Management System</h1>
-              <p className="text-sm text-gray-600">Streamlined approval workflows</p>
-            </div>
-            
-            {/* User Switcher */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <User className="h-5 w-5 text-gray-500" />
-                <div>
-                  <p className="text-sm font-medium">{currentUserData.name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{currentUserData.role}</p>
-                </div>
-              </div>
-              <Select value={currentUser} onValueChange={setCurrentUser}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {mockUsers.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name} ({user.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Tab Navigation */}
-      <div className="bg-white border-b px-6">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
-              ${activeTab === 'dashboard' 
-                ? 'border-gray-900 text-gray-900' 
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            Dashboard
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('my-requests')}
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
-              ${activeTab === 'my-requests' 
-                ? 'border-gray-900 text-gray-900' 
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            <FileText className="h-4 w-4" />
-            My Requests
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('new-request')}
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
-              ${activeTab === 'new-request' 
-                ? 'border-gray-900 text-gray-900' 
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            <PlusCircle className="h-4 w-4" />
-            New Request
-          </button>
-          
-          <button
-            onClick={() => setActiveTab('approvals')}
-            className={`
-              flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
-              ${activeTab === 'approvals' 
-                ? 'border-gray-900 text-gray-900' 
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-              }
-            `}
-          >
-            <CheckSquare className="h-4 w-4" />
-            Approvals
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <main className="p-6">
-        {/* Dashboard Tab */}
-        {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Dashboard Overview</h2>
-              <p className="text-gray-600">Real-time metrics and analytics</p>
-            </div>
-
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <Card className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-sm font-medium text-gray-600">Total Requests</div>
-                  <TrendingUp className="h-5 w-5 text-gray-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{totalRequests}</div>
-                <div className="flex items-center gap-1 text-sm text-green-600">
-                  <ChevronUp className="h-4 w-4" />
-                  <span>12% from last month</span>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-sm font-medium text-gray-600">Pending Approvals</div>
-                  <Clock className="h-5 w-5 text-gray-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900">{pendingApprovals}</div>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-sm font-medium text-gray-600">Avg. Approval Time</div>
-                  <Clock className="h-5 w-5 text-gray-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900">{averageApprovalTime}h</div>
-                <div className="flex items-center gap-1 text-sm text-green-600">
-                  <ChevronUp className="h-4 w-4" />
-                  <span>8% faster</span>
-                </div>
-              </Card>
-
-              <Card className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-sm font-medium text-gray-600">Approval Rate</div>
-                  <CheckCircle className="h-5 w-5 text-gray-400" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900">{approvalRate}%</div>
-              </Card>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <RequestsByTypeChart data={requestsByType} />
-              </div>
-              <div>
-                <StatusDistributionChart data={statusDistribution} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* My Requests Tab */}
-        {activeTab === 'my-requests' && (
-          <div className="space-y-6">
+    <>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b sticky top-0 z-10">
+          <div className="px-6 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-1">My Requests</h2>
-                <p className="text-gray-600">View and track your submitted requests</p>
+                <h1 className="text-xl font-bold text-gray-900">Request Management System</h1>
+                <p className="text-sm text-gray-600">Streamlined approval workflows with enhanced features</p>
               </div>
-              <Button onClick={() => setActiveTab('new-request')}>
-                <PlusCircle className="h-4 w-4 mr-2" />
-                New Request
-              </Button>
-            </div>
-
-            {/* Request List */}
-            <div className="space-y-4">
-              {mockRequests.map((request) => {
-                const requestType = requestTypes.find(t => t.id === request.request_type);
-                return (
-                  <Card key={request.id} className="p-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {requestType?.name.replace(' Request', '') || request.request_type}
-                          </h3>
-                          <StatusBadge status={request.status} />
-                          <Badge variant="outline" className={
-                            request.priority === 'high' ? 'border-red-200 text-red-600' :
-                            request.priority === 'medium' ? 'border-yellow-200 text-yellow-600' :
-                            'border-gray-200 text-gray-600'
-                          }>
-                            {request.priority.charAt(0).toUpperCase() + request.priority.slice(1)} Priority
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-gray-600 space-y-1">
-                          <p>Submitted by: {currentUserData.name}</p>
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span>Submitted: {new Date(request.submitted_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                            </div>
-                            {request.completed_date && (
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                <span>Completed: {new Date(request.completed_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500">Request ID: {request.id}</p>
-                        </div>
-                      </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
+              
+              {/* User Switcher */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-gray-500" />
+                  <div>
+                    <p className="text-sm font-medium">{currentUserData.name}</p>
+                    <p className="text-xs text-gray-500 capitalize">{currentUserData.role}</p>
+                  </div>
+                </div>
+                <Select value={currentUser} onValueChange={setCurrentUser}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} ({user.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
-        )}
+        </header>
 
-        {/* New Request Tab */}
-        {activeTab === 'new-request' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Submit New Request</h2>
-              <p className="text-gray-600">Choose a request type and fill out the form</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {requestTypes.map((type) => {
-                const Icon = type.icon;
-                return (
-                  <Card 
-                    key={type.id}
-                    className="p-8 hover:shadow-lg transition-all cursor-pointer border-2 hover:border-blue-500"
-                  >
-                    <div className="text-center space-y-4">
-                      <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-lg">
-                        <Icon className="h-8 w-8 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                          {type.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {type.description}
-                        </p>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+        {/* Tab Navigation */}
+        <div className="bg-white border-b px-6">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`
+                flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                ${activeTab === 'dashboard' 
+                  ? 'border-gray-900 text-gray-900' 
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                }
+              `}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              Dashboard
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('my-requests')}
+              className={`
+                flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                ${activeTab === 'my-requests' 
+                  ? 'border-gray-900 text-gray-900' 
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                }
+              `}
+            >
+              <FileText className="h-4 w-4" />
+              My Requests
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('new-request')}
+              className={`
+                flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                ${activeTab === 'new-request' 
+                  ? 'border-gray-900 text-gray-900' 
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                }
+              `}
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Request
+            </button>
+            
+            {(currentUserData.role === 'admin' || currentUserData.role === 'supervisor') && (
+              <button
+                onClick={() => setActiveTab('approvals')}
+                className={`
+                  flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                  ${activeTab === 'approvals' 
+                    ? 'border-gray-900 text-gray-900' 
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }
+                `}
+              >
+                <CheckSquare className="h-4 w-4" />
+                Approvals
+                {metrics.pending_approvals > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {metrics.pending_approvals}
+                  </span>
+                )}
+              </button>
+            )}
+            
+            {currentUserData.role === 'admin' && (
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`
+                  flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors
+                  ${activeTab === 'settings' 
+                    ? 'border-gray-900 text-gray-900' 
+                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }
+                `}
+              >
+                <SettingsIcon className="h-4 w-4" />
+                Settings
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Approvals Tab */}
-        {activeTab === 'approvals' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Approval Queue</h2>
-              <p className="text-gray-600">Review and approve pending requests</p>
-            </div>
+        {/* Content */}
+        <main className="p-6">
+          {activeTab === 'dashboard' && (
+            <EnhancedDashboard
+              requests={visibleRequests}
+              metrics={metrics}
+              userRole={currentUserData.role}
+              isAdminView={isAdminView}
+              onToggleAdminView={() => setIsAdminView(!isAdminView)}
+              onNewRequest={handleNewRequest}
+              onViewApprovals={() => setActiveTab('approvals')}
+              onViewSettings={() => setActiveTab('settings')}
+            />
+          )}
 
-            <Card className="p-8 text-center text-gray-500">
-              <CheckSquare className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <p className="text-lg font-medium">No pending approvals</p>
-              <p className="text-sm mt-2">You're all caught up!</p>
-            </Card>
-          </div>
-        )}
-      </main>
-    </div>
+          {activeTab === 'my-requests' && (
+            <MyRequestsPage
+              requests={visibleRequests}
+              currentUserId={currentUser}
+              onNewRequest={handleNewRequest}
+              onViewRequest={handleViewRequest}
+              onEditRequest={handleEditRequest}
+              onDeleteRequest={handleDeleteRequest}
+              requestTypesMap={requestTypesMap}
+              assignedUsersMap={usersMap}
+            />
+          )}
+
+          {activeTab === 'new-request' && (
+            <NewRequestForm
+              templates={mockFormTemplates}
+              onSubmit={handleSubmitRequest}
+              onCancel={() => setActiveTab('my-requests')}
+            />
+          )}
+
+          {activeTab === 'approvals' && (
+            <AdminApprovalQueue
+              requests={requests}
+              onApprove={handleApprove}
+              onViewRequest={handleViewRequest}
+              requestTypesMap={requestTypesMap}
+              usersMap={usersMap}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsPage
+              onClose={() => setActiveTab('dashboard')}
+              onSave={handleSaveSettings}
+              initialSettings={{
+                requestTypes: mockFormTemplates,
+                workflows: [],
+                notifications: {
+                  emailOnSubmit: true,
+                  emailOnApprove: true,
+                  emailOnDeny: true,
+                  slackWebhook: '',
+                },
+              }}
+            />
+          )}
+        </main>
+      </div>
+      
+      {/* Toast Container */}
+      <ToastContainer />
+    </>
   );
 }

@@ -12,9 +12,6 @@ import (
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
-	// Load HTML templates
-	r.LoadHTMLGlob("templates/*")
-
 	// CORS configuration
 	corsConfig := cors.Config{
 		AllowOrigins:     cfg.AllowedOrigins,
@@ -24,11 +21,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		AllowCredentials: true,
 	}
 	r.Use(cors.New(corsConfig))
-
-	// API Documentation (root page)
-	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "api_docs.html", nil)
-	})
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -42,34 +34,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// API v1 routes
 	api := r.Group("/api/v1")
 	{
-		// API v1 root - redirect to docs
-		api.GET("", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Matic Platform API v1",
-				"documentation": "https://backend.maticslab.com/",
-				"health": "https://backend.maticslab.com/health",
-				"endpoints": gin.H{
-					"workspaces": "/api/v1/workspaces",
-					"request_hubs": "/api/v1/request-hubs",
-					"tables": "/api/v1/tables",
-					"forms": "/api/v1/forms",
-				},
-			})
-		})
-		api.GET("/", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{
-				"message": "Matic Platform API v1",
-				"documentation": "https://backend.maticslab.com/",
-				"health": "https://backend.maticslab.com/health",
-				"endpoints": gin.H{
-					"workspaces": "/api/v1/workspaces",
-					"request_hubs": "/api/v1/request-hubs",
-					"tables": "/api/v1/tables",
-					"forms": "/api/v1/forms",
-				},
-			})
-		})
-
 		// Workspaces
 		workspaces := api.Group("/workspaces")
 		{
