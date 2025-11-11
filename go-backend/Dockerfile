@@ -30,7 +30,7 @@ RUN addgroup -g 1000 app && \
     adduser -D -u 1000 -G app app
 
 # Set working directory
-WORKDIR /root/
+WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /app/main .
@@ -39,7 +39,7 @@ COPY --from=builder /app/main .
 COPY --from=builder /app/templates ./templates
 
 # Change ownership
-RUN chown -R app:app main templates
+RUN chown -R app:app /app
 
 # Switch to non-root user
 USER app
