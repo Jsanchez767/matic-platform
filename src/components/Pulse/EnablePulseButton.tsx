@@ -42,8 +42,7 @@ export function EnablePulseButton({ tableId, workspaceId }: EnablePulseButtonPro
     setIsEnabling(true);
     try {
       console.log('📤 Sending enablePulse request...');
-      const result = await pulseSupabase.enablePulse({
-        table_id: tableId,
+      const result = await pulseSupabase.enablePulse(tableId, {
         workspace_id: workspaceId,
       });
       console.log('✅ Pulse enabled successfully:', result);
