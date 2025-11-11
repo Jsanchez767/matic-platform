@@ -153,5 +153,60 @@ export const requestHubsSupabase = {
       .eq('id', typeId)
 
     if (error) throw error
+  },
+
+  /**
+   * Get request hub tabs
+   */
+  async getRequestHubTabs(hubId: string) {
+    const { data, error } = await supabase
+      .from('request_hub_tabs')
+      .select('*')
+      .eq('hub_id', hubId)
+      .order('position', { ascending: true })
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Create a request hub tab
+   */
+  async createTab(tabData: any) {
+    const { data, error } = await supabase
+      .from('request_hub_tabs')
+      .insert(tabData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Update a request hub tab
+   */
+  async updateTab(tabId: string, updates: any) {
+    const { data, error } = await supabase
+      .from('request_hub_tabs')
+      .update(updates)
+      .eq('id', tabId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Delete a request hub tab
+   */
+  async deleteTab(tabId: string) {
+    const { error } = await supabase
+      .from('request_hub_tabs')
+      .delete()
+      .eq('id', tabId)
+
+    if (error) throw error
   }
 }

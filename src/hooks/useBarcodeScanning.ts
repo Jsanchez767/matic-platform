@@ -248,7 +248,7 @@ export function useBarcodeScanning(
       
       try {
         // Use Supabase Direct search for efficient lookup
-        const matchingRows = await rowsSupabase.searchByColumnName(tableId, columnName, barcode)
+        const matchingRows = await rowsSupabase.searchRows(tableId, columnName, barcode)
         matchingRow = matchingRows.length > 0 ? matchingRows[0] : null
         console.log(`✅ Supabase search found ${matchingRows.length} matches`)
       } catch (searchError) {
