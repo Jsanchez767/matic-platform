@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Settings, Plus } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Badge } from "@/ui-components/badge";
-import { Dialog, DialogContent } from "@/ui-components/dialog";
 import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
 import type { RequestHub, RequestHubTab } from "@/types/request-hub";
 import { DashboardMetrics } from "./DashboardMetrics";
@@ -32,6 +31,7 @@ export function RequestHubViewer({
   const [loading, setLoading] = useState(true);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [isEditingTabs, setIsEditingTabs] = useState(false);
 
   useEffect(() => {
     loadHub();
@@ -103,6 +103,19 @@ export function RequestHubViewer({
     );
   }
 
+  // If showing settings, render settings view instead
+  if (showSettings) {
+    return (
+      <div className="flex-1 flex flex-col h-full bg-gray-50">
+        <SettingsView
+          hub={hub!}
+          onBack={() => setShowSettings(false)}
+          onSave={handleSaveSettings}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50">
       {/* Header */}
@@ -131,38 +144,74 @@ export function RequestHubViewer({
                 )}
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setShowSettings(true)}>
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsEditingTabs(!isEditingTabs)}
+              >
+                {isEditingTabs ? 'Done Editing' : 'Edit Tabs'}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowSettings(true)}>
+                <Settings className="w-4 h-4 mr-2" />
+                Configure
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="px-6">
-          <div className="flex items-center gap-1 overflow-x-auto">
+          <div className="flex items-center gap-1 overflow-x-auto pb-px">
             {hub.tabs
               ?.sort((a, b) => a.position - b.position)
               .filter((tab) => tab.is_visible)
               .map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTabId(tab.id)}
-                  className={`
-                    px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                    ${
-                      activeTabId === tab.id
-                        ? "border-blue-600 text-blue-600"
-                        : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300"
-                    }
-                  `}
-                >
-                  {tab.name}
-                </button>
+                <div key={tab.id} className="relative group">
+                  <button
+                    onClick={() => setActiveTabId(tab.id)}
+                    className={`
+                      px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap
+                      ${
+                        activeTabId === tab.id
+                          ? "border-blue-600 text-blue-600 bg-blue-50/50"
+                          : "border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    {tab.name}
+                  </button>
+                  {isEditingTabs && (
+                    <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-5 w-5 p-0 bg-white border shadow-sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // TODO: Edit tab
+                        }}
+                      >
+                        <Settings className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               ))}
-            <Button variant="ghost" size="sm" className="ml-2">
-              <Plus className="w-4 h-4" />
-            </Button>
+            {isEditingTabs && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-2 border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50"
+                onClick={() => {
+                  // TODO: Add new tab
+                  console.log('Add new tab');
+                }}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Tab
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -179,17 +228,54 @@ export function RequestHubViewer({
           </div>
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Settings Dialog */}
-      <Dialog open={showSettings} onOpenChange={setShowSettings}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+// New Settings View Component (Full Page)
+function SettingsView({
+  hub,
+  onBack,
+  onSave,
+}: {
+  hub: RequestHub;
+  onBack: () => void;
+  onSave: (settings: any) => Promise<void>;
+}) {
+  return (
+    <div className="flex-1 flex flex-col h-full">
+      {/* Settings Header */}
+      <div className="bg-white border-b">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={onBack}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Hub
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Configure {hub.name}
+                </h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Manage settings, request types, workflows, and permissions
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Settings Content */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-7xl mx-auto">
           <SettingsPage
-            onClose={() => setShowSettings(false)}
-            onSave={handleSaveSettings}
+            onClose={onBack}
+            onSave={onSave}
             initialSettings={hub.settings}
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 }
