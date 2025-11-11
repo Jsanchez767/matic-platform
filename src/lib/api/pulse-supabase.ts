@@ -12,7 +12,7 @@ export const pulseSupabase = {
    */
   async getPulseConfig(tableId: string) {
     const { data, error } = await supabase
-      .from('pulse_configs')
+      .from('pulse_enabled_tables')
       .select('*')
       .eq('table_id', tableId)
       .single()
@@ -26,7 +26,7 @@ export const pulseSupabase = {
    */
   async createPulseConfig(configData: any) {
     const { data, error } = await supabase
-      .from('pulse_configs')
+      .from('pulse_enabled_tables')
       .insert(configData)
       .select()
       .single()
@@ -40,7 +40,7 @@ export const pulseSupabase = {
    */
   async updatePulseConfig(configId: string, updates: any) {
     const { data, error } = await supabase
-      .from('pulse_configs')
+      .from('pulse_enabled_tables')
       .update(updates)
       .eq('id', configId)
       .select()
@@ -55,7 +55,7 @@ export const pulseSupabase = {
    */
   async deletePulseConfig(configId: string) {
     const { error } = await supabase
-      .from('pulse_configs')
+      .from('pulse_enabled_tables')
       .delete()
       .eq('id', configId)
 

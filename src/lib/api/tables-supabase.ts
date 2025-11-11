@@ -35,7 +35,7 @@ export const tablesSupabase = {
         *,
         columns:table_columns!table_columns_table_id_fkey(*),
         views:table_views(*),
-        links:table_links(*)
+        links:table_links!table_links_source_table_id_fkey(*)
       `)
       .eq('id', tableId)
       .single()
