@@ -15,7 +15,7 @@ export const tablesSupabase = {
       .from('data_tables')
       .select(`
         *,
-        columns:table_columns(*),
+        columns:table_columns!table_columns_table_id_fkey(*),
         views:table_views(*)
       `)
       .eq('workspace_id', workspaceId)
@@ -33,7 +33,7 @@ export const tablesSupabase = {
       .from('data_tables')
       .select(`
         *,
-        columns:table_columns(*),
+        columns:table_columns!table_columns_table_id_fkey(*),
         views:table_views(*),
         links:table_links(*)
       `)
