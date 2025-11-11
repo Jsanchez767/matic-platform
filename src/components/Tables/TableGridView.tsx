@@ -198,7 +198,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       setLoading(true)
       
-      const tableData = await tablesSupabase.get(tableId)
+      const tableData = await tablesSupabase.getTableById(tableId)
       setTableName(tableData.name)
       setColumns(tableData.columns as any || [])
       

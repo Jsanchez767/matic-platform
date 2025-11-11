@@ -170,7 +170,7 @@ function ScanResultsContent() {
       if (!tableId) return
       
       // Fetch table schema from FastAPI backend
-      const tableData = await tablesSupabase.get(tableId)
+      const tableData = await tablesSupabase.getTableById(tableId)
       if (tableData && tableData.columns) {
         setTableColumns(tableData.columns)
         console.log(`📊 Loaded ${tableData.columns.length} table columns from backend`)

@@ -180,7 +180,7 @@ function ScanPageContent() {
 
     const loadMetadata = async () => {
       try {
-        const table = await tablesSupabase.get(tableId)
+        const table = await tablesSupabase.getTableById(tableId)
         setTableInfo(table)
         setWorkspaceId(table.workspace_id)
 
