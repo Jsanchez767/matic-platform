@@ -38,7 +38,7 @@ export function useWorkspaceDiscovery() {
       console.log('🔍 Fetching workspaces from Supabase for user:', userId)
       
       // Fetch from Supabase Direct (uses auth context internally)
-      const apiWorkspaces = await workspacesSupabase.list()
+      const apiWorkspaces = await workspacesSupabase.getWorkspacesForUser(userId)
       
       // Convert API response to hook format
       const formattedWorkspaces: Workspace[] = apiWorkspaces.map((workspace: APIWorkspace) => ({
