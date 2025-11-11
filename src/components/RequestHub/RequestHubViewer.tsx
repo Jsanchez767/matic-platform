@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Settings, Plus } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Badge } from "@/ui-components/badge";
+import { Dialog, DialogContent } from "@/ui-components/dialog";
 import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
 import type { RequestHub, RequestHubTab } from "@/types/request-hub";
 import { DashboardMetrics } from "./DashboardMetrics";
@@ -11,6 +12,7 @@ import { RequestList } from "./RequestList";
 import { DynamicForm } from "./DynamicForm";
 import { ApprovalQueue } from "./ApprovalQueue";
 import { RequestsByTypeChart, StatusDistributionChart, RequestTrendsChart } from "./RequestsChart";
+import { SettingsPage } from "./SettingsPage";
 import type { Request, RequestUser, RequestDetail, FormTemplate, WorkflowTemplate, ApprovalAction } from "@/types/request";
 
 interface RequestHubViewerProps {
@@ -29,6 +31,7 @@ export function RequestHubViewer({
   const [hub, setHub] = useState<RequestHub | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     loadHub();
@@ -60,6 +63,13 @@ export function RequestHubViewer({
   };
 
   const activeTab = hub?.tabs?.find((tab) => tab.id === activeTabId);
+
+  const handleSaveSettings = async (settings: any) => {
+    console.log("Saving settings:", settings);
+    // TODO: Implement API call to save settings
+    alert("Settings saved!");
+    setShowSettings(false);
+  };
 
   if (loading) {
     return (
@@ -121,7 +131,7 @@ export function RequestHubViewer({
                 )}
               </div>
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setShowSettings(true)}>
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </Button>
@@ -169,6 +179,17 @@ export function RequestHubViewer({
           </div>
         )}
       </div>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onOpenChange={setShowSettings}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <SettingsPage
+            onClose={() => setShowSettings(false)}
+            onSave={handleSaveSettings}
+            initialSettings={hub.settings}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
