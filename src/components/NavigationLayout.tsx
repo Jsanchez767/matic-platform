@@ -11,6 +11,8 @@ import { WorkspaceSettingsModal } from './WorkspaceSettingsModal'
 import { workspacesSupabase } from '@/lib/api/workspaces-supabase'
 import { toast } from 'sonner'
 import type { Workspace } from '@/types/workspaces'
+import { OmniSearch } from './OmniSearch'
+import { useOmniSearch } from '@/hooks/useOmniSearch'
 
 interface NavigationLayoutProps {
   children: React.ReactNode
@@ -28,6 +30,7 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
   const [fullWorkspace, setFullWorkspace] = useState<Workspace | null>(null)
   
   const { workspaces, currentWorkspace, setCurrentWorkspaceBySlug } = useWorkspaceDiscovery()
+  const { isOpen, open, close } = useOmniSearch()
 
   useEffect(() => {
     const loadUser = async () => {
@@ -169,14 +172,16 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
           {/* Center: Search Bar */}
           <div className="flex-1 max-w-xl mx-8">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Search workspace..."
-                className="w-full pl-10 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Search for anything..."
+                onClick={open}
+                readOnly
+                className="w-full pl-10 pr-4 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer hover:bg-gray-50 transition-colors"
               />
-              <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 px-2 py-0.5 text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded">
-                ⌘ K
+              <kbd className="absolute right-3 top-1/2 transform -translate-y-1/2 px-2 py-0.5 text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded pointer-events-none">
+                ⌘K
               </kbd>
             </div>
           </div>
@@ -257,6 +262,14 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">{children}</main>
+      
+      {/* OmniSearch Modal */}
+      <OmniSearch
+        isOpen={isOpen}
+        onClose={close}
+        workspaceId={currentWorkspace?.id}
+        workspaceSlug={currentWorkspace?.slug}
+      />
       
       {/* Workspace Settings Modal */}
       {fullWorkspace && (
