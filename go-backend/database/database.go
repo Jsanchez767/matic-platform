@@ -56,6 +56,7 @@ func AutoMigrate() error {
 		&models.FormSubmission{},
 		&models.RequestHub{},
 		&models.RequestHubTab{},
+		&models.SearchHistory{},
 	)
 
 	if err != nil {

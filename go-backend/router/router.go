@@ -151,6 +151,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"create_row":  "POST /api/v1/tables/:id/rows",
 						"update_row":  "PATCH /api/v1/tables/:id/rows/:row_id",
 						"delete_row":  "DELETE /api/v1/tables/:id/rows/:row_id",
+						"search":      "GET /api/v1/tables/:id/search",
 					},
 					"forms": gin.H{
 						"list":              "GET /api/v1/forms",
@@ -160,6 +161,15 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"delete":            "DELETE /api/v1/forms/:id",
 						"list_submissions":  "GET /api/v1/forms/:id/submissions",
 						"submit":            "POST /api/v1/forms/:id/submit",
+						"search":            "GET /api/v1/forms/:id/search",
+					},
+					"search": gin.H{
+						"workspace":         "GET /api/v1/search?q=query&workspace_id=uuid",
+						"suggestions":       "GET /api/v1/search/suggestions?q=query&workspace_id=uuid",
+						"recent":            "GET /api/v1/search/recent?workspace_id=uuid&limit=10",
+						"save_history":      "POST /api/v1/search/history",
+						"popular":           "GET /api/v1/search/popular?workspace_id=uuid&limit=5",
+						"clear_history":     "DELETE /api/v1/search/history/:workspace_id",
 					},
 				},
 			})
@@ -207,6 +217,9 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			tables.POST("/:id/rows", handlers.CreateTableRow)
 			tables.PATCH("/:id/rows/:row_id", handlers.UpdateTableRow)
 			tables.DELETE("/:id/rows/:row_id", handlers.DeleteTableRow)
+			
+			// Table search
+			tables.GET("/:id/search", handlers.SearchTableRows)
 		}
 
 		// Forms
@@ -221,7 +234,26 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			// Form submissions
 			forms.GET("/:id/submissions", handlers.ListFormSubmissions)
 			forms.POST("/:id/submit", handlers.SubmitForm)
+			
+			// Form search
+			forms.GET("/:id/search", handlers.SearchFormSubmissions)
 		}
+
+		// Search
+		search := api.Group("/search")
+		{
+			// Universal workspace search
+			search.GET("", handlers.SearchWorkspace)
+			
+			// Search utilities
+			search.GET("/suggestions", handlers.GetSearchSuggestions)
+			search.GET("/recent", handlers.GetRecentSearches)
+			search.POST("/history", handlers.SaveSearchHistory)
+			search.GET("/popular", handlers.GetPopularSearches)
+			search.DELETE("/history/:workspace_id", handlers.ClearSearchHistory)
+		}
+
+		// Add table search to tables group (need to modify tables section)
 	}
 
 	return r
