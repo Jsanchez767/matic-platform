@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, FileText, Calendar, Users, Search, Settings, ClipboardList, Activity, BarChart3 } from 'lucide-react'
+import { X, Plus, FileText, Calendar, Users, Search, Settings } from 'lucide-react'
 import { TabManager, TabData } from '@/lib/tab-manager'
 import { useTabContext } from './WorkspaceTabProvider'
 import { cn } from '@/lib/utils'
+import { TabActionBar } from './TabActionBar'
 
 interface TabNavigationProps {
   workspaceId: string
@@ -102,21 +103,6 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
     })
   }
 
-  const handleModuleClick = (moduleName: string, moduleUrl: string) => {
-    tabManager?.addTab({
-      title: moduleName,
-      type: 'custom',
-      url: `/w/${workspaceId}/${moduleUrl}`,
-      workspaceId,
-      metadata: {}
-    })
-  }
-
-  // Check if we're on the Overview tab
-  const isOverviewActive = currentActiveTab?.id === 'overview' || 
-                           currentActiveTab?.title === 'Overview' || 
-                           currentActiveTab?.url?.includes(`/workspace/${workspaceId}`)
-
   if (!tabManager) {
     return (
       <div className="flex items-center bg-white border-b border-gray-200 px-4 py-2">
@@ -127,60 +113,8 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
 
   return (
     <>
-      <div className="flex items-center px-4 py-3 gap-2 bg-white border-b border-gray-200">
-        {/* Navigation arrows */}
-        <div className="flex items-center gap-1">
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-600">
-              <path d="M10 12L6 8L10 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-600">
-              <path d="M6 4L10 8L6 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className="h-6 w-px bg-gray-300" />
-
-        {/* Module buttons - only show when Overview tab is active */}
-        {isOverviewActive && (
-          <>
-            <button
-              onClick={() => handleModuleClick('Attendance', 'attendance')}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-            >
-              <ClipboardList size={16} />
-              <span className="font-medium">Attendance</span>
-            </button>
-            <button
-              onClick={() => handleModuleClick('Pulse', 'pulse')}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-            >
-              <Activity size={16} />
-              <span className="font-medium">Pulse</span>
-            </button>
-            <button
-              onClick={() => handleModuleClick('Documents', 'documents')}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-            >
-              <FileText size={16} />
-              <span className="font-medium">Documents</span>
-            </button>
-            <button
-              onClick={() => handleModuleClick('Reports', 'reports')}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-            >
-              <BarChart3 size={16} />
-              <span className="font-medium">Reports</span>
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Tabs row */}
       <div className="flex items-end px-4 pt-2 pb-0 gap-1 bg-white border-b border-gray-200">
+        {/* Tab List */}
         <div className="flex items-end overflow-x-auto scrollbar-hide gap-1">
           {currentTabs.map((tab) => {
             const IconComponent = TAB_ICONS[tab.type] || FileText
@@ -225,6 +159,13 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
           </button>
         </div>
       </div>
+
+      {/* Action Bar */}
+      <TabActionBar 
+        activeTab={currentActiveTab} 
+        workspaceId={workspaceId}
+        onAddTab={(tab) => tabManager?.addTab(tab)}
+      />
     </>
   )
 }
