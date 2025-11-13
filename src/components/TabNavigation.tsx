@@ -5,6 +5,7 @@ import { X, Plus, FileText, Calendar, Users, Search, Settings } from 'lucide-rea
 import { TabManager, TabData } from '@/lib/tab-manager'
 import { useTabContext } from './WorkspaceTabProvider'
 import { cn } from '@/lib/utils'
+import { TabActionBar } from './TabActionBar'
 
 interface TabNavigationProps {
   workspaceId: string
@@ -111,49 +112,61 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
   }
 
   return (
-    <div className="flex items-end px-4 pt-2 pb-0 gap-1">
-      {/* Tab List */}
-      <div className="flex items-end overflow-x-auto scrollbar-hide gap-1">
-        {currentTabs.map((tab) => {
-          const IconComponent = TAB_ICONS[tab.type] || FileText
-          const isActive = currentActiveTab?.id === tab.id
-          
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabClick(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-3 cursor-pointer min-w-0 max-w-48 group relative text-sm",
-                isActive ? "tab-selected" : "tab-unselected"
-              )}
-            >
-              <IconComponent size={14} className="flex-shrink-0 opacity-70" />
-              <span className="truncate">
-                {tab.title}
-              </span>
+    <>
+      <div className="flex items-end px-4 pt-2 pb-0 gap-1 bg-white border-b border-gray-200">
+        {/* Tab List */}
+        <div className="flex items-end overflow-x-auto scrollbar-hide gap-1">
+          {currentTabs.map((tab) => {
+            const IconComponent = TAB_ICONS[tab.type] || FileText
+            const isActive = currentActiveTab?.id === tab.id
+            const isOverviewTab = tab.id === 'overview' || tab.title === 'Overview' || tab.url?.includes(`/workspace/${workspaceId}`)
+            
+            return (
               <button
-                onClick={(e) => handleTabClose(e, tab.id)}
+                key={tab.id}
+                onClick={() => handleTabClick(tab.id)}
                 className={cn(
-                  "opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-200 rounded flex-shrink-0 transition-opacity ml-auto",
-                  isActive && "hover:bg-gray-200"
+                  "flex items-center gap-2 px-3 cursor-pointer min-w-0 max-w-48 group relative text-sm",
+                  isActive ? "tab-selected" : "tab-unselected"
                 )}
               >
-                <X size={14} />
+                <IconComponent size={14} className="flex-shrink-0 opacity-70" />
+                <span className="truncate">
+                  {tab.title}
+                </span>
+                {!isOverviewTab && (
+                  <button
+                    onClick={(e) => handleTabClose(e, tab.id)}
+                    className={cn(
+                      "opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-200 rounded flex-shrink-0 transition-opacity ml-auto",
+                      isActive && "hover:bg-gray-200"
+                    )}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </button>
-            </button>
-          )
-        })}
-        
-        {/* New Tab Button */}
-        <button
-          onClick={handleNewTab}
-          className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-blue-100 bg-transparent transition-colors duration-150 rounded-lg mb-1"
-          title="New tab"
-        >
-          <Plus size={18} />
-        </button>
+            )
+          })}
+          
+          {/* New Tab Button */}
+          <button
+            onClick={handleNewTab}
+            className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 hover:bg-blue-100 bg-transparent transition-colors duration-150 rounded-lg mb-1"
+            title="New tab"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
       </div>
-    </div>
+
+      {/* Action Bar */}
+      <TabActionBar 
+        activeTab={currentActiveTab} 
+        workspaceId={workspaceId}
+        onAddTab={(tab) => tabManager?.addTab(tab)}
+      />
+    </>
   )
 }
 
