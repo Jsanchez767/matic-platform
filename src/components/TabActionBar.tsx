@@ -142,6 +142,11 @@ export function TabActionBar({ activeTab, workspaceId, tabs, onAddTab, onNavigat
 
   const actions = getActionsForTab()
 
+  // Don't render if there are no actions to show
+  if (actions.length === 0) {
+    return null
+  }
+
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
       {/* Left side - Navigation arrows */}
