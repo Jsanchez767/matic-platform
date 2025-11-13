@@ -128,22 +128,7 @@ export function TabActionBar({ activeTab, workspaceId, onAddTab }: TabActionBarP
   }
 
   return (
-    <div className="bg-white border-t border-gray-200 px-4 py-2 flex items-center justify-between">
-      <div className="flex items-center gap-1">
-        <button className="p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-600">
-            <path d="M6 12L2 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-        <button className="p-2 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-600">
-            <path d="M10 4L14 8L10 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </button>
-      </div>
-
-      <div className="h-6 w-px bg-gray-300 mx-2" />
-
+    <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
       {actions.map((action, index) => {
         const Icon = action.icon
         return (
