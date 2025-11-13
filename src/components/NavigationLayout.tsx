@@ -240,24 +240,6 @@ export function NavigationLayout({ children, workspaceSlug }: NavigationLayoutPr
             <TabNavigation workspaceId={currentWorkspace.id} />
           </div>
         )}
-
-        {/* Action Buttons Bar - Below tabs */}
-        {currentWorkspace && (
-          <div className="bg-white border-t border-gray-200 px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
       </nav>
 
       {/* Main Content */}
