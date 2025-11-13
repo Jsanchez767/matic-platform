@@ -124,6 +124,13 @@ export class TabManager {
     // Don't allow closing the last tab
     if (tabs.length === 1) return
 
+    // Don't allow closing the Overview/workspace tab
+    const tab = tabs[index]
+    if (tab.id === 'overview' || tab.title === 'Overview' || tab.url === `/workspace/${this.workspaceId}`) {
+      console.log('Cannot close the workspace Overview tab')
+      return
+    }
+
     tabs.splice(index, 1)
     
     // If we closed the active tab, activate the next one
