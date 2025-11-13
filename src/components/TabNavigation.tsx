@@ -103,6 +103,21 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
     })
   }
 
+  const handleNavigate = (direction: 'back' | 'forward') => {
+    if (!tabManager || currentTabs.length === 0) return
+    
+    const currentIndex = currentTabs.findIndex(tab => tab.id === currentActiveTab?.id)
+    if (currentIndex === -1) return
+
+    if (direction === 'back' && currentIndex > 0) {
+      const previousTab = currentTabs[currentIndex - 1]
+      tabManager.setActiveTab(previousTab.id)
+    } else if (direction === 'forward' && currentIndex < currentTabs.length - 1) {
+      const nextTab = currentTabs[currentIndex + 1]
+      tabManager.setActiveTab(nextTab.id)
+    }
+  }
+
   if (!tabManager) {
     return (
       <div className="flex items-center bg-white border-b border-gray-200 px-4 py-2">
@@ -164,7 +179,9 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
       <TabActionBar 
         activeTab={currentActiveTab} 
         workspaceId={workspaceId}
+        tabs={currentTabs}
         onAddTab={(tab) => tabManager?.addTab(tab)}
+        onNavigate={handleNavigate}
       />
     </>
   )

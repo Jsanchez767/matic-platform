@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, Activity, FileText, BarChart3, Plus, Settings, Download, Share2 } from 'lucide-react'
+import { ClipboardList, Activity, FileText, BarChart3, Plus, Settings, Download, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TabData } from '@/lib/tab-manager'
 import { useRouter } from 'next/navigation'
@@ -8,11 +8,30 @@ import { useRouter } from 'next/navigation'
 interface TabActionBarProps {
   activeTab: TabData | null
   workspaceId: string
+  tabs: TabData[]
   onAddTab?: (tab: Omit<TabData, 'id' | 'lastAccessed'>) => void
+  onNavigate?: (direction: 'back' | 'forward') => void
 }
 
-export function TabActionBar({ activeTab, workspaceId, onAddTab }: TabActionBarProps) {
+export function TabActionBar({ activeTab, workspaceId, tabs, onAddTab, onNavigate }: TabActionBarProps) {
   const router = useRouter()
+
+  // Find current tab index for navigation
+  const currentTabIndex = activeTab ? tabs.findIndex(tab => tab.id === activeTab.id) : -1
+  const canGoBack = currentTabIndex > 0
+  const canGoForward = currentTabIndex >= 0 && currentTabIndex < tabs.length - 1
+
+  const handleBack = () => {
+    if (canGoBack) {
+      onNavigate?.('back')
+    }
+  }
+
+  const handleForward = () => {
+    if (canGoForward) {
+      onNavigate?.('forward')
+    }
+  }
 
   // Determine which actions to show based on the active tab
   const getActionsForTab = () => {
@@ -123,25 +142,54 @@ export function TabActionBar({ activeTab, workspaceId, onAddTab }: TabActionBarP
 
   const actions = getActionsForTab()
 
-  if (actions.length === 0) {
-    return null
-  }
-
   return (
-    <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
-      {actions.map((action, index) => {
-        const Icon = action.icon
-        return (
-          <button
-            key={index}
-            onClick={action.onClick}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-white rounded-lg transition-all border border-transparent hover:border-gray-200"
-          >
-            <Icon size={16} />
-            <span className="font-medium">{action.label}</span>
-          </button>
-        )
-      })}
+    <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-200">
+      {/* Left side - Navigation arrows */}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={handleBack}
+          disabled={!canGoBack}
+          className={cn(
+            "p-1.5 rounded transition-colors",
+            canGoBack 
+              ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100" 
+              : "text-gray-300 cursor-not-allowed"
+          )}
+          title="Go back"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleForward}
+          disabled={!canGoForward}
+          className={cn(
+            "p-1.5 rounded transition-colors",
+            canGoForward 
+              ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100" 
+              : "text-gray-300 cursor-not-allowed"
+          )}
+          title="Go forward"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Right side - Action buttons */}
+      <div className="flex items-center gap-2">
+        {actions.map((action, index) => {
+          const Icon = action.icon
+          return (
+            <button
+              key={index}
+              onClick={action.onClick}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+            >
+              <Icon size={16} />
+              <span className="font-medium">{action.label}</span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
