@@ -7,10 +7,6 @@
 ALTER TABLE IF EXISTS request_hubs RENAME TO activities_hubs;
 ALTER TABLE IF EXISTS request_hub_tabs RENAME TO activities_hub_tabs;
 
--- Rename the foreign key column in the tabs table
-ALTER TABLE IF EXISTS activities_hub_tabs 
-  RENAME COLUMN hub_id TO hub_id;
-
 -- Add new columns to activities_hubs table
 ALTER TABLE activities_hubs
   ADD COLUMN IF NOT EXISTS category VARCHAR(255),
