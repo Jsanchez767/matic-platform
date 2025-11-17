@@ -65,7 +65,7 @@ func GetSearchSuggestions(c *gin.Context) {
 
 	// Get hub name suggestions
 	if len(suggestions) < limit {
-		var hubs []models.RequestHub
+		var hubs []models.ActivitiesHub
 		database.DB.Where("workspace_id = ? AND LOWER(name) LIKE ?", workspaceUUID, searchPattern).
 			Limit(limit - len(suggestions)).
 			Select("name").

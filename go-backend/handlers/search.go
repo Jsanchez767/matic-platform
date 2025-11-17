@@ -77,7 +77,7 @@ func SearchWorkspace(c *gin.Context) {
 	results = append(results, formResults...)
 
 	// Search Request Hubs
-	hubResults := searchRequestHubs(workspaceUUID, workspace.Slug, query)
+	hubResults := searchActivitiesHubs(workspaceUUID, workspace.Slug, query)
 	results = append(results, hubResults...)
 
 	// Search Table Rows (if query is long enough)
@@ -188,9 +188,9 @@ func searchForms(workspaceID uuid.UUID, workspaceSlug, query string) []SearchRes
 	return results
 }
 
-// searchRequestHubs searches for request hubs
-func searchRequestHubs(workspaceID uuid.UUID, workspaceSlug, query string) []SearchResult {
-	var hubs []models.RequestHub
+// searchActivitiesHubs searches for activities hubs
+func searchActivitiesHubs(workspaceID uuid.UUID, workspaceSlug, query string) []SearchResult {
+	var hubs []models.ActivitiesHub
 	searchPattern := "%" + strings.ToLower(query) + "%"
 
 	database.DB.Preload("Tabs").
@@ -211,8 +211,8 @@ func searchRequestHubs(workspaceID uuid.UUID, workspaceSlug, query string) []Sea
 			Title:       hub.Name,
 			Subtitle:    hub.Description,
 			Description: hub.Description,
-			Type:        "request-hub",
-			URL:         fmt.Sprintf("/workspace/%s/request-hub/%s", workspaceSlug, hub.ID),
+			Type:        "activities-hub",
+			URL:         fmt.Sprintf("/workspace/%s/activities-hub/%s", workspaceSlug, hub.Slug),
 			WorkspaceID: workspaceID.String(),
 			Score:       score,
 			Metadata: map[string]interface{}{

@@ -41,7 +41,7 @@ func GetWorkspace(c *gin.Context) {
 	if err := database.DB.Preload("Members").
 		Preload("DataTables").
 		Preload("Forms").
-		Preload("RequestHubs").
+		Preload("ActivitiesHubs").
 		First(&workspace, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Workspace not found"})
 		return
