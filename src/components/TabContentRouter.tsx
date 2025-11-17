@@ -7,7 +7,6 @@ import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
 import { ActivitiesHubListPage } from './ActivitiesHub/ActivitiesHubListPage'
-import { ActivityDetailPanel } from './ActivitiesHub/ActivityDetailPanel'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -96,13 +95,7 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
         return <ActivitiesHubListPage workspaceId={workspaceId} />
       }
 
-      // Handle individual Activities Hub viewer
-      if (tab.url?.includes('/activities-hubs/')) {
-        const hubSlug = tab.url.split('/activities-hubs/')[1]?.split('/')[0]
-        if (hubSlug) {
-          return <ActivityDetailPanel activity={} workspaceId={workspaceId} onClose={() => {}} />
-        }
-      }      // Handle Overview and other custom workspace content
+      // Handle Overview and other custom workspace content
       if (tab.url === `/w/${workspaceId}` || tab.title === 'Overview') {
         return (
           <div className="flex-1 overflow-hidden">
