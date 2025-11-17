@@ -54,8 +54,8 @@ func AutoMigrate() error {
 		&models.Form{},
 		&models.FormField{},
 		&models.FormSubmission{},
-		&models.RequestHub{},
-		&models.RequestHubTab{},
+		&models.ActivitiesHub{},
+		&models.ActivitiesHubTab{},
 		&models.SearchHistory{},
 	)
 
