@@ -45,20 +45,17 @@ export type ActivitiesHubWithTabs = Activity & {
 
 // Input types for API requests
 export type CreateActivityInput = {
-  workspace_id: string;
   name: string;
-  slug: string;
   description?: string;
   category?: string;
-  begin_date?: string;
-  end_date?: string;
   status?: ActivityStatus;
+  begin_date?: string | null;
+  end_date?: string | null;
   participants?: number;
   settings?: Record<string, any>;
-  is_active?: boolean;
 };
 
-export type UpdateActivityInput = Partial<Omit<CreateActivityInput, 'workspace_id'>>;
+export type UpdateActivityInput = Partial<CreateActivityInput>;
 
 export type CreateActivityTabInput = {
   name: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, Calendar, Users, Activity } from 'lucide-react';
+import { Search, Plus, Calendar, Users, Activity as ActivityIcon } from 'lucide-react';
 import { Button } from '@/ui-components/button';
 import { Badge } from '@/ui-components/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/ui-components/dialog';
@@ -9,27 +9,31 @@ import { Input } from '@/ui-components/input';
 import { Label } from '@/ui-components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui-components/select';
 import { toast } from 'sonner';
-import {
-  listActivitiesHubs,
-  createActivitiesHub,
-  deleteActivitiesHub,
-  generateSlug,
-  formatDate,
-} from '@/lib/api/activities-hubs-client';
-import type { ActivitiesHub, ActivityStatus, CreateActivityInput } from '@/types/activities-hubs';
+import { activitiesSupabase } from '@/lib/api/activities-supabase';
+import type { Activity, ActivityStatus, CreateActivityInput } from '@/types/activities-hubs';
+
+// Helper function to format dates
+const formatDate = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return 'Not set';
+  try {
+    return new Date(dateStr).toLocaleDateString();
+  } catch {
+    return 'Invalid date';
+  }
+};
 
 interface ActivitiesHubListPageProps {
   workspaceId: string;
-  onSelectActivity?: (activity: ActivitiesHub) => void;
+  onSelectActivity?: (activity: Activity) => void;
 }
 
 export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: ActivitiesHubListPageProps) {
-  const [activities, setActivities] = useState<ActivitiesHub[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<ActivityStatus | 'all'>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState<ActivitiesHub | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   
   const [newActivity, setNewActivity] = useState<Partial<CreateActivityInput>>({
     name: '',
@@ -48,7 +52,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
   const loadActivities = async () => {
     try {
       setLoading(true);
-      const data = await listActivitiesHubs(workspaceId, { includeInactive: true });
+      const data = await activitiesSupabase.listActivities(workspaceId);
       setActivities(data);
     } catch (error) {
       console.error('Error loading activities:', error);
@@ -78,18 +82,16 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
 
     try {
       const activityData: CreateActivityInput = {
-        workspace_id: workspaceId,
-        name: newActivity.name,
-        slug: newActivity.slug || generateSlug(newActivity.name),
-        category: newActivity.category || '',
+        name: newActivity.name!,
         description: newActivity.description,
-        status: newActivity.status as ActivityStatus || 'upcoming',
-        begin_date: newActivity.begin_date,
-        end_date: newActivity.end_date,
+        category: newActivity.category || '',
+        status: (newActivity.status as ActivityStatus) || 'upcoming',
+        begin_date: newActivity.begin_date || undefined,
+        end_date: newActivity.end_date || undefined,
         participants: newActivity.participants || 0,
       };
 
-      const created = await createActivitiesHub(activityData);
+      const created = await activitiesSupabase.createActivity(workspaceId, activityData);
       
       setActivities([created, ...activities]);
       setAddDialogOpen(false);
@@ -111,7 +113,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
     }
   };
 
-  const handleSelectActivity = (activity: ActivitiesHub) => {
+  const handleSelectActivity = (activity: Activity) => {
     setSelectedActivity(activity);
     if (onSelectActivity) {
       onSelectActivity(activity);
@@ -189,7 +191,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
         <div className="space-y-3">
           {filteredActivities.length === 0 ? (
             <div className="text-center py-12">
-              <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <ActivityIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No activities found</h3>
               <p className="text-gray-500 mb-4">
                 {searchQuery ? 'Try adjusting your search' : 'Get started by creating your first activity'}
