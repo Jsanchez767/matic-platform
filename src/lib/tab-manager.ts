@@ -124,9 +124,14 @@ export class TabManager {
     // Don't allow closing the last tab
     if (tabs.length === 1) return
 
-    // Don't allow closing the Overview/workspace tab
+    // Don't allow closing the Overview/workspace tab (check all possible identifiers)
     const tab = tabs[index]
-    if (tab.id === 'overview' || tab.title === 'Overview' || tab.url === `/workspace/${this.workspaceId}`) {
+    const isWorkspaceTab = 
+      tab.id === 'overview' || 
+      (tab.title === 'Overview' && tab.url === `/workspace/${this.workspaceId}`) ||
+      (tab.type === 'custom' && tab.icon === 'home')
+    
+    if (isWorkspaceTab) {
       console.log('Cannot close the workspace Overview tab')
       return
     }

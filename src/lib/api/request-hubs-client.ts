@@ -1,7 +1,7 @@
 /**
- * Request Hubs API Client - FastAPI Backend
+ * Request Hubs API Client - Go Backend
  * 
- * Handles all request hub and tab operations through FastAPI backend
+ * Handles all request hub and tab operations through Go Gin backend
  */
 
 import { getSessionToken } from '@/lib/supabase';
@@ -99,17 +99,6 @@ async function getAuthHeaders() {
   };
 }
 
-async function getUserId(): Promise<string> {
-  // Get user ID from session - will need to be implemented based on auth setup
-  const token = await getSessionToken();
-  if (!token) throw new Error('Not authenticated');
-  
-  // For now, decode JWT to get user_id
-  // In production, you might want to use a proper JWT library
-  const payload = JSON.parse(atob(token.split('.')[1]));
-  return payload.sub || payload.user_id;
-}
-
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const headers = await getAuthHeaders();
   const response = await fetch(url, {
@@ -122,7 +111,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(error.detail || `HTTP ${response.status}`);
+    throw new Error(error.detail || error.message || `HTTP ${response.status}`);
   }
 
   if (response.status === 204) {
@@ -142,56 +131,38 @@ export async function listRequestHubs(
     includeInactive?: boolean;
   }
 ): Promise<RequestHub[]> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
+  const params = new URLSearchParams({ workspace_id: workspaceId });
   
   if (options?.includeInactive) {
     params.append('include_inactive', 'true');
   }
 
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs?${params}`
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs?${params}`);
 }
 
 export async function getRequestHub(
   workspaceId: string,
   hubId: string
 ): Promise<RequestHubWithTabs> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}?${params}`
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs/${hubId}`);
 }
 
 export async function getRequestHubBySlug(
   workspaceId: string,
   slug: string
 ): Promise<RequestHubWithTabs> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/by-slug/${slug}?${params}`
-  );
+  const params = new URLSearchParams({ workspace_id: workspaceId });
+  return fetchWithAuth(`${API_BASE}/request-hubs/by-slug/${slug}?${params}`);
 }
 
 export async function createRequestHub(
   workspaceId: string,
   data: CreateRequestHubData
 ): Promise<RequestHubWithTabs> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs?${params}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateRequestHub(
@@ -199,31 +170,19 @@ export async function updateRequestHub(
   hubId: string,
   data: UpdateRequestHubData
 ): Promise<RequestHubWithTabs> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}?${params}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs/${hubId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteRequestHub(
   workspaceId: string,
   hubId: string
 ): Promise<void> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  await fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}?${params}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  await fetchWithAuth(`${API_BASE}/request-hubs/${hubId}`, {
+    method: 'DELETE',
+  });
 }
 
 // ============================================================================
@@ -237,15 +196,15 @@ export async function listRequestHubTabs(
     includeHidden?: boolean;
   }
 ): Promise<RequestHubTab[]> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
+  const params = new URLSearchParams();
   
   if (options?.includeHidden) {
     params.append('include_hidden', 'true');
   }
 
+  const queryString = params.toString();
   return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}/tabs?${params}`
+    `${API_BASE}/request-hubs/${hubId}/tabs${queryString ? `?${queryString}` : ''}`
   );
 }
 
@@ -254,16 +213,10 @@ export async function createRequestHubTab(
   hubId: string,
   data: CreateTabData
 ): Promise<RequestHubTab> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}/tabs?${params}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs/${hubId}/tabs`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateRequestHubTab(
@@ -272,16 +225,10 @@ export async function updateRequestHubTab(
   tabId: string,
   data: UpdateTabData
 ): Promise<RequestHubTab> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}/tabs/${tabId}?${params}`,
-    {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs/${hubId}/tabs/${tabId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteRequestHubTab(
@@ -289,15 +236,9 @@ export async function deleteRequestHubTab(
   hubId: string,
   tabId: string
 ): Promise<void> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  await fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}/tabs/${tabId}?${params}`,
-    {
-      method: 'DELETE',
-    }
-  );
+  await fetchWithAuth(`${API_BASE}/request-hubs/${hubId}/tabs/${tabId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function reorderRequestHubTabs(
@@ -305,14 +246,8 @@ export async function reorderRequestHubTabs(
   hubId: string,
   data: ReorderTabsData
 ): Promise<RequestHubTab[]> {
-  const userId = await getUserId();
-  const params = new URLSearchParams({ user_id: userId });
-
-  return fetchWithAuth(
-    `${API_BASE}/workspaces/${workspaceId}/request-hubs/${hubId}/tabs/reorder?${params}`,
-    {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }
-  );
+  return fetchWithAuth(`${API_BASE}/request-hubs/${hubId}/tabs/reorder`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }

@@ -4,8 +4,12 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Settings, Plus } from "lucide-react";
 import { Button } from "@/ui-components/button";
 import { Badge } from "@/ui-components/badge";
-import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
-import type { RequestHub, RequestHubTab } from "@/types/request-hub";
+import { 
+  getRequestHub, 
+  getRequestHubBySlug,
+  type RequestHubWithTabs,
+  type RequestHubTab 
+} from "@/lib/api/request-hubs-client";
 import { DashboardMetrics } from "./DashboardMetrics";
 import { RequestList } from "./RequestList";
 import { DynamicForm } from "./DynamicForm";
@@ -15,37 +19,48 @@ import { SettingsPage } from "./SettingsPage";
 import type { Request, RequestUser, RequestDetail, FormTemplate, WorkflowTemplate, ApprovalAction } from "@/types/request";
 
 interface RequestHubViewerProps {
+  hub?: RequestHubWithTabs;
   hubId?: string;
   hubSlug?: string;
   workspaceId: string;
   onBack?: () => void;
+  onHubUpdate?: () => void;
 }
 
 export function RequestHubViewer({
+  hub: initialHub,
   hubId,
   hubSlug,
   workspaceId,
   onBack,
+  onHubUpdate,
 }: RequestHubViewerProps) {
-  const [hub, setHub] = useState<RequestHub | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [hub, setHub] = useState<RequestHubWithTabs | null>(initialHub || null);
+  const [loading, setLoading] = useState(!initialHub);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [isEditingTabs, setIsEditingTabs] = useState(false);
 
   useEffect(() => {
-    loadHub();
-  }, [hubId, hubSlug, workspaceId]);
+    if (!initialHub && (hubId || hubSlug)) {
+      loadHub();
+    } else if (initialHub) {
+      setHub(initialHub);
+      if (initialHub.tabs && initialHub.tabs.length > 0) {
+        setActiveTabId(initialHub.tabs[0].id);
+      }
+    }
+  }, [hubId, hubSlug, workspaceId, initialHub]);
 
   const loadHub = async () => {
     try {
       setLoading(true);
-      let data: RequestHub;
+      let data: RequestHubWithTabs;
 
       if (hubId) {
-        data = await requestHubsSupabase.getRequestHubById(hubId);
+        data = await getRequestHub(workspaceId, hubId);
       } else if (hubSlug) {
-        data = await requestHubsSupabase.getRequestHubBySlug(workspaceId, hubSlug);
+        data = await getRequestHubBySlug(workspaceId, hubSlug);
       } else {
         throw new Error("Either hubId or hubSlug is required");
       }
@@ -238,7 +253,7 @@ function SettingsView({
   onBack,
   onSave,
 }: {
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
   onBack: () => void;
   onSave: (settings: any) => Promise<void>;
 }) {
@@ -281,7 +296,7 @@ function SettingsView({
 }
 
 // Tab Content Renderer
-function TabContent({ tab, hub }: { tab: RequestHubTab; hub: RequestHub }) {
+function TabContent({ tab, hub }: { tab: RequestHubTab; hub: RequestHubWithTabs }) {
   switch (tab.type) {
     case "dashboard":
       return <DashboardTabContent tab={tab} hub={hub} />;
@@ -314,7 +329,7 @@ function DashboardTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock data - will be replaced with real API calls
   const mockMetrics = {
@@ -367,7 +382,7 @@ function MyRequestsTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock data - will be replaced with real API calls filtered by current user
   const mockRequests: Request[] = [];
@@ -401,7 +416,7 @@ function NewRequestTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock form template - will be loaded from tab.config.form_table_id
   const mockFormTemplate: FormTemplate = {
@@ -460,7 +475,7 @@ function ApprovalsTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock data - will be replaced with real API calls
   const mockCurrentUser: RequestUser = {
@@ -519,7 +534,7 @@ function AllRequestsTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock data - will be replaced with real API calls
   const mockRequests: Request[] = [];
@@ -560,7 +575,7 @@ function AnalyticsTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   // Mock data - will be replaced with real API calls
   const mockByType = [
@@ -622,7 +637,7 @@ function CustomTabContent({
   hub,
 }: {
   tab: RequestHubTab;
-  hub: RequestHub;
+  hub: RequestHubWithTabs;
 }) {
   return (
     <div className="p-6">

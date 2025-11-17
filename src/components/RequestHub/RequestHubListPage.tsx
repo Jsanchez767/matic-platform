@@ -7,11 +7,15 @@ import { Card } from "@/ui-components/card";
 import { Badge } from "@/ui-components/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/ui-components/dialog";
 import { Input } from "@/ui-components/input";
-import { requestHubsSupabase } from "@/lib/api/request-hubs-supabase";
+import {
+  listRequestHubs,
+  createRequestHub,
+  deleteRequestHub,
+  type RequestHub
+} from "@/lib/api/request-hubs-client";
 import { supabase } from "@/lib/supabase";
 import { useTabContext } from "@/components/WorkspaceTabProvider";
 import { toast } from "sonner";
-import type { RequestHub } from "@/types/request-hub";
 
 interface RequestHubListPageProps {
   workspaceId: string;
@@ -51,7 +55,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
     try {
       setLoading(true);
       console.log('🔍 Loading request hubs for workspace:', workspaceId)
-      const data = await requestHubsSupabase.getRequestHubsByWorkspace(workspaceId);
+      const data = await listRequestHubs(workspaceId, { includeInactive: true });
       console.log('✅ Request hubs loaded:', data.length, data)
       setHubs(data);
       if (data.length === 0) {
@@ -59,13 +63,6 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
       }
     } catch (error: any) {
       console.error('❌ Error loading request hubs:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        full: error
-      });
       toast.error(`Failed to load request hubs: ${error.message}`)
     } finally {
       setLoading(false);
@@ -83,16 +80,16 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
       // Get user ID from auth
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        alert("You must be logged in to create a hub.");
+        toast.error("You must be logged in to create a hub.");
         return;
       }
       
-      const newHub = await requestHubsSupabase.createRequestHub({
+      const newHub = await createRequestHub(workspaceId, {
         workspace_id: workspaceId,
         name: newHubName.trim(),
         slug: newHubSlug.trim(),
         description: newHubDescription.trim() || undefined,
-        created_by: user.id,
+        is_active: true,
         settings: {
           theme: {
             primary_color: "#6366f1",
@@ -134,14 +131,15 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
         },
       ];
 
-      // Create tabs
-      await Promise.all(
-        defaultTabs.map((tab) => requestHubsSupabase.createTab(tab))
-      );
-
+      // Tabs are created automatically by the backend
+      toast.success(`Request Hub "${newHub.name}" created successfully!`);
+      
       setHubs([...hubs, newHub]);
       setCreateDialogOpen(false);
       resetForm();
+      
+      // Reload hubs to get the tabs
+      await loadHubs();
     } catch (error) {
       console.error("Failed to create request hub:", error);
       alert("Failed to create request hub. Please try again.");
@@ -155,13 +153,14 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
 
     try {
       setDeleting(true);
-      await requestHubsSupabase.deleteRequestHub(selectedHub.id);
+      await deleteRequestHub(workspaceId, selectedHub.id);
       setHubs(hubs.filter((h) => h.id !== selectedHub.id));
+      toast.success(`Request Hub "${selectedHub.name}" deleted successfully`);
       setDeleteDialogOpen(false);
       setSelectedHub(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to delete request hub:", error);
-      alert("Failed to delete request hub. Please try again.");
+      toast.error(`Failed to delete request hub: ${error.message}`);
     } finally {
       setDeleting(false);
     }
@@ -266,7 +265,7 @@ export function RequestHubListPage({ workspaceId }: RequestHubListPageProps) {
                 )}
 
                 <div className="flex items-center justify-between text-sm text-gray-500">
-                  <span>{hub.tabs?.length || 0} tabs</span>
+                  <span>Request Hub</span>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"

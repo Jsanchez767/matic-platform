@@ -134,7 +134,11 @@ export function TabNavigation({ workspaceId, onTabChange, tabManager: externalTa
           {currentTabs.map((tab) => {
             const IconComponent = TAB_ICONS[tab.type] || FileText
             const isActive = currentActiveTab?.id === tab.id
-            const isOverviewTab = tab.id === 'overview' || tab.title === 'Overview' || tab.url?.includes(`/workspace/${workspaceId}`)
+            // Check for Overview/workspace tab - be specific to avoid matching all workspace tabs
+            const isOverviewTab = 
+              tab.id === 'overview' || 
+              (tab.title === 'Overview' && tab.url === `/workspace/${workspaceId}`) ||
+              (tab.type === 'custom' && tab.icon === 'home')
             
             return (
               <button
