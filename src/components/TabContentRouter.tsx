@@ -6,8 +6,8 @@ import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layo
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
-import { RequestHubListPage } from './RequestHub/RequestHubListPage'
-import { RequestHubViewer } from './RequestHub/RequestHubViewer'
+import { ActivitiesHubListPage } from './ActivitiesHub/ActivitiesHubListPage'
+import { ActivityDetailPanel } from './ActivitiesHub/ActivityDetailPanel'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -91,20 +91,18 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
       )
       
     case 'custom':
-      // Handle Request Hub list page
-      if (tab.url?.includes('/request-hubs') && !tab.url?.includes('/request-hubs/')) {
-        return <RequestHubListPage workspaceId={workspaceId} />
+      // Handle Activities Hub list page
+      if (tab.url?.includes('/activities-hubs') && !tab.url?.includes('/activities-hubs/')) {
+        return <ActivitiesHubListPage workspaceId={workspaceId} />
       }
-      
-      // Handle individual Request Hub viewer
-      if (tab.url?.includes('/request-hubs/')) {
-        const hubSlug = tab.url.split('/request-hubs/')[1]?.split('/')[0]
+
+      // Handle individual Activities Hub viewer
+      if (tab.url?.includes('/activities-hubs/')) {
+        const hubSlug = tab.url.split('/activities-hubs/')[1]?.split('/')[0]
         if (hubSlug) {
-          return <RequestHubViewer hubSlug={hubSlug} workspaceId={workspaceId} />
+          return <ActivityDetailPanel activity={} workspaceId={workspaceId} onClose={() => {}} />
         }
-      }
-      
-      // Handle Overview and other custom workspace content
+      }      // Handle Overview and other custom workspace content
       if (tab.url === `/w/${workspaceId}` || tab.title === 'Overview') {
         return (
           <div className="flex-1 overflow-hidden">
@@ -346,7 +344,7 @@ function SearchResultsView({
 function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
   const { tabManager } = useTabContext()
 
-  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document' | 'request-hubs') => {
+  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document' | 'activities-hubs') => {
     if (!tabManager) return
     
     switch (type) {
@@ -368,11 +366,11 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
           metadata: {}
         })
         break
-      case 'request-hubs':
+      case 'activities-hubs':
         tabManager.addTab({
-          title: 'Request Hubs',
+          title: 'Activities Hub',
           type: 'custom',
-          url: `/workspace/${workspaceId}/request-hubs`,
+          url: `/workspace/${workspaceId}/activities-hubs`,
           workspaceId,
           metadata: {}
         })
@@ -428,9 +426,9 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
             color="green"
           />
         </div>
-        <div onClick={() => handleQuickAction('request-hubs')}>
+        <div onClick={() => handleQuickAction('activities-hubs')}>
           <QuickActionCard
-            title="Request Hubs"
+            title="Activities Hub"
             description="Manage request workflows"
             icon={Layout}
             color="purple"
