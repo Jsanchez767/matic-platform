@@ -57,7 +57,7 @@ type Workspace struct {
 	Members        []WorkspaceMember      `gorm:"foreignKey:WorkspaceID" json:"members,omitempty"`
 	DataTables     []DataTable            `gorm:"foreignKey:WorkspaceID" json:"data_tables,omitempty"`
 	Forms          []Form                 `gorm:"foreignKey:WorkspaceID" json:"forms,omitempty"`
-	RequestHubs    []RequestHub           `gorm:"foreignKey:WorkspaceID" json:"request_hubs,omitempty"`
+	ActivitiesHubs []ActivitiesHub        `gorm:"foreignKey:WorkspaceID" json:"activities_hubs,omitempty"`
 }
 
 type WorkspaceMember struct {
@@ -69,25 +69,30 @@ type WorkspaceMember struct {
 	AddedAt     time.Time              `gorm:"autoCreateTime" json:"added_at"`
 }
 
-// RequestHub model
-type RequestHub struct {
+// ActivitiesHub model
+type ActivitiesHub struct {
 	BaseModel
-	WorkspaceID uuid.UUID              `gorm:"type:uuid;not null;index" json:"workspace_id"`
-	Name        string                 `gorm:"not null" json:"name"`
-	Slug        string                 `gorm:"not null;index" json:"slug"`
-	Description string                 `json:"description"`
-	Settings    map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
-	IsActive    bool                   `gorm:"default:true" json:"is_active"`
-	CreatedBy   uuid.UUID              `gorm:"type:uuid;not null" json:"created_by"`
-	Tabs        []RequestHubTab        `gorm:"foreignKey:HubID" json:"tabs,omitempty"`
+	WorkspaceID  uuid.UUID              `gorm:"type:uuid;not null;index" json:"workspace_id"`
+	Name         string                 `gorm:"not null" json:"name"`
+	Slug         string                 `gorm:"not null;index" json:"slug"`
+	Description  string                 `json:"description"`
+	Category     string                 `json:"category"`
+	BeginDate    *time.Time             `json:"begin_date"`
+	EndDate      *time.Time             `json:"end_date"`
+	Status       string                 `gorm:"default:'upcoming'" json:"status"` // active, upcoming, completed
+	Participants int                    `gorm:"default:0" json:"participants"`
+	Settings     map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
+	IsActive     bool                   `gorm:"default:true" json:"is_active"`
+	CreatedBy    uuid.UUID              `gorm:"type:uuid;not null" json:"created_by"`
+	Tabs         []ActivitiesHubTab     `gorm:"foreignKey:HubID" json:"tabs,omitempty"`
 }
 
-type RequestHubTab struct {
+type ActivitiesHubTab struct {
 	BaseModel
 	HubID     uuid.UUID              `gorm:"type:uuid;not null;index" json:"hub_id"`
 	Name      string                 `gorm:"not null" json:"name"`
 	Slug      string                 `gorm:"not null" json:"slug"`
-	Type      string                 `gorm:"not null" json:"type"` // dashboard, my-requests, etc.
+	Type      string                 `gorm:"not null" json:"type"` // dashboard, attendance, participants, etc.
 	Icon      string                 `json:"icon"`
 	Position  int                    `gorm:"default:0" json:"position"`
 	IsVisible bool                   `gorm:"default:true" json:"is_visible"`

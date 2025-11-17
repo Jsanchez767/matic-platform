@@ -38,12 +38,12 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			"status":      "running",
 			"description": "Full-stack Airtable-like platform with forms and data tables",
 			"endpoints": gin.H{
-				"health":       "/health",
-				"api_v1":       "/api/v1",
-				"workspaces":   "/api/v1/workspaces",
-				"tables":       "/api/v1/tables",
-				"forms":        "/api/v1/forms",
-				"request_hubs": "/api/v1/request-hubs",
+				"health":           "/health",
+				"api_v1":           "/api/v1",
+				"workspaces":       "/api/v1/workspaces",
+				"tables":           "/api/v1/tables",
+				"forms":            "/api/v1/forms",
+				"activities_hubs":  "/api/v1/activities-hubs",
 			},
 			"documentation": gin.H{
 				"html": "/",
@@ -79,7 +79,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"update": "PATCH /api/v1/workspaces/:id",
 						"delete": "DELETE /api/v1/workspaces/:id",
 					},
-					"request_hubs": gin.H{
+					"activities_hubs": gin.H{
 						"list":         "GET /api/v1/request-hubs",
 						"create":       "POST /api/v1/request-hubs",
 						"get":          "GET /api/v1/request-hubs/:hub_id",
@@ -128,7 +128,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"update": "PATCH /api/v1/workspaces/:id",
 						"delete": "DELETE /api/v1/workspaces/:id",
 					},
-					"request_hubs": gin.H{
+					"activities_hubs": gin.H{
 						"list":         "GET /api/v1/request-hubs",
 						"create":       "POST /api/v1/request-hubs",
 						"get":          "GET /api/v1/request-hubs/:hub_id",
@@ -185,22 +185,22 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			workspaces.DELETE("/:id", handlers.DeleteWorkspace)
 		}
 
-		// Request Hubs (separate base path to avoid conflicts with /workspaces/:id)
-		reqHubs := api.Group("/request-hubs")
+		// Activities Hubs (separate base path to avoid conflicts with /workspaces/:id)
+		activitiesHubs := api.Group("/activities-hubs")
 		{
-			reqHubs.GET("", handlers.ListRequestHubs)               // ?workspace_id=xxx
-			reqHubs.POST("", handlers.CreateRequestHub)             // workspace_id in body
-			reqHubs.GET("/by-slug/:slug", handlers.GetRequestHubBySlug) // ?workspace_id=xxx
-			reqHubs.GET("/:hub_id", handlers.GetRequestHub)
-			reqHubs.PATCH("/:hub_id", handlers.UpdateRequestHub)
-			reqHubs.DELETE("/:hub_id", handlers.DeleteRequestHub)
+			activitiesHubs.GET("", handlers.ListActivitiesHubs)               // ?workspace_id=xxx
+			activitiesHubs.POST("", handlers.CreateActivitiesHub)             // workspace_id in body
+			activitiesHubs.GET("/by-slug/:slug", handlers.GetActivitiesHubBySlug) // ?workspace_id=xxx
+			activitiesHubs.GET("/:hub_id", handlers.GetActivitiesHub)
+			activitiesHubs.PATCH("/:hub_id", handlers.UpdateActivitiesHub)
+			activitiesHubs.DELETE("/:hub_id", handlers.DeleteActivitiesHub)
 
-			// Request Hub Tabs
-			reqHubs.GET("/:hub_id/tabs", handlers.ListRequestHubTabs)
-			reqHubs.POST("/:hub_id/tabs", handlers.CreateRequestHubTab)
-			reqHubs.PATCH("/:hub_id/tabs/:tab_id", handlers.UpdateRequestHubTab)
-			reqHubs.DELETE("/:hub_id/tabs/:tab_id", handlers.DeleteRequestHubTab)
-			reqHubs.POST("/:hub_id/tabs/reorder", handlers.ReorderRequestHubTabs)
+			// Activities Hub Tabs
+			activitiesHubs.GET("/:hub_id/tabs", handlers.ListActivitiesHubTabs)
+			activitiesHubs.POST("/:hub_id/tabs", handlers.CreateActivitiesHubTab)
+			activitiesHubs.PATCH("/:hub_id/tabs/:tab_id", handlers.UpdateActivitiesHubTab)
+			activitiesHubs.DELETE("/:hub_id/tabs/:tab_id", handlers.DeleteActivitiesHubTab)
+			activitiesHubs.POST("/:hub_id/tabs/reorder", handlers.ReorderActivitiesHubTabs)
 		}
 
 		// Data Tables
