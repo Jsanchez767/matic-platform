@@ -12,7 +12,11 @@ import (
 // Request Hub Handlers
 
 func ListRequestHubs(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
+	workspaceID := c.Query("workspace_id")
+	if workspaceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workspace_id is required"})
+		return
+	}
 	includeInactive := c.Query("include_inactive") == "true"
 
 	var hubs []models.RequestHub
@@ -31,12 +35,11 @@ func ListRequestHubs(c *gin.Context) {
 }
 
 func GetRequestHub(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 
 	var hub models.RequestHub
 	if err := database.DB.Preload("Tabs").
-		Where("id = ? AND workspace_id = ?", hubID, workspaceID).
+		Where("id = ?", hubID).
 		First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
@@ -46,7 +49,11 @@ func GetRequestHub(c *gin.Context) {
 }
 
 func GetRequestHubBySlug(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
+	workspaceID := c.Query("workspace_id")
+	if workspaceID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "workspace_id is required"})
+		return
+	}
 	slug := c.Param("slug")
 
 	var hub models.RequestHub
@@ -76,15 +83,9 @@ func CreateRequestHub(c *gin.Context) {
 		return
 	}
 
-	workspaceID := c.Param("workspace_id")
-	if input.WorkspaceID.String() != workspaceID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Workspace ID mismatch"})
-		return
-	}
-
 	// Check for duplicate slug
 	var existing models.RequestHub
-	if err := database.DB.Where("workspace_id = ? AND slug = ?", workspaceID, input.Slug).First(&existing).Error; err == nil {
+	if err := database.DB.Where("workspace_id = ? AND slug = ?", input.WorkspaceID, input.Slug).First(&existing).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Request hub with this slug already exists"})
 		return
 	}
@@ -124,11 +125,10 @@ type UpdateRequestHubInput struct {
 }
 
 func UpdateRequestHub(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -142,7 +142,7 @@ func UpdateRequestHub(c *gin.Context) {
 	// Check slug conflicts if updating
 	if input.Slug != nil && *input.Slug != hub.Slug {
 		var existing models.RequestHub
-		if err := database.DB.Where("workspace_id = ? AND slug = ? AND id != ?", workspaceID, *input.Slug, hubID).First(&existing).Error; err == nil {
+		if err := database.DB.Where("workspace_id = ? AND slug = ? AND id != ?", hub.WorkspaceID, *input.Slug, hubID).First(&existing).Error; err == nil {
 			c.JSON(http.StatusConflict, gin.H{"error": "Request hub with this slug already exists"})
 			return
 		}
@@ -177,11 +177,10 @@ func UpdateRequestHub(c *gin.Context) {
 }
 
 func DeleteRequestHub(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -197,13 +196,12 @@ func DeleteRequestHub(c *gin.Context) {
 // Request Hub Tab Handlers
 
 func ListRequestHubTabs(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 	includeHidden := c.Query("include_hidden") == "true"
 
 	// Verify hub exists
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -234,12 +232,11 @@ type CreateRequestHubTabInput struct {
 }
 
 func CreateRequestHubTab(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 
 	// Verify hub exists
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -292,13 +289,12 @@ type UpdateRequestHubTabInput struct {
 }
 
 func UpdateRequestHubTab(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 	tabID := c.Param("tab_id")
 
 	// Verify hub exists
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -356,13 +352,12 @@ func UpdateRequestHubTab(c *gin.Context) {
 }
 
 func DeleteRequestHubTab(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 	tabID := c.Param("tab_id")
 
 	// Verify hub exists
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
@@ -391,12 +386,11 @@ type ReorderTabsInput struct {
 }
 
 func ReorderRequestHubTabs(c *gin.Context) {
-	workspaceID := c.Param("workspace_id")
 	hubID := c.Param("hub_id")
 
 	// Verify hub exists
 	var hub models.RequestHub
-	if err := database.DB.Where("id = ? AND workspace_id = ?", hubID, workspaceID).First(&hub).Error; err != nil {
+	if err := database.DB.Where("id = ?", hubID).First(&hub).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Request hub not found"})
 		return
 	}
