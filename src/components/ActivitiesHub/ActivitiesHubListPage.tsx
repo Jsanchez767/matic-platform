@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/ui-components/input';
 import { Label } from '@/ui-components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui-components/select';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import {
   listActivitiesHubs,
   createActivitiesHub,
@@ -24,7 +24,6 @@ interface ActivitiesHubListPageProps {
 }
 
 export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: ActivitiesHubListPageProps) {
-  const { toast } = useToast();
   const [activities, setActivities] = useState<ActivitiesHub[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,11 +52,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
       setActivities(data);
     } catch (error) {
       console.error('Error loading activities:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load activities',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load activities');
     } finally {
       setLoading(false);
     }
@@ -77,11 +72,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
 
   const handleAddActivity = async () => {
     if (!newActivity.name || !newActivity.begin_date || !newActivity.end_date) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields',
-        variant: 'destructive',
-      });
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -113,17 +104,10 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
         participants: 0,
       });
 
-      toast({
-        title: 'Success',
-        description: `Activity "${created.name}" created successfully`,
-      });
+      toast.success(`Activity "${created.name}" created successfully`);
     } catch (error) {
       console.error('Error creating activity:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create activity',
-        variant: 'destructive',
-      });
+      toast.error('Failed to create activity');
     }
   };
 

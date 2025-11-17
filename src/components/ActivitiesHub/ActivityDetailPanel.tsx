@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { X, Maximize2, Trash2, Calendar, Users, MapPin, ChevronDown, ChevronUp, ClipboardCheck, GraduationCap, Target } from 'lucide-react';
 import { Button } from '@/ui-components/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/ui-components/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { deleteActivitiesHub, formatDate } from '@/lib/api/activities-hubs-client';
 import type { ActivitiesHub } from '@/types/activities-hubs';
 
@@ -29,7 +29,6 @@ export function ActivityDetailPanel({
   onClose,
   onDeleted
 }: ActivityDetailPanelProps) {
-  const { toast } = useToast();
   const [expandedSections, setExpandedSections] = useState<Set<SectionKey>>(
     new Set(['program', 'description'])
   );
@@ -51,10 +50,7 @@ export function ActivityDetailPanel({
       setDeleting(true);
       await deleteActivitiesHub(activity.id);
       
-      toast({
-        title: 'Success',
-        description: `Activity "${activity.name}" deleted successfully`,
-      });
+      toast.success(`Activity "${activity.name}" deleted successfully`);
       
       if (onDeleted) {
         onDeleted();
@@ -62,11 +58,7 @@ export function ActivityDetailPanel({
       onClose();
     } catch (error) {
       console.error('Error deleting activity:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete activity',
-        variant: 'destructive',
-      });
+      toast.error('Failed to delete activity');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
