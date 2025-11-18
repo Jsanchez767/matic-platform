@@ -162,6 +162,7 @@ export const activitiesSupabase = {
         participants: row.data?.participants || 0,
         settings: row.data?.settings || {},
         is_active: true,
+        created_by: row.created_by || '',
         created_at: row.created_at,
         updated_at: row.updated_at,
       }));
@@ -200,6 +201,7 @@ export const activitiesSupabase = {
         participants: row.data?.participants || 0,
         settings: row.data?.settings || {},
         is_active: true,
+        created_by: row.created_by || '',
         created_at: row.created_at,
         updated_at: row.updated_at,
       };
@@ -262,6 +264,7 @@ export const activitiesSupabase = {
         participants: row.data.participants,
         settings: row.data.settings,
         is_active: true,
+        created_by: row.created_by || '',
         created_at: row.created_at,
         updated_at: row.updated_at,
       };
@@ -325,6 +328,7 @@ export const activitiesSupabase = {
         participants: row.data.participants,
         settings: row.data.settings,
         is_active: true,
+        created_by: row.created_by || '',
         created_at: row.created_at,
         updated_at: row.updated_at,
       };
