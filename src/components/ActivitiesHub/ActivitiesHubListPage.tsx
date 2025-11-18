@@ -2,18 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Search, 
   Plus, 
   Calendar, 
   Users, 
   Activity as ActivityIcon,
-  ChevronLeft,
-  ChevronRight,
-  Table,
-  FileText,
-  BarChart3,
-  Database,
-  Maximize2
+  Database
 } from 'lucide-react';
 import { Button } from '@/ui-components/button';
 import { Badge } from '@/ui-components/badge';
@@ -46,7 +39,6 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeModule, setActiveModule] = useState('activity-hubs');
   const [filterStatus, setFilterStatus] = useState<ActivityStatus | 'all'>('all');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [connectTableDialogOpen, setConnectTableDialogOpen] = useState(false);
@@ -148,161 +140,7 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
-      {/* Top Header */}
-      <div className="bg-white border-b border-gray-200 px-3 md:px-6 py-2 md:py-3 flex items-center justify-between gap-2 md:gap-4">
-        {/* Left: Organization */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 bg-blue-50 rounded-lg">
-            <div className="w-5 h-5 md:w-6 md:h-6 bg-blue-600 rounded flex items-center justify-center text-white text-xs">
-              W
-            </div>
-            <span className="text-xs md:text-sm hidden sm:inline">Workspace</span>
-            <ChevronLeft className="h-3 w-3 md:h-3.5 md:w-3.5 rotate-90 hidden sm:inline" />
-          </div>
-        </div>
-
-        {/* Center: Search */}
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 md:h-4 md:w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="w-full pl-8 md:pl-10 pr-2 md:pr-16 py-1.5 md:py-2 bg-gray-100 border-0 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={(e) => e.target.placeholder = "Search for anything..."}
-              onBlur={(e) => e.target.placeholder = "Search..."}
-            />
-            <kbd className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 px-1.5 md:px-2 py-0.5 bg-white border border-gray-300 rounded text-xs text-gray-500 hidden md:inline-block">
-              ⌘K
-            </kbd>
-          </div>
-        </div>
-
-        {/* Right: User */}
-        <div className="flex items-center flex-shrink-0">
-          <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs md:text-sm">
-            U
-          </div>
-        </div>
-      </div>
-
-      {/* Module Navigation */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-3 md:px-6 overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-1 md:gap-2 min-w-max">
-            {/* Navigation arrows - Desktop only */}
-            <button className="p-1.5 hover:bg-gray-100 rounded-lg hidden lg:flex items-center justify-center flex-shrink-0 transition-colors">
-              <ChevronLeft className="h-4 w-4 text-gray-600" />
-            </button>
-            <button className="p-1.5 hover:bg-gray-100 rounded-lg hidden lg:flex items-center justify-center flex-shrink-0 transition-colors">
-              <ChevronRight className="h-4 w-4 text-gray-600" />
-            </button>
-
-            {/* Active Module */}
-            <button 
-              onClick={() => setActiveModule('activity-hubs')}
-              className={`
-                relative px-3 md:px-4 py-2.5 md:py-3 text-xs md:text-sm flex items-center gap-1.5 md:gap-2 
-                whitespace-nowrap transition-all flex-shrink-0 group
-                ${activeModule === 'activity-hubs' 
-                  ? 'text-violet-700' 
-                  : 'text-gray-600 hover:text-gray-900'
-                }
-              `}
-            >
-              <ActivityIcon className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Activity Hubs</span>
-              <span className="sm:hidden">Activities</span>
-              
-              {/* Active indicator */}
-              {activeModule === 'activity-hubs' && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600 rounded-t-full" />
-              )}
-            </button>
-
-            {/* Divider */}
-            <div className="h-6 w-px bg-gray-200 mx-1" />
-
-            {/* Other Modules */}
-            <button 
-              onClick={() => setActiveModule('attendance')}
-              className={`
-                relative px-2.5 md:px-3 py-2.5 md:py-3 text-xs md:text-sm flex items-center gap-1.5 
-                whitespace-nowrap transition-all flex-shrink-0 rounded-lg
-                ${activeModule === 'attendance' 
-                  ? 'text-violet-700 bg-violet-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }
-              `}
-            >
-              <Calendar className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Attendance</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveModule('tables')}
-              className={`
-                relative px-2.5 md:px-3 py-2.5 md:py-3 text-xs md:text-sm flex items-center gap-1.5 
-                whitespace-nowrap transition-all flex-shrink-0 rounded-lg
-                ${activeModule === 'tables' 
-                  ? 'text-violet-700 bg-violet-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }
-              `}
-            >
-              <Table className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Tables</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveModule('documents')}
-              className={`
-                relative px-2.5 md:px-3 py-2.5 md:py-3 text-xs md:text-sm flex items-center gap-1.5 
-                whitespace-nowrap transition-all flex-shrink-0 rounded-lg
-                ${activeModule === 'documents' 
-                  ? 'text-violet-700 bg-violet-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }
-              `}
-            >
-              <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Documents</span>
-            </button>
-
-            <button 
-              onClick={() => setActiveModule('reports')}
-              className={`
-                relative px-2.5 md:px-3 py-2.5 md:py-3 text-xs md:text-sm flex items-center gap-1.5 
-                whitespace-nowrap transition-all flex-shrink-0 rounded-lg
-                ${activeModule === 'reports' 
-                  ? 'text-violet-700 bg-violet-50' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }
-              `}
-            >
-              <BarChart3 className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="hidden md:inline">Reports</span>
-            </button>
-
-            {/* Add New Button */}
-            <div className="h-6 w-px bg-gray-200 mx-1" />
-            <button 
-              className="p-2 md:p-2.5 border border-dashed border-gray-300 rounded-lg hover:border-violet-400 hover:bg-violet-50 flex-shrink-0 transition-all group"
-              onClick={() => setAddDialogOpen(true)}
-              title="Add new module"
-            >
-              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4 text-gray-500 group-hover:text-violet-600 transition-colors" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Scroll indicator for mobile */}
-        <div className="md:hidden absolute right-0 top-12 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none" />
-      </div>
-
+    <div className="h-full bg-gray-50 flex flex-col">
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Activities List */}
