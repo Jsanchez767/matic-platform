@@ -19,7 +19,10 @@ type ActivityDetailPanelProps = {
 type SectionKey = 
   | 'program' 
   | 'categories' 
+  | 'provider'
+  | 'eligibility'
   | 'enrollment'
+  | 'location'
   | 'description';
 
 export function ActivityDetailPanel({
@@ -30,7 +33,7 @@ export function ActivityDetailPanel({
   onDeleted
 }: ActivityDetailPanelProps) {
   const [expandedSections, setExpandedSections] = useState<Set<SectionKey>>(
-    new Set(['program', 'description'])
+    new Set(['program', 'description', 'location'])
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -214,9 +217,52 @@ export function ActivityDetailPanel({
           </div>
         </CollapsibleSection>
 
+        {/* Activity Categories */}
+        <CollapsibleSection 
+          title="Activity Categories" 
+          sectionKey="categories"
+          icon={Target}
+          badge={activity.category || 'Not specified'}
+        >
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs text-gray-500 mb-2">Primary Category</div>
+              <div className="inline-flex items-center px-3 py-2 bg-violet-100 text-violet-700 rounded-lg text-sm">
+                {activity.category || 'Not specified'}
+              </div>
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* Service Provider */}
+        <CollapsibleSection 
+          title="Service Provider" 
+          sectionKey="provider"
+          icon={Users}
+          badge="Activity Provider"
+        >
+          <div className="space-y-3">
+            <InfoRow label="Provider Name" value="Not specified" fullWidth />
+            <InfoRow label="Contact Information" value="Not specified" fullWidth />
+          </div>
+        </CollapsibleSection>
+
+        {/* Eligibility */}
+        <CollapsibleSection 
+          title="Eligibility Requirements" 
+          sectionKey="eligibility"
+          icon={GraduationCap}
+          badge="Participant Information"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <InfoRow label="Target Group" value="General" />
+            <InfoRow label="Fee Scale" value="Free" />
+          </div>
+        </CollapsibleSection>
+
         {/* Enrollment */}
         <CollapsibleSection 
-          title="Enrollment" 
+          title="Target Enrollment" 
           sectionKey="enrollment"
           icon={Target}
           badge={`${activity.participants}/${targetEnrollment} enrolled`}
@@ -229,7 +275,7 @@ export function ActivityDetailPanel({
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all"
+                  className="h-full bg-gradient-to-r from-violet-500 to-violet-600 rounded-full transition-all duration-500"
                   style={{ width: `${(activity.participants / targetEnrollment) * 100}%` }}
                 />
               </div>
@@ -240,6 +286,34 @@ export function ActivityDetailPanel({
             <div className="grid grid-cols-2 gap-4">
               <InfoRow label="Target Total" value={targetEnrollment} />
               <InfoRow label="Current Enrolled" value={activity.participants} />
+              <InfoRow label="Waitlist" value="0" />
+            </div>
+          </div>
+        </CollapsibleSection>
+
+        {/* Location */}
+        <CollapsibleSection 
+          title="Location Details" 
+          sectionKey="location"
+          icon={MapPin}
+          badge="Activity Location"
+        >
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs text-gray-500 mb-2">Location</div>
+              <div className="text-sm text-gray-900">
+                To be determined
+              </div>
+            </div>
+            <div className="pt-2">
+              <Button 
+                variant="outline" 
+                className="w-full justify-center"
+                onClick={() => window.open('https://maps.google.com', '_blank')}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                View on Map
+              </Button>
             </div>
           </div>
         </CollapsibleSection>
@@ -294,6 +368,12 @@ export function ActivityDetailPanel({
 
       {/* Bottom Actions */}
       <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 space-y-2">
+        <Button 
+          className="w-full bg-violet-600 hover:bg-violet-700 text-white h-12 text-base"
+        >
+          <ClipboardCheck className="h-5 w-5 mr-2" />
+          Setup Attendance
+        </Button>
         <div className="grid grid-cols-2 gap-2">
           <Button 
             variant="outline"
@@ -314,27 +394,31 @@ export function ActivityDetailPanel({
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
+        <DialogContent className="max-w-sm">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="h-6 w-6 text-red-600" />
+          </div>
           <DialogHeader>
             <DialogTitle>Delete Activity?</DialogTitle>
             <DialogDescription>
               This will permanently delete "{activity.name}" and all associated data. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
             <Button 
-              variant="outline"
-              onClick={() => setShowDeleteConfirm(false)}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
-            <Button 
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="w-full bg-red-600 hover:bg-red-700 text-white h-11"
               onClick={handleDelete}
               disabled={deleting}
             >
               {deleting ? 'Deleting...' : 'Delete Activity'}
+            </Button>
+            <Button 
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => setShowDeleteConfirm(false)}
+              disabled={deleting}
+            >
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
