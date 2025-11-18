@@ -29,14 +29,25 @@ async function getActivitiesTable(workspaceId: string): Promise<string> {
     return existingTables.id;
   }
 
+  // Get current user for created_by field
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error('User must be authenticated to create activities table');
+  }
+
   // Create activities table if it doesn't exist
   const { data: newTable, error: createError } = await supabase
     .from('data_tables')
     .insert({
       workspace_id: workspaceId,
       name: ACTIVITIES_TABLE_NAME,
+      slug: 'activities',
       description: 'Activities and events for this workspace',
       icon: 'calendar',
+      color: '#3B82F6',
+      settings: {},
+      is_archived: false,
+      created_by: user.id,
     })
     .select()
     .single();
