@@ -229,6 +229,12 @@ export const activitiesSupabase = {
     try {
       const tableId = await getActivitiesTable(workspaceId);
 
+      // Get current user for created_by field
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User must be authenticated to create activities');
+      }
+
       // Generate slug from name
       const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -254,6 +260,7 @@ export const activitiesSupabase = {
             settings: input.settings || {},
           },
           position: count || 0,
+          created_by: user.id,
         })
         .select()
         .single();
