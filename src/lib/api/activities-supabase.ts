@@ -160,6 +160,11 @@ export const activitiesSupabase = {
 
       if (error) throw error;
 
+      console.log('Activities rows fetched:', rows?.length);
+      if (rows && rows.length > 0) {
+        console.log('First activity data:', rows[0].data);
+      }
+
       return (rows || []).map(row => ({
         id: row.id,
         workspace_id: workspaceId,

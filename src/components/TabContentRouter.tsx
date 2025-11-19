@@ -2,15 +2,52 @@
 
 import { TabData } from '@/lib/tab-manager'
 import { useTabContext } from './WorkspaceTabProvider'
-import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layout } from 'lucide-react'
+import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layout, Inbox } from 'lucide-react'
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
 import { ActivitiesHubListPage } from './ActivitiesHub/ActivitiesHubListPage'
+import { AttendanceView } from './ActivitiesHub/AttendanceView'
+import { RequestHubViewer } from './RequestHub/RequestHubViewer'
+import { RequestHubListPage } from './RequestHub/RequestHubListPage'
+import { useState, useEffect } from 'react'
+import { activitiesSupabase } from '@/lib/api/activities-supabase'
+import type { Activity } from '@/types/activities-hubs'
 
 interface TabContentRouterProps {
   tab?: TabData | null
   workspaceId: string
+}
+
+// Attendance View Wrapper with data fetching
+function AttendanceViewWrapper({ workspaceId }: { workspaceId: string }) {
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const loadActivities = async () => {
+      try {
+        setLoading(true)
+        const data = await activitiesSupabase.listActivities(workspaceId)
+        setActivities(data)
+      } catch (error) {
+        console.error('Error loading activities:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadActivities()
+  }, [workspaceId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-500">Loading attendance...</div>
+      </div>
+    )
+  }
+
+  return <AttendanceView activities={activities} onSelectActivity={() => {}} />
 }
 
 export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouterProps) {
@@ -90,9 +127,27 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
       )
       
     case 'custom':
+      // Handle Attendance view
+      if (tab.url?.includes('/attendance')) {
+        return <AttendanceViewWrapper workspaceId={workspaceId} />
+      }
+
       // Handle Activities Hub list page
       if (tab.url?.includes('/activities-hubs') && !tab.url?.includes('/activities-hubs/')) {
         return <ActivitiesHubListPage workspaceId={workspaceId} />
+      }
+
+      // Handle Request Hub list page
+      if (tab.url?.includes('/request-hubs') && !tab.url?.includes('/request-hubs/')) {
+        return <RequestHubListPage workspaceId={workspaceId} />
+      }
+
+      // Handle Request Hub viewer
+      if (tab.url?.includes('/request-hub/')) {
+        const hubId = tab.metadata?.hubId
+        if (hubId) {
+          return <RequestHubViewer hubId={hubId} workspaceId={workspaceId} />
+        }
       }
 
       // Handle Overview and other custom workspace content
@@ -337,7 +392,7 @@ function SearchResultsView({
 function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
   const { tabManager } = useTabContext()
 
-  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document' | 'activities-hubs') => {
+  const handleQuickAction = (type: 'forms' | 'tables' | 'calendar' | 'document' | 'activities-hubs' | 'request-hubs') => {
     if (!tabManager) return
     
     switch (type) {
@@ -364,6 +419,15 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
           title: 'Activities Hub',
           type: 'custom',
           url: `/workspace/${workspaceId}/activities-hubs`,
+          workspaceId,
+          metadata: {}
+        })
+        break
+      case 'request-hubs':
+        tabManager.addTab({
+          title: 'Request Hubs',
+          type: 'custom',
+          url: `/workspace/${workspaceId}/request-hubs`,
           workspaceId,
           metadata: {}
         })
@@ -419,11 +483,11 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
             color="green"
           />
         </div>
-        <div onClick={() => handleQuickAction('activities-hubs')}>
+        <div onClick={() => handleQuickAction('request-hubs')}>
           <QuickActionCard
-            title="Activities Hub"
+            title="Request Hubs"
             description="Manage request workflows"
-            icon={Layout}
+            icon={Inbox}
             color="purple"
           />
         </div>

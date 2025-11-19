@@ -6,8 +6,7 @@ import {
   Calendar, 
   Users, 
   Activity as ActivityIcon,
-  Database,
-  ClipboardCheck
+  Database
 } from 'lucide-react';
 import { Button } from '@/ui-components/button';
 import { Badge } from '@/ui-components/badge';
@@ -215,18 +214,6 @@ export function ActivitiesHubListPage({ workspaceId, onSelectActivity }: Activit
               >
                 Completed {completedCount}
               </button>
-              
-              {/* Divider */}
-              <div className="w-px h-6 bg-gray-300 mx-1" />
-              
-              {/* Attendance Button */}
-              <Button
-                variant="outline"
-                className="flex items-center gap-2 text-xs md:text-sm border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300"
-              >
-                <ClipboardCheck className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                <span>Attendance</span>
-              </Button>
             </div>
 
             {/* Activities */}

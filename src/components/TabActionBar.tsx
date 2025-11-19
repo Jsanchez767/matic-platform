@@ -35,6 +35,24 @@ export function TabActionBar({ activeTab, workspaceId, tabs, onAddTab, onNavigat
 
   // Determine which actions to show based on the active tab
   const getActionsForTab = () => {
+    // Activities Hub tab - show Attendance action
+    if (activeTab?.title?.includes('Activities') || activeTab?.url?.includes('activities-hub')) {
+      return [
+        {
+          icon: ClipboardList,
+          label: 'Attendance',
+          onClick: () => {
+            onAddTab?.({
+              title: 'Attendance',
+              url: `/workspace/${workspaceId}/attendance`,
+              type: 'custom',
+              workspaceId,
+            })
+          }
+        }
+      ]
+    }
+
     // Overview tab - show main modules
     if (activeTab?.id === 'overview' || activeTab?.title === 'Overview') {
       return [
