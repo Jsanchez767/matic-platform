@@ -138,5 +138,61 @@ export const tablesSupabase = {
       .eq('id', columnId)
 
     if (error) throw error
+  },
+
+  /**
+   * Get table rows
+   */
+  async getTableRows(tableId: string) {
+    const { data, error } = await supabase
+      .from('table_rows')
+      .select('*')
+      .eq('table_id', tableId)
+      .eq('is_archived', false)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Create a row
+   */
+  async createRow(rowData: any) {
+    const { data, error } = await supabase
+      .from('table_rows')
+      .insert(rowData)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Update a row
+   */
+  async updateRow(rowId: string, updates: any) {
+    const { data, error } = await supabase
+      .from('table_rows')
+      .update(updates)
+      .eq('id', rowId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  /**
+   * Delete a row
+   */
+  async deleteRow(rowId: string) {
+    const { error } = await supabase
+      .from('table_rows')
+      .delete()
+      .eq('id', rowId)
+
+    if (error) throw error
   }
 }
