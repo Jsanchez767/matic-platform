@@ -2,7 +2,7 @@
 
 import { TabData } from '@/lib/tab-manager'
 import { useTabContext } from './WorkspaceTabProvider'
-import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layout, Inbox } from 'lucide-react'
+import { FileText, Calendar, Users, Search, Plus, BarChart3, Folder, Clock, Layout, Inbox, Activity as ActivityIcon } from 'lucide-react'
 import { TablesListPage } from './Tables/TablesListPage'
 import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
@@ -659,6 +659,14 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
             description="Build interactive forms"
             icon={Users}
             color="green"
+          />
+        </div>
+        <div onClick={() => handleQuickAction('activities-hubs')}>
+          <QuickActionCard
+            title="Activities Hub"
+            description="Manage programs & activities"
+            icon={ActivityIcon}
+            color="purple"
           />
         </div>
         <div onClick={() => handleQuickAction('request-hubs')}>
