@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Calendar, Clock, Users, ChevronRight, CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
 import { Badge } from '@/ui-components/badge';
+import { TakeAttendanceDialog } from './TakeAttendanceDialog';
 import type { Activity } from '@/types/activities-hubs';
 
 interface AttendanceSession {
@@ -21,6 +22,9 @@ interface AttendanceViewProps {
 
 export function AttendanceView({ activities, onSelectActivity }: AttendanceViewProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'empty'>('all');
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [selectedSession, setSelectedSession] = useState<AttendanceSession | null>(null);
 
   // Mock function to get attendance sessions for an activity
   const getAttendanceSessions = (activity: Activity): AttendanceSession[] => {
@@ -74,6 +78,17 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
       day: 'numeric', 
       year: 'numeric' 
     });
+  };
+
+  const handleSessionClick = (activity: Activity, session: AttendanceSession) => {
+    setSelectedActivity(activity);
+    setSelectedSession(session);
+    setAttendanceDialogOpen(true);
+  };
+
+  const handleSaveAttendance = (records: any[]) => {
+    console.log('Attendance saved:', records);
+    // Here you would save to the API
   };
 
   const filteredActivities = activities.filter(activity => activity.status === 'active');
@@ -182,7 +197,7 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
                       return (
                         <button
                           key={session.id}
-                          onClick={() => onSelectActivity(activity)}
+                          onClick={() => handleSessionClick(activity, session)}
                           className="w-full bg-gray-50 hover:bg-gray-100 active:bg-gray-200 rounded-xl p-4 transition-colors text-left"
                         >
                           <div className="flex items-start justify-between mb-3">
@@ -248,7 +263,7 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
                           return (
                             <tr 
                               key={session.id}
-                              onClick={() => onSelectActivity(activity)}
+                              onClick={() => handleSessionClick(activity, session)}
                               className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group"
                             >
                               <td className="px-4 py-4">
@@ -294,6 +309,19 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
           );
         })}
       </div>
+
+      {/* Take Attendance Dialog */}
+      <TakeAttendanceDialog
+        open={attendanceDialogOpen}
+        onClose={() => setAttendanceDialogOpen(false)}
+        activity={selectedActivity}
+        sessionDate={selectedSession?.date || ''}
+        sessionTime={{
+          begin: selectedSession?.beginTime || '',
+          end: selectedSession?.endTime || ''
+        }}
+        onSave={handleSaveAttendance}
+      />
     </div>
   );
 }
