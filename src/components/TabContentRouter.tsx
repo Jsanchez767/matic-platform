@@ -669,14 +669,6 @@ function WorkspaceDashboard({ workspaceId }: { workspaceId: string }) {
             color="purple"
           />
         </div>
-        <div onClick={() => handleQuickAction('request-hubs')}>
-          <QuickActionCard
-            title="Request Hubs"
-            description="Manage request workflows"
-            icon={Inbox}
-            color="purple"
-          />
-        </div>
         <div onClick={() => handleQuickAction('tables')}>
           <QuickActionCard
             title="Tables"
