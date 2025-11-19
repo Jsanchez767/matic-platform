@@ -8,11 +8,15 @@ import { TableGridView } from './Tables/TableGridView'
 import { FormsListPage as FormsListComponent } from './Forms/FormsListPage'
 import { ActivitiesHubListPage } from './ActivitiesHub/ActivitiesHubListPage'
 import { AttendanceView } from './ActivitiesHub/AttendanceView'
+import { EnrolledView } from './ActivitiesHub/EnrolledView'
+import { AddParticipantDialog } from './ActivitiesHub/AddParticipantDialog'
+import { ParticipantDetailPanel } from './ActivitiesHub/ParticipantDetailPanel'
 import { RequestHubViewer } from './RequestHub/RequestHubViewer'
 import { RequestHubListPage } from './RequestHub/RequestHubListPage'
 import { useState, useEffect } from 'react'
 import { activitiesSupabase } from '@/lib/api/activities-supabase'
 import type { Activity } from '@/types/activities-hubs'
+import type { Participant, CreateParticipantInput, UpdateParticipantInput } from '@/types/participants'
 
 interface TabContentRouterProps {
   tab?: TabData | null
@@ -48,6 +52,85 @@ function AttendanceViewWrapper({ workspaceId }: { workspaceId: string }) {
   }
 
   return <AttendanceView activities={activities} onSelectActivity={() => {}} />
+}
+
+// Enrolled View Wrapper with data fetching
+function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [participants, setParticipants] = useState<Participant[]>([])
+  const [loading, setLoading] = useState(true)
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true)
+        const activitiesData = await activitiesSupabase.listActivities(workspaceId)
+        setActivities(activitiesData)
+        // TODO: Load participants from API
+        setParticipants([])
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [workspaceId])
+
+  const handleAddParticipant = (data: CreateParticipantInput, programIds: string[]) => {
+    // TODO: Implement API call to create participant
+    console.log('Add participant:', data, programIds)
+  }
+
+  const handleSaveParticipant = (id: string, updates: UpdateParticipantInput) => {
+    // TODO: Implement API call to update participant
+    console.log('Update participant:', id, updates)
+  }
+
+  const handleDeleteParticipant = (id: string) => {
+    // TODO: Implement API call to delete participant
+    console.log('Delete participant:', id)
+  }
+
+  const handleUnenroll = (participantId: string, enrollmentId: string) => {
+    // TODO: Implement API call to unenroll participant
+    console.log('Unenroll:', participantId, enrollmentId)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-gray-500">Loading participants...</div>
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <EnrolledView
+        activities={activities}
+        participants={participants}
+        onAddParticipant={() => setAddDialogOpen(true)}
+        onSelectParticipant={setSelectedParticipant}
+      />
+      <AddParticipantDialog
+        open={addDialogOpen}
+        onClose={() => setAddDialogOpen(false)}
+        onSave={handleAddParticipant}
+        activities={activities}
+      />
+      <ParticipantDetailPanel
+        participant={selectedParticipant}
+        activities={activities}
+        onClose={() => setSelectedParticipant(null)}
+        onSave={handleSaveParticipant}
+        onDelete={handleDeleteParticipant}
+        onUnenroll={handleUnenroll}
+      />
+    </>
+  )
 }
 
 export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouterProps) {
@@ -130,6 +213,11 @@ export function TabContentRouter({ tab: propTab, workspaceId }: TabContentRouter
       // Handle Attendance view
       if (tab.url?.includes('/attendance')) {
         return <AttendanceViewWrapper workspaceId={workspaceId} />
+      }
+
+      // Handle Enrolled view
+      if (tab.url?.includes('/enrolled')) {
+        return <EnrolledViewWrapper workspaceId={workspaceId} />
       }
 
       // Handle Activities Hub list page

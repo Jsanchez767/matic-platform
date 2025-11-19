@@ -1,6 +1,6 @@
 'use client'
 
-import { ClipboardList, Activity, FileText, BarChart3, Plus, Settings, Download, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ClipboardList, Activity, FileText, BarChart3, Plus, Settings, Download, Share2, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TabData } from '@/lib/tab-manager'
 import { useRouter } from 'next/navigation'
@@ -35,7 +35,7 @@ export function TabActionBar({ activeTab, workspaceId, tabs, onAddTab, onNavigat
 
   // Determine which actions to show based on the active tab
   const getActionsForTab = () => {
-    // Activities Hub tab - show Attendance action
+    // Activities Hub tab - show Attendance and Enrolled actions
     if (activeTab?.title?.includes('Activities') || activeTab?.url?.includes('activities-hub')) {
       return [
         {
@@ -45,6 +45,18 @@ export function TabActionBar({ activeTab, workspaceId, tabs, onAddTab, onNavigat
             onAddTab?.({
               title: 'Attendance',
               url: `/workspace/${workspaceId}/attendance`,
+              type: 'custom',
+              workspaceId,
+            })
+          }
+        },
+        {
+          icon: Users,
+          label: 'Enrolled',
+          onClick: () => {
+            onAddTab?.({
+              title: 'Enrolled',
+              url: `/workspace/${workspaceId}/enrolled`,
               type: 'custom',
               workspaceId,
             })
