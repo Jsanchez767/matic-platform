@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, Users, ChevronRight, CheckCircle2, XCircle, ClipboardCheck } from 'lucide-react';
 import { Badge } from '@/ui-components/badge';
 import { TakeAttendanceDialog } from './TakeAttendanceDialog';
 import type { Activity } from '@/types/activities-hubs';
+import type { Participant } from '@/types/participants';
 
 interface AttendanceSession {
   id: string;
@@ -17,14 +18,17 @@ interface AttendanceSession {
 
 interface AttendanceViewProps {
   activities: Activity[];
+  workspaceId: string;
   onSelectActivity: (activity: Activity) => void;
 }
 
-export function AttendanceView({ activities, onSelectActivity }: AttendanceViewProps) {
+export function AttendanceView({ activities, workspaceId, onSelectActivity }: AttendanceViewProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'empty'>('all');
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [selectedSession, setSelectedSession] = useState<AttendanceSession | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   // Mock function to get attendance sessions for an activity
   const getAttendanceSessions = (activity: Activity): AttendanceSession[] => {
@@ -80,10 +84,70 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
     });
   };
 
-  const handleSessionClick = (activity: Activity, session: AttendanceSession) => {
+  const handleSessionClick = async (activity: Activity, session: AttendanceSession) => {
     setSelectedActivity(activity);
     setSelectedSession(session);
-    setAttendanceDialogOpen(true);
+    setLoadingParticipants(true);
+    
+    try {
+      // Get participants table and link
+      const { getOrCreateParticipantsTable } = await import('@/lib/api/participants-setup');
+      const { getOrCreateActivitiesTable } = await import('@/lib/api/activities-table-setup');
+      const { supabase } = await import('@/lib/supabase');
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setLoadingParticipants(false);
+        return;
+      }
+      
+      const participantsTable = await getOrCreateParticipantsTable(workspaceId, user.id);
+      const activitiesTable = await getOrCreateActivitiesTable(workspaceId, user.id);
+      
+      // Get link between participants and activities
+      const { data: link } = await supabase
+        .from('table_links')
+        .select('id')
+        .eq('source_table_id', participantsTable.id)
+        .eq('target_table_id', activitiesTable.id)
+        .eq('relationship_type', 'many_to_many')
+        .single();
+      
+      if (!link) {
+        console.error('No link found between participants and activities');
+        setParticipants([]);
+        setLoadingParticipants(false);
+        setAttendanceDialogOpen(true);
+        return;
+      }
+      
+      // Get activity row ID from activities table
+      const { tablesSupabase } = await import('@/lib/api/tables-supabase');
+      const activityRows = await tablesSupabase.getTableRows(activitiesTable.id);
+      const activityRow = activityRows?.find((row: any) => 
+        row.data?.legacy_activity_id === activity.id || row.id === activity.id
+      );
+      
+      if (!activityRow?.id) {
+        console.error('Activity not found in activities table');
+        setParticipants([]);
+        setLoadingParticipants(false);
+        setAttendanceDialogOpen(true);
+        return;
+      }
+      
+      // Get enrolled participants for this activity
+      const { getParticipantsForActivity } = await import('@/lib/api/participants-activities-link');
+      const enrolledParticipants = await getParticipantsForActivity(activityRow.id, link.id);
+      
+      setParticipants(enrolledParticipants);
+    } catch (error) {
+      console.error('Error loading participants:', error);
+      setParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
+      setAttendanceDialogOpen(true);
+    }
   };
 
   const handleSaveAttendance = (records: any[]) => {
@@ -320,6 +384,7 @@ export function AttendanceView({ activities, onSelectActivity }: AttendanceViewP
           begin: selectedSession?.beginTime || '',
           end: selectedSession?.endTime || ''
         }}
+        participants={participants}
         onSave={handleSaveAttendance}
       />
     </div>

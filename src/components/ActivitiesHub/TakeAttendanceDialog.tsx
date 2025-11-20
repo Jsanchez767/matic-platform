@@ -1,16 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, X, AlertCircle, Users } from 'lucide-react';
 import { Dialog, DialogContent } from '@/ui-components/dialog';
 import { Button } from '@/ui-components/button';
 import type { Activity } from '@/types/activities-hubs';
-
-type Participant = {
-  id: string;
-  name: string;
-  isStaff: boolean;
-};
+import type { Participant } from '@/types/participants';
 
 type AttendanceRecord = {
   participantId: string;
@@ -23,21 +18,9 @@ type TakeAttendanceDialogProps = {
   activity: Activity | null;
   sessionDate: string;
   sessionTime: { begin: string; end: string };
+  participants: Participant[];
   onSave: (records: AttendanceRecord[]) => void;
 };
-
-// Mock participants - would be replaced with actual API call
-const mockParticipants: Participant[] = [
-  { id: '1', name: 'Castillo, Pilar', isStaff: true },
-  { id: '2', name: 'Davila, Aurora', isStaff: false },
-  { id: '3', name: 'Lopez, Leticia', isStaff: false },
-  { id: '4', name: 'Morales, Patricia', isStaff: false },
-  { id: '5', name: 'Navarro, Cecilia', isStaff: false },
-  { id: '6', name: 'Pita, Marisol', isStaff: false },
-  { id: '7', name: 'Ruiz Vega, Ma Gloria', isStaff: false },
-  { id: '8', name: 'Solis, Enriqueta', isStaff: false },
-  { id: '9', name: 'Velasquez, Amelia', isStaff: false },
-];
 
 export function TakeAttendanceDialog({ 
   open, 
@@ -45,14 +28,20 @@ export function TakeAttendanceDialog({
   activity, 
   sessionDate, 
   sessionTime,
+  participants,
   onSave 
 }: TakeAttendanceDialogProps) {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>(
-    mockParticipants.map(p => ({
-      participantId: p.id,
-      status: 'absent' as const
-    }))
-  );
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+
+  // Initialize attendance records when participants change
+  useEffect(() => {
+    setAttendanceRecords(
+      participants.map(p => ({
+        participantId: p.id,
+        status: 'absent' as const
+      }))
+    );
+  }, [participants]);
 
   const updateAttendance = (participantId: string, status: 'present' | 'absent' | 'excused') => {
     setAttendanceRecords(records =>
@@ -77,8 +66,10 @@ export function TakeAttendanceDialog({
     onClose();
   };
 
-  const staff = mockParticipants.filter(p => p.isStaff);
-  const participants = mockParticipants.filter(p => !p.isStaff);
+  // For now, treat all participants as non-staff
+  // Can add isStaff field to Participant type later if needed
+  const staff: Participant[] = [];
+  const enrolledParticipants = participants;
 
   const presentCount = attendanceRecords.filter(r => r.status === 'present').length;
   const absentCount = attendanceRecords.filter(r => r.status === 'absent').length;
@@ -159,12 +150,13 @@ export function TakeAttendanceDialog({
                 <div className="border border-gray-200 rounded-b-xl overflow-hidden">
                   {staff.map((person, index) => {
                     const record = attendanceRecords.find(r => r.participantId === person.id);
+                    const fullName = `${person.last_name}, ${person.first_name}`;
                     return (
                       <div 
                         key={person.id} 
                         className={`p-2.5 md:p-3 flex items-center justify-between gap-2 md:gap-4 ${index !== staff.length - 1 ? 'border-b border-gray-200' : ''}`}
                       >
-                        <div className="text-xs md:text-sm text-gray-900 flex-1 min-w-0 truncate font-medium">{person.name}</div>
+                        <div className="text-xs md:text-sm text-gray-900 flex-1 min-w-0 truncate font-medium">{fullName}</div>
                         <div className="flex gap-1.5 md:gap-2 flex-shrink-0">
                           <button
                             onClick={() => updateAttendance(person.id, 'present')}
@@ -214,14 +206,15 @@ export function TakeAttendanceDialog({
                 <span className="text-xs md:text-sm font-medium">Participants ({participants.length})</span>
               </div>
               <div className="border border-gray-200 rounded-b-xl overflow-hidden">
-                {participants.map((person, index) => {
+                {enrolledParticipants.map((person, index) => {
                   const record = attendanceRecords.find(r => r.participantId === person.id);
+                  const fullName = `${person.last_name}, ${person.first_name}`;
                   return (
-                    <div 
-                      key={person.id} 
-                      className={`p-2.5 md:p-3 flex items-center justify-between gap-2 md:gap-4 ${index !== participants.length - 1 ? 'border-b border-gray-200' : ''}`}
+                    <div
+                      key={person.id}
+                      className={`p-2.5 md:p-3 flex items-center justify-between gap-2 md:gap-4 ${index !== enrolledParticipants.length - 1 ? 'border-b border-gray-200' : ''}`}
                     >
-                      <div className="text-xs md:text-sm text-gray-900 flex-1 min-w-0 truncate font-medium">{person.name}</div>
+                      <div className="text-xs md:text-sm text-gray-900 flex-1 min-w-0 truncate font-medium">{fullName}</div>
                       <div className="flex gap-1.5 md:gap-2 flex-shrink-0">
                         <button
                           onClick={() => updateAttendance(person.id, 'present')}

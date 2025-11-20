@@ -51,7 +51,7 @@ function AttendanceViewWrapper({ workspaceId }: { workspaceId: string }) {
     )
   }
 
-  return <AttendanceView activities={activities} onSelectActivity={() => {}} />
+  return <AttendanceView activities={activities} workspaceId={workspaceId} onSelectActivity={() => {}} />
 }
 
 // Enrolled View Wrapper with data fetching
