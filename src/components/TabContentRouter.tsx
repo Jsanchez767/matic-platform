@@ -75,16 +75,14 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
         
         // Get or create participants table and activities table
         const { getOrCreateParticipantsTable } = await import('@/lib/api/participants-setup')
-        const { getSessionToken } = await import('@/lib/supabase')
-        const token = await getSessionToken()
-        const { data: { user } } = await import('@/lib/supabase').then(m => m.supabase.auth.getUser())
+        const { supabase } = await import('@/lib/supabase')
+        const { data: { user } } = await supabase.auth.getUser()
         
         if (user) {
           const table = await getOrCreateParticipantsTable(workspaceId, user.id)
           setParticipantsTableId(table.id)
           
           // Get link ID between participants and activities tables
-          const { supabase } = await import('@/lib/supabase')
           const { data: link } = await supabase
             .from('table_links')
             .select('id')
@@ -96,11 +94,11 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
             setLinkId(link.id)
           }
           
-          // Load participants (table rows) with enrollment data from links
-          const { tablesSupabase } = await import('@/lib/api/tables-supabase')
-          const rows = await tablesSupabase.getTableRows(table.id)
+          // Load participants via Go API
+          const { participantsGoClient } = await import('@/lib/api/participants-go-client')
+          const rows = await participantsGoClient.getParticipants(table.id)
           
-          // Convert table rows to participants (with enrollments from table_row_links)
+          // Convert table rows to participants (with enrollments from row_links)
           const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
           const participantsData = await Promise.all(
             (rows || []).map((row: any) => 
@@ -109,6 +107,62 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
           )
           
           setParticipants(participantsData)
+          
+          // Subscribe to realtime changes for participants table_rows
+          const rowsChannel = supabase
+            .channel(`table_rows:${table.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'table_rows',
+                filter: `table_id=eq.${table.id}`
+              },
+              async (payload) => {
+                console.log('Participants row change:', payload)
+                // Reload all participants when any row changes
+                const updatedRows = await participantsGoClient.getParticipants(table.id)
+                const updatedData = await Promise.all(
+                  (updatedRows || []).map((row: any) => 
+                    tableRowToParticipant(row, table.id, link?.id)
+                  )
+                )
+                setParticipants(updatedData)
+              }
+            )
+            .subscribe()
+          
+          // Subscribe to realtime changes for row_links (enrollments)
+          const linksChannel = link ? supabase
+            .channel(`row_links:${link.id}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'table_row_links',
+                filter: `link_id=eq.${link.id}`
+              },
+              async (payload) => {
+                console.log('Enrollment link change:', payload)
+                // Reload all participants to reflect enrollment changes
+                const updatedRows = await participantsGoClient.getParticipants(table.id)
+                const updatedData = await Promise.all(
+                  (updatedRows || []).map((row: any) => 
+                    tableRowToParticipant(row, table.id, link.id)
+                  )
+                )
+                setParticipants(updatedData)
+              }
+            )
+            .subscribe() : null
+          
+          // Cleanup subscriptions on unmount
+          return () => {
+            rowsChannel.unsubscribe()
+            linksChannel?.unsubscribe()
+          }
         }
       } catch (error) {
         console.error('Error loading data:', error)
@@ -124,8 +178,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
     
     try {
       const { participantToTableRowData } = await import('@/lib/api/participants-helpers')
-      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
-      const { enrollParticipantInActivity } = await import('@/lib/api/participants-activities-link')
+      const { participantsGoClient, rowLinksGoClient } = await import('@/lib/api/participants-go-client')
       const { getOrCreateActivitiesTable } = await import('@/lib/api/activities-table-setup')
       const { supabase } = await import('@/lib/supabase')
       const { data: { user } } = await supabase.auth.getUser()
@@ -135,28 +188,28 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
       // Convert participant data to table row format (without enrolled_programs)
       const rowData = participantToTableRowData(data)
       
-      // Create participant table row
-      const newRow = await tablesSupabase.createRow({
-        table_id: participantsTableId,
-        data: rowData,
-        created_by: user.id
-      })
+      // Create participant table row via Go API
+      const newRow = await participantsGoClient.createParticipant(
+        participantsTableId,
+        rowData,
+        user.id
+      )
       
-      // Enroll participant in selected programs via table_row_links
+      // Enroll participant in selected programs via row links
       if (newRow?.id && programIds.length > 0) {
         // Get activities table to find activity row IDs
+        const { tablesSupabase } = await import('@/lib/api/tables-supabase')
         const activitiesTable = await getOrCreateActivitiesTable(workspaceId, user.id)
         const activityRows = await tablesSupabase.getTableRows(activitiesTable.id)
         
-        // Create table_row_links for each enrollment
+        // Create row_links for each enrollment
         for (const programId of programIds) {
-          // Find matching activity row by matching legacy activity ID in data
           const activityRow = activityRows?.find((row: any) => 
             row.data?.legacy_activity_id === programId || row.id === programId
           )
           
           if (activityRow?.id) {
-            await enrollParticipantInActivity(
+            await rowLinksGoClient.createRowLink(
               newRow.id,
               activityRow.id,
               linkId,
@@ -170,8 +223,8 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
         }
       }
       
-      // Reload participants with updated enrollments
-      const rows = await tablesSupabase.getTableRows(participantsTableId)
+      // Reload participants (will be replaced by realtime subscription)
+      const rows = await participantsGoClient.getParticipants(participantsTableId)
       const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
       const participantsData = await Promise.all(
         (rows || []).map((row: any) => 
@@ -186,31 +239,24 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   }
 
   const handleSaveParticipant = async (id: string, updates: UpdateParticipantInput) => {
-    if (!linkId) return
+    if (!linkId || !participantsTableId) return
     
     try {
       const { participantToTableRowData } = await import('@/lib/api/participants-helpers')
-      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
-      const { supabase } = await import('@/lib/supabase')
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) return
+      const { participantsGoClient } = await import('@/lib/api/participants-go-client')
       
       // Convert participant data (without enrolled_programs)
       const rowData = participantToTableRowData(updates)
       
-      // Update participant table row
-      await tablesSupabase.updateRow(id, {
-        data: rowData,
-        updated_by: user.id
-      })
+      // Update participant table row via Go API
+      await participantsGoClient.updateParticipant(participantsTableId, id, rowData)
       
-      // Update local state with fresh data from table_row_links
+      // Reload participants (will be replaced by realtime subscription)
+      const rows = await participantsGoClient.getParticipants(participantsTableId)
       const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
-      const rows = await tablesSupabase.getTableRows(participantsTableId!)
       const participantsData = await Promise.all(
         (rows || []).map((row: any) => 
-          tableRowToParticipant(row, participantsTableId!, linkId)
+          tableRowToParticipant(row, participantsTableId, linkId)
         )
       )
       setParticipants(participantsData)
@@ -224,12 +270,12 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
     if (!linkId || !participantsTableId) return
     
     try {
-      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      const { participantsGoClient } = await import('@/lib/api/participants-go-client')
       
-      // Delete table row (this will also cascade delete table_row_links)
-      await tablesSupabase.deleteRow(id)
+      // Delete table row via Go API (cascade deletes row_links)
+      await participantsGoClient.deleteParticipant(participantsTableId, id)
       
-      // Update local state
+      // Update local state (will be replaced by realtime subscription)
       setParticipants(prev => prev.filter(p => p.id !== id))
       setSelectedParticipant(null)
     } catch (error) {
@@ -237,22 +283,22 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
     }
   }
 
-  const handleUnenroll = async (participantId: string, enrollmentId: string) => {
-    if (!linkId) return
+  const handleUnenroll = async (participantId: string, rowLinkId: string) => {
+    if (!linkId || !participantsTableId) return
     
     try {
-      const { unenrollParticipantFromActivity } = await import('@/lib/api/participants-activities-link')
+      const { rowLinksGoClient } = await import('@/lib/api/participants-go-client')
       
-      // Remove table_row_link
-      await unenrollParticipantFromActivity(participantId, enrollmentId, linkId)
+      // Remove row link via Go API
+      await rowLinksGoClient.deleteRowLink(rowLinkId)
       
-      // Reload participants to reflect changes
-      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      // Reload participants (will be replaced by realtime subscription)
+      const { participantsGoClient } = await import('@/lib/api/participants-go-client')
       const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
-      const rows = await tablesSupabase.getTableRows(participantsTableId!)
+      const rows = await participantsGoClient.getParticipants(participantsTableId)
       const participantsData = await Promise.all(
         (rows || []).map((row: any) => 
-          tableRowToParticipant(row, participantsTableId!, linkId)
+          tableRowToParticipant(row, participantsTableId, linkId)
         )
       )
       setParticipants(participantsData)
