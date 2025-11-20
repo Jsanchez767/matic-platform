@@ -216,7 +216,7 @@ export default function DebugPage() {
           <h2 className="text-xl font-semibold mb-4">⚙️ Configuration</h2>
           <div className="space-y-2">
             <p><strong>Supabase URL:</strong> {process.env.NEXT_PUBLIC_SUPABASE_URL}</p>
-            <p><strong>API URL:</strong> {process.env.NEXT_PUBLIC_API_URL || 'Not configured'}</p>
+            <p><strong>Go API URL:</strong> {process.env.NEXT_PUBLIC_GO_API_URL || 'Not configured'}</p>
           </div>
         </div>
 

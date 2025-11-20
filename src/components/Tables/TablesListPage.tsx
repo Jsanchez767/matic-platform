@@ -10,10 +10,10 @@ import { supabase, getSessionToken } from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { DataTable } from '@/types/data-tables'
 
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
+// API Configuration - Go Backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
 if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local')
+  throw new Error('NEXT_PUBLIC_GO_API_URL is not configured. Set it in .env.local')
 }
 
 interface TablesListPageProps {

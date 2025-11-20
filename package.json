@@ -1,7 +1,7 @@
 {
   "name": "matic-platform",
   "version": "2.0.0",
-  "description": "Matic Platform - Forms and Data Tables with FastAPI Backend",
+  "description": "Matic Platform - Forms and Data Tables with Go Backend",
   "private": true,
   "scripts": {
     "dev": "next dev",

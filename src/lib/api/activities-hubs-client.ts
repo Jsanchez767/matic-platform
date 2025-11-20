@@ -16,7 +16,7 @@ import type {
   ReorderTabsInput,
 } from '@/types/activities-hubs';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1';
 
 // ============================================================================
 // Helper Functions

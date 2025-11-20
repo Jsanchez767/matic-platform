@@ -209,7 +209,7 @@ function ScanResultsContent() {
           console.log('📡 Fetching from database with params:', {
             tableId,
             columnName,
-            apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+            apiUrl: process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
           })
           
           const scanHistory = await scanHistoryAPI.list({

@@ -5,10 +5,10 @@
 
 import { getSessionToken } from '@/lib/supabase';
 
-// API Configuration - Always use production backend on Render
-const API_BASE = process.env.NEXT_PUBLIC_API_URL!;
+// API Configuration - Go Backend
+const API_BASE = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1';
 if (!API_BASE) {
-  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local');
+  throw new Error('NEXT_PUBLIC_GO_API_URL is not configured. Set it in .env.local');
 }
 
 // ============================================================================

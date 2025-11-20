@@ -24,17 +24,24 @@ export function useTableRealtime(
       return
     }
 
+    // WebSocket disabled - using Supabase Realtime instead
+    // The Go backend doesn't have WebSocket support yet
+    console.log('WebSocket disabled - using Supabase Realtime for table:', tableId)
+    setConnectionStatus('disconnected')
+    return
+
+    /* WebSocket code disabled - uncomment when Go backend supports WebSocket
     // Convert HTTP API URL to WebSocket URL
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+    const apiUrl = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
     // For local development, construct WebSocket URL properly
     let wsUrl: string
     if (apiUrl.includes('localhost')) {
-      // For localhost, construct WebSocket URL directly (API prefix is included in the backend)
-      wsUrl = `ws://localhost:8000/api/ws/tables/${tableId}`
+      // For localhost, construct WebSocket URL directly
+      wsUrl = `ws://localhost:8080/api/v1/ws/tables/${tableId}`
     } else {
       // For production, replace https with wss and keep the domain
-      const baseUrl = apiUrl.replace('/api', '').replace(/^https?/, 'wss')
-      wsUrl = `${baseUrl}/api/ws/tables/${tableId}`
+      const baseUrl = apiUrl.replace('/api/v1', '').replace(/^https?/, 'wss')
+      wsUrl = `${baseUrl}/api/v1/ws/tables/${tableId}`
     }
     
     console.log('Connecting to WebSocket:', wsUrl)
@@ -92,6 +99,7 @@ export function useTableRealtime(
       console.error('Failed to create WebSocket connection:', error)
       setConnectionStatus('error')
     }
+    */
   }, [tableId, onUpdate])
 
   useEffect(() => {

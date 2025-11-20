@@ -19,11 +19,10 @@ import { Button } from '@/ui-components/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
 import { toast } from 'sonner'
 
-// @ts-ignore - Next.js injects env vars at build time
-// API Configuration - Always use production backend on Render
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL!
+// API Configuration - Go Backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
 if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_API_URL is not configured. Set it in .env.local')
+  throw new Error('NEXT_PUBLIC_GO_API_URL is not configured. Set it in .env.local')
 }
 
 interface Column {
