@@ -137,9 +137,17 @@ export function AttendanceView({ activities, workspaceId, onSelectActivity }: At
       
       // Get enrolled participants for this activity
       const { getParticipantsForActivity } = await import('@/lib/api/participants-activities-link');
-      const enrolledParticipants = await getParticipantsForActivity(activityRow.id, link.id);
+      const enrolledRows = await getParticipantsForActivity(activityRow.id, link.id);
       
-      setParticipants(enrolledParticipants);
+      // Convert table rows to Participant objects
+      const { tableRowToParticipant } = await import('@/lib/api/participants-helpers');
+      const participantsData = await Promise.all(
+        enrolledRows.map((row: any) => 
+          tableRowToParticipant(row, participantsTable.id, link.id)
+        )
+      );
+      
+      setParticipants(participantsData);
     } catch (error) {
       console.error('Error loading participants:', error);
       setParticipants([]);
