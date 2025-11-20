@@ -43,10 +43,10 @@ func GetTableLink(c *gin.Context) {
 }
 
 type CreateTableLinkInput struct {
-	SourceTableID    uuid.UUID              `json:"source_table_id" binding:"required"`
-	TargetTableID    uuid.UUID              `json:"target_table_id" binding:"required"`
-	RelationshipType string                 `json:"relationship_type" binding:"required"` // "one_to_many", "many_to_many"
-	Settings         map[string]interface{} `json:"settings"`
+	SourceTableID uuid.UUID              `json:"source_table_id" binding:"required"`
+	TargetTableID uuid.UUID              `json:"target_table_id" binding:"required"`
+	LinkType      string                 `json:"link_type" binding:"required"`
+	Settings      map[string]interface{} `json:"settings"`
 }
 
 // CreateTableLink - Create a relationship between two tables
@@ -57,9 +57,9 @@ func CreateTableLink(c *gin.Context) {
 		return
 	}
 
-	// Validate relationship type
-	if input.RelationshipType != "one_to_many" && input.RelationshipType != "many_to_many" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "relationship_type must be 'one_to_many' or 'many_to_many'"})
+	// Validate link type
+	if input.LinkType != "one_to_many" && input.LinkType != "many_to_many" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "link_type must be 'one_to_many' or 'many_to_many'"})
 		return
 	}
 
@@ -83,10 +83,10 @@ func CreateTableLink(c *gin.Context) {
 	}
 
 	link := models.TableLink{
-		SourceTableID:    input.SourceTableID,
-		TargetTableID:    input.TargetTableID,
-		RelationshipType: input.RelationshipType,
-		Settings:         input.Settings,
+		SourceTableID: input.SourceTableID,
+		TargetTableID: input.TargetTableID,
+		LinkType:      input.LinkType,
+		Settings:      input.Settings,
 	}
 
 	if err := database.DB.Create(&link).Error; err != nil {
@@ -98,8 +98,8 @@ func CreateTableLink(c *gin.Context) {
 }
 
 type UpdateTableLinkInput struct {
-	RelationshipType *string                 `json:"relationship_type"`
-	Settings         *map[string]interface{} `json:"settings"`
+	LinkType *string                 `json:"link_type"`
+	Settings *map[string]interface{} `json:"settings"`
 }
 
 // UpdateTableLink - Update a table link
@@ -118,12 +118,12 @@ func UpdateTableLink(c *gin.Context) {
 		return
 	}
 
-	if input.RelationshipType != nil {
-		if *input.RelationshipType != "one_to_many" && *input.RelationshipType != "many_to_many" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "relationship_type must be 'one_to_many' or 'many_to_many'"})
+	if input.LinkType != nil {
+		if *input.LinkType != "one_to_many" && *input.LinkType != "many_to_many" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "link_type must be 'one_to_many' or 'many_to_many'"})
 			return
 		}
-		link.RelationshipType = *input.RelationshipType
+		link.LinkType = *input.LinkType
 	}
 
 	if input.Settings != nil {
