@@ -222,6 +222,25 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			tables.GET("/:id/search", handlers.SearchTableRows)
 		}
 
+		// Table Links - for managing table relationships
+		tableLinks := api.Group("/table-links")
+		{
+			tableLinks.GET("", handlers.ListTableLinks)                       // ?table_id=xxx
+			tableLinks.POST("", handlers.CreateTableLink)
+			tableLinks.GET("/:id", handlers.GetTableLink)
+			tableLinks.PATCH("/:id", handlers.UpdateTableLink)
+			tableLinks.DELETE("/:id", handlers.DeleteTableLink)
+		}
+
+		// Table Row Links - for managing row-to-row connections
+		rowLinks := api.Group("/row-links")
+		{
+			rowLinks.GET("/rows/:row_id/linked", handlers.GetLinkedRows)     // ?link_id=xxx
+			rowLinks.POST("", handlers.CreateTableRowLink)
+			rowLinks.PATCH("/:id", handlers.UpdateTableRowLink)
+			rowLinks.DELETE("/:id", handlers.DeleteTableRowLink)
+		}
+
 		// Forms
 		forms := api.Group("/forms")
 		{
