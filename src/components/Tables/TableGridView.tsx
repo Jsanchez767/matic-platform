@@ -200,7 +200,20 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       
       const tableData = await tablesSupabase.getTableById(tableId)
       setTableName(tableData.name)
-      setColumns(tableData.columns as any || [])
+      
+      // Populate linked_table_id on columns from table_links
+      const columnsWithLinks = (tableData.columns || []).map((col: any) => {
+        if (col.column_type === 'link' && tableData.links) {
+          // Find the table_link for this column
+          const link = tableData.links.find((l: any) => l.source_column_id === col.id)
+          if (link) {
+            return { ...col, linked_table_id: link.target_table_id }
+          }
+        }
+        return col
+      })
+      
+      setColumns(columnsWithLinks as any)
       
       const rowsData = await rowsSupabase.getRowsByTable(tableId)
       setRows(rowsData as any)

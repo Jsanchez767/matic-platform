@@ -147,10 +147,10 @@ type TableView struct {
 // TableLink - Defines relationships between tables (schema-level)
 type TableLink struct {
 	BaseModel
-	SourceTableID    uuid.UUID              `gorm:"type:uuid;not null;index" json:"source_table_id"`
-	TargetTableID    uuid.UUID              `gorm:"type:uuid;not null;index" json:"target_table_id"`
-	RelationshipType string                 `gorm:"not null" json:"relationship_type"` // one_to_many, many_to_many
-	Settings         map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
+	SourceTableID uuid.UUID              `gorm:"type:uuid;not null;index" json:"source_table_id"`
+	TargetTableID uuid.UUID              `gorm:"type:uuid;not null;index" json:"target_table_id"`
+	LinkType      string                 `gorm:"column:link_type;not null" json:"link_type"` // one_to_many, many_to_many
+	Settings      map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
 }
 
 // TableRowLink - Links specific rows together (data-level)

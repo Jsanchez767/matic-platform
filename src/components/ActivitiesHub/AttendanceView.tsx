@@ -110,7 +110,7 @@ export function AttendanceView({ activities, workspaceId, onSelectActivity }: At
         .select('id')
         .eq('source_table_id', participantsTable.id)
         .eq('target_table_id', activitiesTable.id)
-        .eq('relationship_type', 'many_to_many')
+        .eq('link_type', 'many_to_many')
         .single();
       
       if (!link) {

@@ -11,7 +11,7 @@ export interface TableLink {
   id: string
   source_table_id: string
   target_table_id: string
-  relationship_type: 'one_to_many' | 'many_to_many'
+  link_type: 'one_to_many' | 'many_to_many'
   settings: Record<string, any>
   created_at: string
   updated_at: string
@@ -98,13 +98,13 @@ export const tableLinksGoClient = {
   async createTableLink(
     sourceTableId: string,
     targetTableId: string,
-    relationshipType: 'one_to_many' | 'many_to_many',
+    linkType: 'one_to_many' | 'many_to_many',
     settings?: Record<string, any>
   ): Promise<TableLink> {
     return goClient.post<TableLink>('/table-links', {
       source_table_id: sourceTableId,
       target_table_id: targetTableId,
-      relationship_type: relationshipType,
+      link_type: linkType,
       settings: settings || {},
     })
   },

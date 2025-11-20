@@ -87,7 +87,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
             .from('table_links')
             .select('id')
             .eq('source_table_id', table.id)
-            .eq('relationship_type', 'many_to_many')
+            .eq('link_type', 'many_to_many')
             .single()
           
           if (link) {
