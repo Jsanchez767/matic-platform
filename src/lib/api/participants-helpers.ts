@@ -9,8 +9,29 @@ import { Participant } from '@/types/participants'
 /**
  * Convert table row to Participant object for UI
  */
-export function tableRowToParticipant(row: TableRow, tableId: string): Participant {
+export async function tableRowToParticipant(
+  row: TableRow, 
+  tableId: string,
+  linkId?: string
+): Promise<Participant> {
   const data = row.data || {}
+  
+  // Get enrolled programs from table_row_links if linkId provided
+  let enrolledPrograms: any[] = []
+  if (linkId && row.id) {
+    const { getActivitiesForParticipant } = await import('./participants-activities-link')
+    const activities = await getActivitiesForParticipant(row.id, linkId)
+    
+    enrolledPrograms = activities.map((activity: any) => ({
+      id: activity.id,
+      participant_id: row.id,
+      activity_id: activity.id,
+      activity_name: activity.data?.name || '',
+      enrolled_date: activity.enrollment?.enrolled_date || new Date().toISOString(),
+      status: activity.enrollment?.status || 'active',
+      notes: activity.enrollment?.notes || ''
+    }))
+  }
   
   return {
     id: row.id || '',
@@ -57,8 +78,8 @@ export function tableRowToParticipant(row: TableRow, tableId: string): Participa
     contact_phone: data.contact_phone,
     contact_email: data.contact_email,
     
-    // Programs - parse from multiselect or link field
-    enrolled_programs: parseEnrolledPrograms(data.enrolled_programs),
+    // Programs - from table_row_links
+    enrolled_programs: enrolledPrograms,
     
     // Metadata
     created_at: row.created_at || new Date().toISOString(),
@@ -69,6 +90,7 @@ export function tableRowToParticipant(row: TableRow, tableId: string): Participa
 
 /**
  * Convert participant data to table row data
+ * Note: enrolled_programs are NOT stored in JSONB - they are managed via table_row_links
  */
 export function participantToTableRowData(participant: Partial<Participant>): Record<string, any> {
   const rowData: Record<string, any> = {}
@@ -114,37 +136,7 @@ export function participantToTableRowData(participant: Partial<Participant>): Re
   if (participant.contact_phone) rowData.contact_phone = participant.contact_phone
   if (participant.contact_email) rowData.contact_email = participant.contact_email
   
-  // Programs
-  if (participant.enrolled_programs) {
-    rowData.enrolled_programs = participant.enrolled_programs.map(p => p.activity_id)
-  }
+  // enrolled_programs intentionally omitted - managed via table_row_links
   
   return rowData
-}
-
-/**
- * Parse enrolled programs from table data
- */
-function parseEnrolledPrograms(data: any): any[] {
-  if (!data) return []
-  
-  // If it's already an array of program enrollments
-  if (Array.isArray(data)) {
-    return data.map((item: any) => {
-      if (typeof item === 'string') {
-        // Just activity ID
-        return {
-          id: `enrollment_${item}`,
-          participant_id: '',
-          activity_id: item,
-          activity_name: item,
-          enrolled_date: new Date().toISOString(),
-          status: 'active' as const
-        }
-      }
-      return item
-    })
-  }
-  
-  return []
 }

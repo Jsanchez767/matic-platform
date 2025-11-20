@@ -69,6 +69,13 @@ export async function createParticipantsTable(workspaceId: string, userId: strin
       created_by: userId
     })
 
+    // Set up link to activities table
+    const { getOrCreateActivitiesTable } = await import('./activities-table-setup')
+    const { createParticipantsActivitiesLink } = await import('./participants-activities-link')
+    
+    const activitiesTable = await getOrCreateActivitiesTable(workspaceId, userId)
+    await createParticipantsActivitiesLink(table.id, activitiesTable.id)
+
     return table
   } catch (error) {
     console.error('Error creating participants table:', error)

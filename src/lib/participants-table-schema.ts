@@ -347,15 +347,17 @@ const participantColumnDefs: Partial<TableColumn>[] = [
     validation: {}
   },
   
-  // Program Enrollment (multiselect linking to activities)
+  // Program Enrollment (link to activities table)
   {
     name: 'enrolled_programs',
     label: 'Enrolled Programs',
-    column_type: 'multiselect',
+    column_type: 'link',
     is_visible: true,
     width: 250,
     settings: {
-      options: [] // Will be populated dynamically from activities
+      // Will be set dynamically to link to activities table
+      allowMultiple: true,
+      linkedTableName: 'activities'
     },
     validation: {}
   },
