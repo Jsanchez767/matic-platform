@@ -307,6 +307,56 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
     }
   }
 
+  const handleEnroll = async (participantId: string, activityId: string) => {
+    if (!linkId || !participantsTableId) return
+    
+    try {
+      const { rowLinksGoClient } = await import('@/lib/api/participants-go-client')
+      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      const { getOrCreateActivitiesTable } = await import('@/lib/api/activities-table-setup')
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) return
+      
+      // Get activities table to find activity row ID
+      const activitiesTable = await getOrCreateActivitiesTable(workspaceId, user.id)
+      const activityRows = await tablesSupabase.getTableRows(activitiesTable.id)
+      
+      // Find the activity row
+      const activityRow = activityRows?.find((row: any) => 
+        row.data?.legacy_activity_id === activityId || row.id === activityId
+      )
+      
+      if (activityRow?.id) {
+        // Create row link via Go API
+        await rowLinksGoClient.createRowLink(
+          participantId,
+          activityRow.id,
+          linkId,
+          {
+            enrolled_date: new Date().toISOString(),
+            status: 'active',
+            notes: ''
+          }
+        )
+        
+        // Reload participants (will be replaced by realtime subscription)
+        const { participantsGoClient } = await import('@/lib/api/participants-go-client')
+        const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
+        const rows = await participantsGoClient.getParticipants(participantsTableId)
+        const participantsData = await Promise.all(
+          (rows || []).map((row: any) => 
+            tableRowToParticipant(row, participantsTableId, linkId)
+          )
+        )
+        setParticipants(participantsData)
+      }
+    } catch (error) {
+      console.error('Error enrolling participant:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -336,6 +386,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
         onSave={handleSaveParticipant}
         onDelete={handleDeleteParticipant}
         onUnenroll={handleUnenroll}
+        onEnroll={handleEnroll}
       />
     </>
   )

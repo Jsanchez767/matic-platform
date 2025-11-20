@@ -16,21 +16,27 @@ export async function tableRowToParticipant(
 ): Promise<Participant> {
   const data = row.data || {}
   
-  // Get enrolled programs from table_row_links if linkId provided
+  // Get enrolled programs from table_row_links via Go API if linkId provided
   let enrolledPrograms: any[] = []
   if (linkId && row.id) {
-    const { getActivitiesForParticipant } = await import('./participants-activities-link')
-    const activities = await getActivitiesForParticipant(row.id, linkId)
-    
-    enrolledPrograms = activities.map((activity: any) => ({
-      id: activity.id,
-      participant_id: row.id,
-      activity_id: activity.id,
-      activity_name: activity.data?.name || '',
-      enrolled_date: activity.enrollment?.enrolled_date || new Date().toISOString(),
-      status: activity.enrollment?.status || 'active',
-      notes: activity.enrollment?.notes || ''
-    }))
+    try {
+      const { rowLinksGoClient } = await import('./participants-go-client')
+      const linkedRows = await rowLinksGoClient.getLinkedRows(row.id, linkId)
+      
+      enrolledPrograms = linkedRows.map((linkedRow: any) => ({
+        id: linkedRow.row_link_id, // Use row_link_id as the enrollment ID for unenrolling
+        participant_id: row.id,
+        activity_id: linkedRow.row.id,
+        activity_name: linkedRow.row.data?.name || linkedRow.row.data?.legacy_name || '',
+        enrolled_date: linkedRow.link_data?.enrolled_date || new Date().toISOString(),
+        status: linkedRow.link_data?.status || 'active',
+        notes: linkedRow.link_data?.notes || ''
+      }))
+    } catch (error) {
+      console.error('Error loading enrollments for participant:', error)
+      // Return empty enrollments on error
+      enrolledPrograms = []
+    }
   }
   
   return {

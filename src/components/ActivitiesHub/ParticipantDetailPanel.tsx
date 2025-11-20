@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Save, UserCircle, Home, GraduationCap, Users, Phone, Mail, Calendar, Trash2 } from 'lucide-react'
+import { X, Save, UserCircle, Home, GraduationCap, Users, Phone, Mail, Calendar, Trash2, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Participant, UpdateParticipantInput } from '@/types/participants'
 import { Activity } from '@/types/activities-hubs'
@@ -16,6 +16,7 @@ interface ParticipantDetailPanelProps {
   onSave: (id: string, updates: UpdateParticipantInput) => void
   onDelete: (id: string) => void
   onUnenroll: (participantId: string, enrollmentId: string) => void
+  onEnroll: (participantId: string, activityId: string) => void
 }
 
 export function ParticipantDetailPanel({
@@ -24,11 +25,14 @@ export function ParticipantDetailPanel({
   onClose,
   onSave,
   onDelete,
-  onUnenroll
+  onUnenroll,
+  onEnroll
 }: ParticipantDetailPanelProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [formData, setFormData] = useState<UpdateParticipantInput>({})
   const [activeSection, setActiveSection] = useState<string>('student')
+  const [showEnrollDialog, setShowEnrollDialog] = useState(false)
+  const [selectedActivityId, setSelectedActivityId] = useState<string>('')
 
   if (!participant) return null
 
@@ -91,6 +95,23 @@ export function ParticipantDetailPanel({
   }
 
   const activeEnrollments = participant.enrolled_programs.filter(e => e.status === 'active')
+  const enrolledActivityIds = new Set(participant.enrolled_programs.map(e => e.activity_id))
+  const availableActivities = activities.filter(a => !enrolledActivityIds.has(a.id))
+
+  const handleEnrollClick = () => {
+    if (availableActivities.length > 0) {
+      setSelectedActivityId(availableActivities[0].id)
+      setShowEnrollDialog(true)
+    }
+  }
+
+  const handleConfirmEnroll = () => {
+    if (selectedActivityId) {
+      onEnroll(participant.id, selectedActivityId)
+      setShowEnrollDialog(false)
+      setSelectedActivityId('')
+    }
+  }
 
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-[600px] bg-white shadow-2xl z-50 flex flex-col">
@@ -508,9 +529,17 @@ export function ParticipantDetailPanel({
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-gray-900">Enrolled Programs</h3>
-              <span className="text-sm text-gray-500">
-                {activeEnrollments.length} active
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-gray-500">
+                  {activeEnrollments.length} active
+                </span>
+                {availableActivities.length > 0 && (
+                  <Button size="sm" onClick={handleEnrollClick}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Enroll
+                  </Button>
+                )}
+              </div>
             </div>
 
             {activeEnrollments.length === 0 ? (
@@ -564,6 +593,43 @@ export function ParticipantDetailPanel({
           </div>
         )}
       </div>
+
+      {/* Enrollment Dialog */}
+      {showEnrollDialog && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold mb-4">Enroll in Program</h3>
+            <div className="mb-4">
+              <Label className="text-sm mb-2 block">Select Program</Label>
+              <select
+                value={selectedActivityId}
+                onChange={(e) => setSelectedActivityId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableActivities.map(activity => (
+                  <option key={activity.id} value={activity.id}>
+                    {activity.name} ({activity.category})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEnrollDialog(false)
+                  setSelectedActivityId('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmEnroll}>
+                Enroll
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

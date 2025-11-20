@@ -221,7 +221,7 @@ func searchActivitiesHubs(workspaceID uuid.UUID, workspaceSlug, query string) []
 				"lastUpdated": hub.UpdatedAt,
 				"createdAt":   hub.CreatedAt,
 			},
-			Path: fmt.Sprintf("Workspace / Request Hubs / %s", hub.Name),
+			Path: fmt.Sprintf("Workspace / Activities Hubs / %s", hub.Name),
 		})
 	}
 
@@ -531,12 +531,12 @@ func SearchFormSubmissions(c *gin.Context) {
 			WorkspaceID: form.WorkspaceID.String(),
 			Score:       0.8,
 			Metadata: map[string]interface{}{
-				"formName":   form.Name,
-				"formId":     form.ID,
-				"ipAddress":  submission.IPAddress,
-				"userAgent":  submission.UserAgent,
-				"createdAt":  submission.CreatedAt,
-				"data":       submission.Data,
+				"formName":  form.Name,
+				"formId":    form.ID,
+				"ipAddress": submission.IPAddress,
+				"userAgent": submission.UserAgent,
+				"createdAt": submission.CreatedAt,
+				"data":      submission.Data,
 			},
 			Path: fmt.Sprintf("%s / Submissions", form.Name),
 		})
