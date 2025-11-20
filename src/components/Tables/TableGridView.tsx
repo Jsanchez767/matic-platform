@@ -459,75 +459,55 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   }
 
   const handleDeleteColumn = async (columnId: string) => {
-    if (!confirm('Delete this field? All data will be lost.')) return
-    try {
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/columns/${columnId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) throw new Error('Failed to delete column')
-      await loadTableData()
-    } catch (error) {
-      console.error('Error deleting column:', error)
-    }
+    // TODO: Add column delete endpoint to Go backend
+    toast.error('Column deletion not yet available - Go backend endpoint needed')
+    console.warn('Column delete endpoint not implemented in Go backend yet')
     setActiveColumnMenu(null)
+    return
+    
+    // if (!confirm('Delete this field? All data will be lost.')) return
+    // try {
+    //   await goClient.delete(`/tables/${tableId}/columns/${columnId}`)
+    //   await loadTableData()
+    //   toast.success('Column deleted')
+    // } catch (error) {
+    //   console.error('Error deleting column:', error)
+    //   toast.error('Failed to delete column')
+    // }
+    // setActiveColumnMenu(null)
   }
 
   const handleSaveColumn = async (columnData: any) => {
-    try {
-      console.log('Saving column data:', columnData)
-      let response
-      if (editingColumn) {
-        const url = `${API_BASE_URL}/tables/${tableId}/columns/${editingColumn.id}`
-        console.log('PATCH URL:', url)
-        response = await fetchWithRetry(url, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(columnData),
-        }, {
-          onRetry: (attempt) => console.log(`Retrying column update, attempt ${attempt}...`)
-        })
-      } else {
-        const url = `${API_BASE_URL}/tables/${tableId}/columns`
-        const payload = { ...columnData, table_id: tableId, position: columns.length }
-        console.log('POST URL:', url)
-        console.log('POST payload:', payload)
-        response = await fetchWithRetry(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }, {
-          onRetry: (attempt) => console.log(`Retrying column creation, attempt ${attempt}...`)
-        })
-      }
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        console.error('Column save failed:', response.status, errorData)
-        alert(`Failed to save column (${response.status}): ${JSON.stringify(errorData)}`)
-        return
-      }
-      
-      const savedColumn = await response.json()
-      console.log('Column saved successfully:', savedColumn)
-      
-      // Update columns locally without reloading entire table
-      if (editingColumn) {
-        setColumns(columns.map(col => col.id === editingColumn.id ? savedColumn : col))
-      } else {
-        setColumns([...columns, savedColumn])
-      }
-      
-      setIsColumnEditorOpen(false)
-      setEditingColumn(null)
-    } catch (error) {
-      console.error('Error saving column:', error)
-      
-      if (isBackendSleeping(error)) {
-        showBackendSleepingMessage()
-      } else {
-        alert(`Error saving column: ${error}`)
-      }
-    }
+    // TODO: Add column create/update endpoints to Go backend
+    toast.error('Column editing not yet available - Go backend endpoints needed')
+    console.warn('Column create/update endpoints not implemented in Go backend yet')
+    setIsColumnEditorOpen(false)
+    return
+    
+    // try {
+    //   console.log('Saving column data:', columnData)
+    //   if (editingColumn) {
+    //     // Update existing column
+    //     const savedColumn = await goClient.patch(
+    //       `/tables/${tableId}/columns/${editingColumn.id}`,
+    //       columnData
+    //     )
+    //     setColumns(columns.map(col => col.id === editingColumn.id ? savedColumn : col))
+    //     toast.success('Column updated')
+    //   } else {
+    //     // Create new column
+    //     const payload = { ...columnData, table_id: tableId, position: columns.length }
+    //     const savedColumn = await goClient.post(`/tables/${tableId}/columns`, payload)
+    //     setColumns([...columns, savedColumn])
+    //     toast.success('Column created')
+    //   }
+    //   
+    //   setIsColumnEditorOpen(false)
+    //   setEditingColumn(null)
+    // } catch (error: any) {
+    //   console.error('Error saving column:', error)
+    //   toast.error(`Failed to save column: ${error.message}`)
+    // }
   }
 
   const renderCell = (row: Row, column: Column) => {
