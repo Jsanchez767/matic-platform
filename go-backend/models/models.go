@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
@@ -61,75 +62,75 @@ type Workspace struct {
 
 type WorkspaceMember struct {
 	BaseModel
-	WorkspaceID uuid.UUID              `gorm:"type:uuid;not null;index" json:"workspace_id"`
-	UserID      uuid.UUID              `gorm:"type:uuid;not null;index" json:"user_id"`
-	Role        string                 `gorm:"type:varchar(50);default:'editor'" json:"role"`
-	Permissions map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"permissions"`
-	AddedAt     time.Time              `gorm:"autoCreateTime" json:"added_at"`
+	WorkspaceID uuid.UUID      `gorm:"type:uuid;not null;index" json:"workspace_id"`
+	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	Role        string         `gorm:"type:varchar(50);default:'editor'" json:"role"`
+	Permissions datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"permissions"`
+	AddedAt     time.Time      `gorm:"autoCreateTime" json:"added_at"`
 }
 
 // ActivitiesHub model
 type ActivitiesHub struct {
 	BaseModel
-	WorkspaceID  uuid.UUID              `gorm:"type:uuid;not null;index" json:"workspace_id"`
-	Name         string                 `gorm:"not null" json:"name"`
-	Slug         string                 `gorm:"not null;index" json:"slug"`
-	Description  string                 `json:"description"`
-	Category     string                 `json:"category"`
-	BeginDate    *time.Time             `json:"begin_date"`
-	EndDate      *time.Time             `json:"end_date"`
-	Status       string                 `gorm:"default:'upcoming'" json:"status"` // active, upcoming, completed
-	Participants int                    `gorm:"default:0" json:"participants"`
-	Settings     map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
-	IsActive     bool                   `gorm:"default:true" json:"is_active"`
-	CreatedBy    uuid.UUID              `gorm:"type:uuid;not null" json:"created_by"`
-	Tabs         []ActivitiesHubTab     `gorm:"foreignKey:HubID" json:"tabs,omitempty"`
+	WorkspaceID  uuid.UUID          `gorm:"type:uuid;not null;index" json:"workspace_id"`
+	Name         string             `gorm:"not null" json:"name"`
+	Slug         string             `gorm:"not null;index" json:"slug"`
+	Description  string             `json:"description"`
+	Category     string             `json:"category"`
+	BeginDate    *time.Time         `json:"begin_date"`
+	EndDate      *time.Time         `json:"end_date"`
+	Status       string             `gorm:"default:'upcoming'" json:"status"` // active, upcoming, completed
+	Participants int                `gorm:"default:0" json:"participants"`
+	Settings     datatypes.JSON     `gorm:"type:jsonb;default:'{}'" json:"settings"`
+	IsActive     bool               `gorm:"default:true" json:"is_active"`
+	CreatedBy    uuid.UUID          `gorm:"type:uuid;not null" json:"created_by"`
+	Tabs         []ActivitiesHubTab `gorm:"foreignKey:HubID" json:"tabs,omitempty"`
 }
 
 type ActivitiesHubTab struct {
 	BaseModel
-	HubID     uuid.UUID              `gorm:"type:uuid;not null;index" json:"hub_id"`
-	Name      string                 `gorm:"not null" json:"name"`
-	Slug      string                 `gorm:"not null" json:"slug"`
-	Type      string                 `gorm:"not null" json:"type"` // dashboard, attendance, participants, etc.
-	Icon      string                 `json:"icon"`
-	Position  int                    `gorm:"default:0" json:"position"`
-	IsVisible bool                   `gorm:"default:true" json:"is_visible"`
-	Config    map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"config"`
+	HubID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"hub_id"`
+	Name      string         `gorm:"not null" json:"name"`
+	Slug      string         `gorm:"not null" json:"slug"`
+	Type      string         `gorm:"not null" json:"type"` // dashboard, attendance, participants, etc.
+	Icon      string         `json:"icon"`
+	Position  int            `gorm:"default:0" json:"position"`
+	IsVisible bool           `gorm:"default:true" json:"is_visible"`
+	Config    datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"config"`
 }
 
 // DataTable model
 type DataTable struct {
 	BaseModel
-	WorkspaceID uuid.UUID              `gorm:"type:uuid;not null;index" json:"workspace_id"`
-	Name        string                 `gorm:"not null" json:"name"`
-	Description string                 `json:"description"`
-	Icon        string                 `gorm:"default:'table'" json:"icon"`
-	Settings    map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
-	Columns     []TableColumn          `gorm:"foreignKey:TableID" json:"columns,omitempty"`
-	Rows        []TableRow             `gorm:"foreignKey:TableID" json:"rows,omitempty"`
-	Views       []TableView            `gorm:"foreignKey:TableID" json:"views,omitempty"`
+	WorkspaceID uuid.UUID      `gorm:"type:uuid;not null;index" json:"workspace_id"`
+	Name        string         `gorm:"not null" json:"name"`
+	Description string         `json:"description"`
+	Icon        string         `gorm:"default:'table'" json:"icon"`
+	Settings    datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"settings"`
+	Columns     []TableColumn  `gorm:"foreignKey:TableID" json:"columns,omitempty"`
+	Rows        []TableRow     `gorm:"foreignKey:TableID" json:"rows,omitempty"`
+	Views       []TableView    `gorm:"foreignKey:TableID" json:"views,omitempty"`
 }
 
 type TableColumn struct {
 	BaseModel
-	TableID      uuid.UUID              `gorm:"type:uuid;not null;index" json:"table_id"`
-	Name         string                 `gorm:"not null" json:"name"`
-	Type         string                 `gorm:"not null" json:"type"` // text, number, select, etc.
-	Position     int                    `gorm:"default:0" json:"position"`
-	Width        int                    `gorm:"default:200" json:"width"`
-	IsRequired   bool                   `gorm:"default:false" json:"is_required"`
-	IsPrimaryKey bool                   `gorm:"default:false" json:"is_primary_key"`
-	Options      map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"options"`
-	Validation   map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"validation"`
+	TableID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"table_id"`
+	Name         string         `gorm:"not null" json:"name"`
+	Type         string         `gorm:"not null" json:"type"` // text, number, select, etc.
+	Position     int            `gorm:"default:0" json:"position"`
+	Width        int            `gorm:"default:200" json:"width"`
+	IsRequired   bool           `gorm:"default:false" json:"is_required"`
+	IsPrimaryKey bool           `gorm:"default:false" json:"is_primary_key"`
+	Options      datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"options"`
+	Validation   datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"validation"`
 }
 
 type TableRow struct {
 	BaseModel
-	TableID   uuid.UUID              `gorm:"type:uuid;not null;index" json:"table_id"`
-	Position  int                    `gorm:"default:0" json:"position"`
-	Data      map[string]interface{} `gorm:"type:jsonb;not null" json:"data"`
-	CreatedBy *uuid.UUID             `gorm:"type:uuid" json:"created_by,omitempty"`
+	TableID   uuid.UUID      `gorm:"type:uuid;not null;index" json:"table_id"`
+	Position  int            `gorm:"default:0" json:"position"`
+	Data      datatypes.JSON `gorm:"type:jsonb;not null" json:"data"`
+	CreatedBy *uuid.UUID     `gorm:"type:uuid" json:"created_by,omitempty"`
 	UpdatedBy *uuid.UUID             `gorm:"type:uuid" json:"updated_by,omitempty"`
 }
 
@@ -188,9 +189,9 @@ type FormField struct {
 
 type FormSubmission struct {
 	BaseModel
-	FormID      uuid.UUID              `gorm:"type:uuid;not null;index" json:"form_id"`
-	Data        map[string]interface{} `gorm:"type:jsonb;not null" json:"data"`
-	SubmittedBy uuid.UUID              `gorm:"type:uuid" json:"submitted_by"`
-	IPAddress   string                 `json:"ip_address"`
-	UserAgent   string                 `json:"user_agent"`
+	FormID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"form_id"`
+	Data        datatypes.JSON `gorm:"type:jsonb;not null" json:"data"`
+	SubmittedBy uuid.UUID      `gorm:"type:uuid" json:"submitted_by"`
+	IPAddress   string         `json:"ip_address"`
+	UserAgent   string         `json:"user_agent"`
 }

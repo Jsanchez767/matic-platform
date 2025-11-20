@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/Jsanchez767/matic-platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
 // Helper function to parse date strings
@@ -24,6 +26,15 @@ func parseDate(dateStr string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, nil
+}
+
+// Helper function to convert map to datatypes.JSON (for activities hubs)
+func mapToJSONHub(m map[string]interface{}) datatypes.JSON {
+	if m == nil {
+		return datatypes.JSON("{}")
+	}
+	jsonBytes, _ := json.Marshal(m)
+	return datatypes.JSON(jsonBytes)
 }
 
 // Activities Hub Handlers
@@ -130,7 +141,7 @@ func CreateActivitiesHub(c *gin.Context) {
 		Category:     input.Category,
 		Status:       status,
 		Participants: input.Participants,
-		Settings:     input.Settings,
+		Settings:     mapToJSONHub(input.Settings),
 		IsActive:     isActive,
 		CreatedBy:    uuid.MustParse(c.Query("user_id")), // Get from auth middleware
 	}
@@ -229,7 +240,7 @@ func UpdateActivitiesHub(c *gin.Context) {
 		}
 	}
 	if input.Settings != nil {
-		hub.Settings = *input.Settings
+		hub.Settings = mapToJSONHub(*input.Settings)
 	}
 	if input.IsActive != nil {
 		hub.IsActive = *input.IsActive
@@ -337,7 +348,7 @@ func CreateActivitiesHubTab(c *gin.Context) {
 		Icon:      input.Icon,
 		Position:  input.Position,
 		IsVisible: isVisible,
-		Config:    input.Config,
+		Config:    mapToJSONHub(input.Config),
 	}
 
 	if err := database.DB.Create(&tab).Error; err != nil {
@@ -410,7 +421,7 @@ func UpdateActivitiesHubTab(c *gin.Context) {
 		tab.IsVisible = *input.IsVisible
 	}
 	if input.Config != nil {
-		tab.Config = *input.Config
+		tab.Config = mapToJSONHub(*input.Config)
 	}
 
 	if err := database.DB.Save(&tab).Error; err != nil {

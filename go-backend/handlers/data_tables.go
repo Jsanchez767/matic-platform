@@ -1,13 +1,24 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/Jsanchez767/matic-platform/database"
 	"github.com/Jsanchez767/matic-platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
+
+// Helper function to convert map to datatypes.JSON
+func mapToJSON(m map[string]interface{}) datatypes.JSON {
+	if m == nil {
+		return datatypes.JSON("{}")
+	}
+	jsonBytes, _ := json.Marshal(m)
+	return datatypes.JSON(jsonBytes)
+}
 
 // Data Table Handlers
 
@@ -68,7 +79,7 @@ func CreateDataTable(c *gin.Context) {
 		Name:        input.Name,
 		Description: input.Description,
 		Icon:        icon,
-		Settings:    input.Settings,
+		Settings:    mapToJSON(input.Settings),
 	}
 
 	if err := database.DB.Create(&table).Error; err != nil {
@@ -111,7 +122,7 @@ func UpdateDataTable(c *gin.Context) {
 		table.Icon = *input.Icon
 	}
 	if input.Settings != nil {
-		table.Settings = *input.Settings
+		table.Settings = mapToJSON(*input.Settings)
 	}
 
 	if err := database.DB.Save(&table).Error; err != nil {
@@ -189,7 +200,7 @@ func CreateTableRow(c *gin.Context) {
 
 	row := models.TableRow{
 		TableID:   parsedTableID,
-		Data:      input.Data,
+		Data:      mapToJSON(input.Data),
 		Position:  input.Position,
 		CreatedBy: &parsedUserID,
 	}
@@ -224,7 +235,7 @@ func UpdateTableRow(c *gin.Context) {
 	}
 
 	if input.Data != nil {
-		row.Data = *input.Data
+		row.Data = mapToJSON(*input.Data)
 	}
 	if input.Position != nil {
 		row.Position = *input.Position
@@ -305,8 +316,8 @@ func CreateTableColumn(c *gin.Context) {
 		Width:        input.Width,
 		IsRequired:   input.IsRequired,
 		IsPrimaryKey: input.IsPrimaryKey,
-		Options:      input.Options,
-		Validation:   input.Validation,
+		Options:      mapToJSON(input.Options),
+		Validation:   mapToJSON(input.Validation),
 	}
 
 	if err := database.DB.Create(&column).Error; err != nil {
@@ -364,10 +375,10 @@ func UpdateTableColumn(c *gin.Context) {
 		column.IsPrimaryKey = *input.IsPrimaryKey
 	}
 	if input.Options != nil {
-		column.Options = *input.Options
+		column.Options = mapToJSON(*input.Options)
 	}
 	if input.Validation != nil {
-		column.Validation = *input.Validation
+		column.Validation = mapToJSON(*input.Validation)
 	}
 
 	if err := database.DB.Save(&column).Error; err != nil {

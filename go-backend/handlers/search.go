@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/Jsanchez767/matic-platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
 
 // SearchResult represents a search result item
@@ -273,11 +275,16 @@ func searchTableRows(workspaceID uuid.UUID, workspaceSlug, query string) []Searc
 }
 
 // extractRowPreview creates a preview string from row data
-func extractRowPreview(data map[string]interface{}) string {
+func extractRowPreview(data datatypes.JSON) string {
+	var dataMap map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &dataMap); err != nil {
+		return ""
+	}
+	
 	var preview []string
 	count := 0
 
-	for key, value := range data {
+	for key, value := range dataMap {
 		if count >= 3 {
 			break
 		}

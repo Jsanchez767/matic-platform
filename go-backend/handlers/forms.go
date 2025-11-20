@@ -1,13 +1,24 @@
 package handlers
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/Jsanchez767/matic-platform/database"
 	"github.com/Jsanchez767/matic-platform/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 )
+
+// Helper function to convert map to datatypes.JSON (for forms)
+func mapToJSONForm(m map[string]interface{}) datatypes.JSON {
+	if m == nil {
+		return datatypes.JSON("{}")
+	}
+	jsonBytes, _ := json.Marshal(m)
+	return datatypes.JSON(jsonBytes)
+}
 
 // Form Handlers
 
@@ -173,7 +184,7 @@ func SubmitForm(c *gin.Context) {
 
 	submission := models.FormSubmission{
 		FormID:    uuid.MustParse(formID),
-		Data:      input.Data,
+		Data:      mapToJSONForm(input.Data),
 		IPAddress: c.ClientIP(),
 		UserAgent: c.Request.UserAgent(),
 	}
