@@ -280,7 +280,7 @@ func extractRowPreview(data datatypes.JSON) string {
 	if err := json.Unmarshal([]byte(data), &dataMap); err != nil {
 		return ""
 	}
-	
+
 	var preview []string
 	count := 0
 

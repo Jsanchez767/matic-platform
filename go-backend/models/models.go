@@ -131,7 +131,7 @@ type TableRow struct {
 	Position  int            `gorm:"default:0" json:"position"`
 	Data      datatypes.JSON `gorm:"type:jsonb;not null" json:"data"`
 	CreatedBy *uuid.UUID     `gorm:"type:uuid" json:"created_by,omitempty"`
-	UpdatedBy *uuid.UUID             `gorm:"type:uuid" json:"updated_by,omitempty"`
+	UpdatedBy *uuid.UUID     `gorm:"type:uuid" json:"updated_by,omitempty"`
 }
 
 type TableView struct {
