@@ -38,17 +38,17 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			"status":      "running",
 			"description": "Full-stack Airtable-like platform with forms and data tables",
 			"endpoints": gin.H{
-				"health":           "/health",
-				"api_v1":           "/api/v1",
-				"workspaces":       "/api/v1/workspaces",
-				"tables":           "/api/v1/tables",
-				"forms":            "/api/v1/forms",
-				"activities_hubs":  "/api/v1/activities-hubs",
+				"health":          "/health",
+				"api_v1":          "/api/v1",
+				"workspaces":      "/api/v1/workspaces",
+				"tables":          "/api/v1/tables",
+				"forms":           "/api/v1/forms",
+				"activities_hubs": "/api/v1/activities-hubs",
 			},
 			"documentation": gin.H{
-				"html": "/",
-				"json": "/api/v1/docs",
-				"health":  "/health",
+				"html":   "/",
+				"json":   "/api/v1/docs",
+				"health": "/health",
 			},
 		})
 	})
@@ -79,38 +79,38 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"update": "PATCH /api/v1/workspaces/:id",
 						"delete": "DELETE /api/v1/workspaces/:id",
 					},
-				"activities_hubs": gin.H{
-					"list":         "GET /api/v1/activities-hubs",
-					"create":       "POST /api/v1/activities-hubs",
-					"get":          "GET /api/v1/activities-hubs/:hub_id",
-					"get_by_slug":  "GET /api/v1/activities-hubs/by-slug/:slug",
-					"update":       "PATCH /api/v1/activities-hubs/:hub_id",
-					"delete":       "DELETE /api/v1/activities-hubs/:hub_id",
-					"list_tabs":    "GET /api/v1/activities-hubs/:hub_id/tabs",
-					"create_tab":   "POST /api/v1/activities-hubs/:hub_id/tabs",
-					"update_tab":   "PATCH /api/v1/activities-hubs/:hub_id/tabs/:tab_id",
-					"delete_tab":   "DELETE /api/v1/activities-hubs/:hub_id/tabs/:tab_id",
-					"reorder_tabs": "POST /api/v1/activities-hubs/:hub_id/tabs/reorder",
-				},
+					"activities_hubs": gin.H{
+						"list":         "GET /api/v1/activities-hubs",
+						"create":       "POST /api/v1/activities-hubs",
+						"get":          "GET /api/v1/activities-hubs/:hub_id",
+						"get_by_slug":  "GET /api/v1/activities-hubs/by-slug/:slug",
+						"update":       "PATCH /api/v1/activities-hubs/:hub_id",
+						"delete":       "DELETE /api/v1/activities-hubs/:hub_id",
+						"list_tabs":    "GET /api/v1/activities-hubs/:hub_id/tabs",
+						"create_tab":   "POST /api/v1/activities-hubs/:hub_id/tabs",
+						"update_tab":   "PATCH /api/v1/activities-hubs/:hub_id/tabs/:tab_id",
+						"delete_tab":   "DELETE /api/v1/activities-hubs/:hub_id/tabs/:tab_id",
+						"reorder_tabs": "POST /api/v1/activities-hubs/:hub_id/tabs/reorder",
+					},
 					"tables": gin.H{
-						"list":        "GET /api/v1/tables",
-						"create":      "POST /api/v1/tables",
-						"get":         "GET /api/v1/tables/:id",
-						"update":      "PATCH /api/v1/tables/:id",
-						"delete":      "DELETE /api/v1/tables/:id",
-						"list_rows":   "GET /api/v1/tables/:id/rows",
-						"create_row":  "POST /api/v1/tables/:id/rows",
-						"update_row":  "PATCH /api/v1/tables/:id/rows/:row_id",
-						"delete_row":  "DELETE /api/v1/tables/:id/rows/:row_id",
+						"list":       "GET /api/v1/tables",
+						"create":     "POST /api/v1/tables",
+						"get":        "GET /api/v1/tables/:id",
+						"update":     "PATCH /api/v1/tables/:id",
+						"delete":     "DELETE /api/v1/tables/:id",
+						"list_rows":  "GET /api/v1/tables/:id/rows",
+						"create_row": "POST /api/v1/tables/:id/rows",
+						"update_row": "PATCH /api/v1/tables/:id/rows/:row_id",
+						"delete_row": "DELETE /api/v1/tables/:id/rows/:row_id",
 					},
 					"forms": gin.H{
-						"list":              "GET /api/v1/forms",
-						"create":            "POST /api/v1/forms",
-						"get":               "GET /api/v1/forms/:id",
-						"update":            "PATCH /api/v1/forms/:id",
-						"delete":            "DELETE /api/v1/forms/:id",
-						"list_submissions":  "GET /api/v1/forms/:id/submissions",
-						"submit":            "POST /api/v1/forms/:id/submit",
+						"list":             "GET /api/v1/forms",
+						"create":           "POST /api/v1/forms",
+						"get":              "GET /api/v1/forms/:id",
+						"update":           "PATCH /api/v1/forms/:id",
+						"delete":           "DELETE /api/v1/forms/:id",
+						"list_submissions": "GET /api/v1/forms/:id/submissions",
+						"submit":           "POST /api/v1/forms/:id/submit",
 					},
 				},
 			})
@@ -142,34 +142,34 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"reorder_tabs": "POST /api/v1/request-hubs/:hub_id/tabs/reorder",
 					},
 					"tables": gin.H{
-						"list":        "GET /api/v1/tables",
-						"create":      "POST /api/v1/tables",
-						"get":         "GET /api/v1/tables/:id",
-						"update":      "PATCH /api/v1/tables/:id",
-						"delete":      "DELETE /api/v1/tables/:id",
-						"list_rows":   "GET /api/v1/tables/:id/rows",
-						"create_row":  "POST /api/v1/tables/:id/rows",
-						"update_row":  "PATCH /api/v1/tables/:id/rows/:row_id",
-						"delete_row":  "DELETE /api/v1/tables/:id/rows/:row_id",
-						"search":      "GET /api/v1/tables/:id/search",
+						"list":       "GET /api/v1/tables",
+						"create":     "POST /api/v1/tables",
+						"get":        "GET /api/v1/tables/:id",
+						"update":     "PATCH /api/v1/tables/:id",
+						"delete":     "DELETE /api/v1/tables/:id",
+						"list_rows":  "GET /api/v1/tables/:id/rows",
+						"create_row": "POST /api/v1/tables/:id/rows",
+						"update_row": "PATCH /api/v1/tables/:id/rows/:row_id",
+						"delete_row": "DELETE /api/v1/tables/:id/rows/:row_id",
+						"search":     "GET /api/v1/tables/:id/search",
 					},
 					"forms": gin.H{
-						"list":              "GET /api/v1/forms",
-						"create":            "POST /api/v1/forms",
-						"get":               "GET /api/v1/forms/:id",
-						"update":            "PATCH /api/v1/forms/:id",
-						"delete":            "DELETE /api/v1/forms/:id",
-						"list_submissions":  "GET /api/v1/forms/:id/submissions",
-						"submit":            "POST /api/v1/forms/:id/submit",
-						"search":            "GET /api/v1/forms/:id/search",
+						"list":             "GET /api/v1/forms",
+						"create":           "POST /api/v1/forms",
+						"get":              "GET /api/v1/forms/:id",
+						"update":           "PATCH /api/v1/forms/:id",
+						"delete":           "DELETE /api/v1/forms/:id",
+						"list_submissions": "GET /api/v1/forms/:id/submissions",
+						"submit":           "POST /api/v1/forms/:id/submit",
+						"search":           "GET /api/v1/forms/:id/search",
 					},
 					"search": gin.H{
-						"workspace":         "GET /api/v1/search?q=query&workspace_id=uuid",
-						"suggestions":       "GET /api/v1/search/suggestions?q=query&workspace_id=uuid",
-						"recent":            "GET /api/v1/search/recent?workspace_id=uuid&limit=10",
-						"save_history":      "POST /api/v1/search/history",
-						"popular":           "GET /api/v1/search/popular?workspace_id=uuid&limit=5",
-						"clear_history":     "DELETE /api/v1/search/history/:workspace_id",
+						"workspace":     "GET /api/v1/search?q=query&workspace_id=uuid",
+						"suggestions":   "GET /api/v1/search/suggestions?q=query&workspace_id=uuid",
+						"recent":        "GET /api/v1/search/recent?workspace_id=uuid&limit=10",
+						"save_history":  "POST /api/v1/search/history",
+						"popular":       "GET /api/v1/search/popular?workspace_id=uuid&limit=5",
+						"clear_history": "DELETE /api/v1/search/history/:workspace_id",
 					},
 				},
 			})
@@ -188,8 +188,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Activities Hubs (separate base path to avoid conflicts with /workspaces/:id)
 		activitiesHubs := api.Group("/activities-hubs")
 		{
-			activitiesHubs.GET("", handlers.ListActivitiesHubs)               // ?workspace_id=xxx
-			activitiesHubs.POST("", handlers.CreateActivitiesHub)             // workspace_id in body
+			activitiesHubs.GET("", handlers.ListActivitiesHubs)                   // ?workspace_id=xxx
+			activitiesHubs.POST("", handlers.CreateActivitiesHub)                 // workspace_id in body
 			activitiesHubs.GET("/by-slug/:slug", handlers.GetActivitiesHubBySlug) // ?workspace_id=xxx
 			activitiesHubs.GET("/:hub_id", handlers.GetActivitiesHub)
 			activitiesHubs.PATCH("/:hub_id", handlers.UpdateActivitiesHub)
@@ -217,7 +217,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			tables.POST("/:id/rows", handlers.CreateTableRow)
 			tables.PATCH("/:id/rows/:row_id", handlers.UpdateTableRow)
 			tables.DELETE("/:id/rows/:row_id", handlers.DeleteTableRow)
-			
+
 			// Table search
 			tables.GET("/:id/search", handlers.SearchTableRows)
 		}
@@ -225,7 +225,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Table Links - for managing table relationships
 		tableLinks := api.Group("/table-links")
 		{
-			tableLinks.GET("", handlers.ListTableLinks)                       // ?table_id=xxx
+			tableLinks.GET("", handlers.ListTableLinks) // ?table_id=xxx
 			tableLinks.POST("", handlers.CreateTableLink)
 			tableLinks.GET("/:id", handlers.GetTableLink)
 			tableLinks.PATCH("/:id", handlers.UpdateTableLink)
@@ -235,7 +235,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Table Row Links - for managing row-to-row connections
 		rowLinks := api.Group("/row-links")
 		{
-			rowLinks.GET("/rows/:row_id/linked", handlers.GetLinkedRows)     // ?link_id=xxx
+			rowLinks.GET("/rows/:row_id/linked", handlers.GetLinkedRows) // ?link_id=xxx
 			rowLinks.POST("", handlers.CreateTableRowLink)
 			rowLinks.PATCH("/:id", handlers.UpdateTableRowLink)
 			rowLinks.DELETE("/:id", handlers.DeleteTableRowLink)
@@ -253,7 +253,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			// Form submissions
 			forms.GET("/:id/submissions", handlers.ListFormSubmissions)
 			forms.POST("/:id/submit", handlers.SubmitForm)
-			
+
 			// Form search
 			forms.GET("/:id/search", handlers.SearchFormSubmissions)
 		}
@@ -263,7 +263,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		{
 			// Universal workspace search
 			search.GET("", handlers.SearchWorkspace)
-			
+
 			// Search utilities
 			search.GET("/suggestions", handlers.GetSearchSuggestions)
 			search.GET("/recent", handlers.GetRecentSearches)

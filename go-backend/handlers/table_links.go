@@ -76,7 +76,7 @@ func CreateTableLink(c *gin.Context) {
 
 	// Check for existing link
 	var existing models.TableLink
-	if err := database.DB.Where("source_table_id = ? AND target_table_id = ?", 
+	if err := database.DB.Where("source_table_id = ? AND target_table_id = ?",
 		input.SourceTableID, input.TargetTableID).First(&existing).Error; err == nil {
 		c.JSON(http.StatusConflict, gin.H{"error": "Link already exists between these tables"})
 		return

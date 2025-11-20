@@ -144,6 +144,24 @@ type TableView struct {
 	VisibleCols []string               `gorm:"type:text[]" json:"visible_columns"`
 }
 
+// TableLink - Defines relationships between tables (schema-level)
+type TableLink struct {
+	BaseModel
+	SourceTableID    uuid.UUID              `gorm:"type:uuid;not null;index" json:"source_table_id"`
+	TargetTableID    uuid.UUID              `gorm:"type:uuid;not null;index" json:"target_table_id"`
+	RelationshipType string                 `gorm:"not null" json:"relationship_type"` // one_to_many, many_to_many
+	Settings         map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"settings"`
+}
+
+// TableRowLink - Links specific rows together (data-level)
+type TableRowLink struct {
+	BaseModel
+	LinkID      uuid.UUID              `gorm:"type:uuid;not null;index" json:"link_id"` // References TableLink.ID
+	SourceRowID uuid.UUID              `gorm:"type:uuid;not null;index" json:"source_row_id"`
+	TargetRowID uuid.UUID              `gorm:"type:uuid;not null;index" json:"target_row_id"`
+	LinkData    map[string]interface{} `gorm:"type:jsonb;default:'{}'" json:"link_data"` // Metadata like enrollment_date, status, notes
+}
+
 // Form model
 type Form struct {
 	BaseModel
