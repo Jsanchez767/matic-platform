@@ -174,23 +174,24 @@ func CreateTableRow(c *gin.Context) {
 		return
 	}
 
-	// Parse user ID from query parameter (optional)
-	var createdBy *uuid.UUID
+	// Parse user ID from query parameter (REQUIRED for database constraint)
 	userIDStr := c.Query("user_id")
-	if userIDStr != "" {
-		parsedUserID, err := uuid.Parse(userIDStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id: " + err.Error()})
-			return
-		}
-		createdBy = &parsedUserID
+	if userIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id query parameter is required"})
+		return
+	}
+	
+	parsedUserID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id: " + err.Error()})
+		return
 	}
 
 	row := models.TableRow{
 		TableID:   parsedTableID,
 		Data:      input.Data,
 		Position:  input.Position,
-		CreatedBy: createdBy,
+		CreatedBy: &parsedUserID,
 	}
 
 	if err := database.DB.Create(&row).Error; err != nil {
