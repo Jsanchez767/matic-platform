@@ -295,33 +295,22 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       }
 
       console.log('Adding row with user:', user.id)
-      const rowData = { 
-        data: {}, 
-        metadata: {},
-        position: rows.length,
-        created_by: user.id
-      }
-      console.log('Sending row data:', JSON.stringify(rowData))
+      const { goClient } = await import('@/lib/api/go-client')
       
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rowData),
-      })
+      const newRow = await goClient.post<Row>(
+        `/tables/${tableId}/rows`,
+        { 
+          data: {}, 
+          position: rows.length
+        },
+        { user_id: user.id }
+      )
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }))
-        console.error('Failed to add row:', response.status, errorData)
-        alert(`Failed to add row: ${JSON.stringify(errorData)}`)
-        return
-      }
-      
-      const newRow = await response.json()
       console.log('Row added successfully:', newRow)
       setRows([...rows, newRow])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding row:', error)
-      alert(`Error adding row: ${error}`)
+      alert(`Failed to add row: ${error.message || 'Unknown error'}`)
     }
   }
 
@@ -394,10 +383,8 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   const handleDeleteRow = async (rowId: string) => {
     if (!confirm('Are you sure you want to delete this row?')) return
     try {
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) throw new Error('Failed to delete row')
+      const { goClient } = await import('@/lib/api/go-client')
+      await goClient.delete(`/tables/${tableId}/rows/${rowId}`)
       setRows(rows.filter(r => r.id !== rowId))
       setSelectedRows(prev => {
         const next = new Set(prev)
@@ -406,6 +393,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       })
     } catch (error) {
       console.error('Error deleting row:', error)
+      alert('Failed to delete row. Please try again.')
     }
   }
 
@@ -414,10 +402,9 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     if (!confirm(`Are you sure you want to delete ${selectedRows.size} row(s)?`)) return
     
     try {
+      const { goClient } = await import('@/lib/api/go-client')
       const deletePromises = Array.from(selectedRows).map(rowId =>
-        fetch(`${API_BASE_URL}/tables/${tableId}/rows/${rowId}`, {
-          method: 'DELETE',
-        })
+        goClient.delete(`/tables/${tableId}/rows/${rowId}`)
       )
       await Promise.all(deletePromises)
       setRows(rows.filter(r => !selectedRows.has(r.id)))

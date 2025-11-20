@@ -65,6 +65,9 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   const [linkId, setLinkId] = useState<string | null>(null)
 
   useEffect(() => {
+    let rowsChannel: any = null
+    let linksChannel: any = null
+    
     const loadData = async () => {
       try {
         setLoading(true)
@@ -109,7 +112,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
           setParticipants(participantsData)
           
           // Subscribe to realtime changes for participants table_rows
-          const rowsChannel = supabase
+          rowsChannel = supabase
             .channel(`table_rows:${table.id}`)
             .on(
               'postgres_changes',
@@ -134,34 +137,30 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
             .subscribe()
           
           // Subscribe to realtime changes for row_links (enrollments)
-          const linksChannel = link ? supabase
-            .channel(`row_links:${link.id}`)
-            .on(
-              'postgres_changes',
-              {
-                event: '*',
-                schema: 'public',
-                table: 'table_row_links',
-                filter: `link_id=eq.${link.id}`
-              },
-              async (payload) => {
-                console.log('Enrollment link change:', payload)
-                // Reload all participants to reflect enrollment changes
-                const updatedRows = await participantsGoClient.getParticipants(table.id)
-                const updatedData = await Promise.all(
-                  (updatedRows || []).map((row: any) => 
-                    tableRowToParticipant(row, table.id, link.id)
+          if (link) {
+            linksChannel = supabase
+              .channel(`row_links:${link.id}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*',
+                  schema: 'public',
+                  table: 'table_row_links',
+                  filter: `link_id=eq.${link.id}`
+                },
+                async (payload) => {
+                  console.log('Enrollment link change:', payload)
+                  // Reload all participants to reflect enrollment changes
+                  const updatedRows = await participantsGoClient.getParticipants(table.id)
+                  const updatedData = await Promise.all(
+                    (updatedRows || []).map((row: any) => 
+                      tableRowToParticipant(row, table.id, link.id)
+                    )
                   )
-                )
-                setParticipants(updatedData)
-              }
-            )
-            .subscribe() : null
-          
-          // Cleanup subscriptions on unmount
-          return () => {
-            rowsChannel.unsubscribe()
-            linksChannel?.unsubscribe()
+                  setParticipants(updatedData)
+                }
+              )
+              .subscribe()
           }
         }
       } catch (error) {
@@ -170,7 +169,14 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
         setLoading(false)
       }
     }
+    
     loadData()
+    
+    // Cleanup subscriptions on unmount
+    return () => {
+      rowsChannel?.unsubscribe()
+      linksChannel?.unsubscribe()
+    }
   }, [workspaceId])
 
   const handleAddParticipant = async (data: CreateParticipantInput, programIds: string[]) => {
