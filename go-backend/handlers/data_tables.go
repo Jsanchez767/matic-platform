@@ -163,19 +163,38 @@ func CreateTableRow(c *gin.Context) {
 
 	var input CreateTableRowInput
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body: " + err.Error()})
 		return
 	}
 
+	// Parse table ID
+	parsedTableID, err := uuid.Parse(tableID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid table ID"})
+		return
+	}
+
+	// Parse user ID from query parameter (optional)
+	var createdBy uuid.UUID
+	userIDStr := c.Query("user_id")
+	if userIDStr != "" {
+		parsedUserID, err := uuid.Parse(userIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id: " + err.Error()})
+			return
+		}
+		createdBy = parsedUserID
+	}
+
 	row := models.TableRow{
-		TableID:   uuid.MustParse(tableID),
+		TableID:   parsedTableID,
 		Data:      input.Data,
 		Position:  input.Position,
-		CreatedBy: uuid.MustParse(c.Query("user_id")),
+		CreatedBy: createdBy,
 	}
 
 	if err := database.DB.Create(&row).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error: " + err.Error()})
 		return
 	}
 
