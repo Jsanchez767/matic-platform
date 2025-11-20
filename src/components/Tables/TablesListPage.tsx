@@ -5,16 +5,10 @@ import { Plus, Search, Table2, MoreVertical, Edit, Trash2, Copy, Archive, Upload
 import { useTabContext } from '../WorkspaceTabProvider'
 import { CreateTableModal, TableFormData } from './CreateTableModal'
 import { CSVImportModal } from './CSVImportModal'
-import { tablesSupabase } from '@/lib/api/tables-supabase'
-import { supabase, getSessionToken } from '@/lib/supabase'
+import { tablesGoClient } from '@/lib/api/tables-go-client'
+import { getCurrentUser } from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { DataTable } from '@/types/data-tables'
-
-// API Configuration - Go Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
-if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_GO_API_URL is not configured. Set it in .env.local')
-}
 
 interface TablesListPageProps {
   workspaceId: string
@@ -39,7 +33,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
       setLoading(true)
       setError(null)
       console.log('🔍 Loading tables for workspace:', workspaceId)
-      const data = await tablesSupabase.getTablesByWorkspace(workspaceId)
+      const data = await tablesGoClient.getTablesByWorkspace(workspaceId)
       console.log('✅ Tables loaded:', data.length, data)
       setTables(data)
       if (data.length === 0) {
@@ -67,7 +61,7 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await getCurrentUser()
       if (!user) {
         toast.error('You must be logged in to import data')
         return
@@ -108,15 +102,15 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
         settings: {}
       }))
 
-      // Create the table via Supabase
+      // Create the table via Go API
       toast.loading('Creating table...')
-      const newTable = await tablesSupabase.createTable({
+      const newTable = await tablesGoClient.createTable({
         workspace_id: workspaceId,
         name: tableName,
-        slug: tableName.toLowerCase().replace(/\s+/g, '-'),
-        columns: tableColumns,
-        created_by: user.id
-      })
+        description: '',
+        icon: 'table',
+        settings: {}
+      }, user.id)
 
       console.log('Table created:', newTable)
       createdTableId = newTable.id
@@ -138,39 +132,28 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
         }
       })
 
-      // Bulk insert rows via FastAPI
+      // Bulk insert rows via Go API
       if (transformedRows.length > 0) {
         toast.loading(`Importing ${transformedRows.length} rows...`)
-        const token = await getSessionToken()
         console.log('Attempting to insert rows:', {
           tableId: newTable.id,
           rowCount: transformedRows.length,
           sampleRow: transformedRows[0]
         })
 
-        const response = await fetch(`${API_BASE_URL}/tables/${newTable.id}/rows/bulk`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token && { Authorization: `Bearer ${token}` })
-          },
-          body: JSON.stringify({
+        try {
+          const importedRows = await tablesGoClient.bulkCreateRows(newTable.id, {
             rows: transformedRows.map(r => r.data),
             created_by: user.id
           })
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          console.error('Failed to import rows:', response.status, errorData)
-          toast.dismiss()
-          toast.error(`Table created but rows failed to import: ${errorData.detail || response.statusText}`)
-          // Don't throw - table was created successfully
-        } else {
-          const importedRows = await response.json()
           console.log('Rows imported successfully:', importedRows.length, 'rows')
           toast.dismiss()
           toast.success(`Successfully imported ${importedRows.length} rows!`)
+        } catch (error: any) {
+          console.error('Failed to import rows:', error)
+          toast.dismiss()
+          toast.error(`Table created but rows failed to import: ${error.message}`)
+          // Don't throw - table was created successfully
         }
       }
 
@@ -214,7 +197,19 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     try {
       console.log('Creating table with data:', data)
       
-      const newTable = await tablesSupabase.createTable(data as any)
+      const user = await getCurrentUser()
+      if (!user) {
+        toast.error('You must be logged in to create tables')
+        return
+      }
+      
+      const newTable = await tablesGoClient.createTable({
+        workspace_id: data.workspace_id,
+        name: data.name,
+        description: data.description || '',
+        icon: data.icon || 'table',
+        settings: {}
+      }, user.id)
       console.log('Table created:', newTable)
       
       // Reload tables list
@@ -265,10 +260,12 @@ export function TablesListPage({ workspaceId }: TablesListPageProps) {
     }
     
     try {
-      await tablesSupabase.deleteTable(tableId)
+      await tablesGoClient.deleteTable(tableId)
+      toast.success('Table deleted successfully')
       await loadTables()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting table:', error)
+      toast.error(`Failed to delete table: ${error.message}`)
     }
     setActiveMenu(null)
   }

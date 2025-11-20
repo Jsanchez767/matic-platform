@@ -7,10 +7,9 @@ import { RealTimeLinkField } from './RealTimeLinkField'
 import { EnablePulseButton } from '@/components/Pulse/EnablePulseButton'
 import { pulseSupabase } from '@/lib/api/pulse-supabase'
 import type { PulseEnabledTable } from '@/lib/api/pulse-client'
-import { tablesSupabase } from '@/lib/api/tables-supabase'
-import { rowsSupabase } from '@/lib/api/rows-supabase'
+import { tablesGoClient } from '@/lib/api/tables-go-client'
+import { getCurrentUser } from '@/lib/supabase'
 import { useTableRealtime } from '@/hooks/useTableRealtime'
-import { fetchWithRetry, isBackendSleeping, showBackendSleepingMessage } from '@/lib/api-utils'
 import type { TableRow } from '@/types/data-tables'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as TableRowComponent } from '@/ui-components/table'
 import { Badge } from '@/ui-components/badge'
@@ -18,12 +17,6 @@ import { Input } from '@/ui-components/input'
 import { Button } from '@/ui-components/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/ui-components/dropdown-menu'
 import { toast } from 'sonner'
-
-// API Configuration - Go Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
-if (!API_BASE_URL) {
-  throw new Error('NEXT_PUBLIC_GO_API_URL is not configured. Set it in .env.local')
-}
 
 interface Column {
   id: string
@@ -197,7 +190,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       setLoading(true)
       
-      const tableData = await tablesSupabase.getTableById(tableId)
+      const tableData = await tablesGoClient.getTableById(tableId)
       setTableName(tableData.name)
       
       // Populate linked_table_id on columns from table_links
@@ -214,10 +207,11 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       
       setColumns(columnsWithLinks as any)
       
-      const rowsData = await rowsSupabase.getRowsByTable(tableId)
+      const rowsData = await tablesGoClient.getRowsByTable(tableId)
       setRows(rowsData as any)
     } catch (error) {
       console.error('Error loading table data:', error)
+      toast.error('Failed to load table data')
     } finally {
       setLoading(false)
     }
@@ -240,12 +234,13 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     }
 
     try {
-      await tablesSupabase.updateTable(tableId, { name: tempTableName })
+      await tablesGoClient.updateTable(tableId, { name: tempTableName })
       setTableName(tempTableName)
       setIsEditingTableName(false)
-    } catch (error) {
+      toast.success('Table name updated')
+    } catch (error: any) {
       console.error('Error updating table name:', error)
-      alert('Failed to update table name')
+      toast.error('Failed to update table name')
       setIsEditingTableName(false)
     }
   }
@@ -258,7 +253,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: true }))
     
     try {
-      const records = await rowsSupabase.getRowsByTable(linkedTableId)
+      const records = await tablesGoClient.getRowsByTable(linkedTableId)
       // Convert TableRow[] to Row[] format
       const convertedRecords: Row[] = records.map((record: TableRow) => ({
         id: record.id || '',
@@ -268,6 +263,7 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
       setLinkedRecords(prev => ({ ...prev, [linkedTableId]: convertedRecords }))
     } catch (error) {
       console.error('Error loading linked records:', error)
+      toast.error('Failed to load linked records')
     } finally {
       setLoadingLinkedRecords(prev => ({ ...prev, [linkedTableId]: false }))
     }
@@ -430,16 +426,23 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
     try {
       const row = rows.find(r => r.id === rowId)
       if (!row) return
-      const response = await fetch(`${API_BASE_URL}/tables/${tableId}/rows`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: row.data, position: rows.length }),
-      })
-      if (!response.ok) throw new Error('Failed to duplicate row')
-      const newRow = await response.json()
-      setRows([...rows, newRow])
-    } catch (error) {
+      
+      const user = await getCurrentUser()
+      if (!user) {
+        toast.error('You must be logged in to duplicate rows')
+        return
+      }
+      
+      const newRow = await tablesGoClient.createRow(
+        tableId,
+        { data: row.data, position: rows.length },
+        user.id
+      )
+      setRows([...rows, newRow as any])
+      toast.success('Row duplicated')
+    } catch (error: any) {
       console.error('Error duplicating row:', error)
+      toast.error(`Failed to duplicate row: ${error.message}`)
     }
   }
 
