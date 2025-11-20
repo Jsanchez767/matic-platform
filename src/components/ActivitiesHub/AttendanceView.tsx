@@ -104,14 +104,13 @@ export function AttendanceView({ activities, workspaceId, onSelectActivity }: At
       const participantsTable = await getOrCreateParticipantsTable(workspaceId, user.id);
       const activitiesTable = await getOrCreateActivitiesTable(workspaceId, user.id);
       
-      // Get link between participants and activities
-      const { data: link } = await supabase
-        .from('table_links')
-        .select('id')
-        .eq('source_table_id', participantsTable.id)
-        .eq('target_table_id', activitiesTable.id)
-        .eq('link_type', 'many_to_many')
-        .single();
+      // Get link between participants and activities via Go API
+      const { tableLinksGoClient } = await import('@/lib/api/participants-go-client');
+      const links = await tableLinksGoClient.getTableLinks(participantsTable.id);
+      const link = links.find(l => 
+        l.target_table_id === activitiesTable.id && 
+        l.link_type === 'many_to_many'
+      );
       
       if (!link) {
         console.error('No link found between participants and activities');

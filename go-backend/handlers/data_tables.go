@@ -180,7 +180,7 @@ func CreateTableRow(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id query parameter is required"})
 		return
 	}
-	
+
 	parsedUserID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id: " + err.Error()})

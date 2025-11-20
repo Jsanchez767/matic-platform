@@ -24,36 +24,29 @@ export async function createParticipantsActivitiesLink(
       throw new Error('enrolled_programs column not found')
     }
 
-    // Check if link already exists
-    const { data: existingLinks } = await supabase
-      .from('table_links')
-      .select('*')
-      .eq('source_table_id', participantsTableId)
-      .eq('target_table_id', activitiesTableId)
-      .eq('source_column_id', enrolledProgramsColumn.id)
+    // Check if link already exists via Go API
+    const { tableLinksGoClient } = await import('./participants-go-client')
+    const existingLinks = await tableLinksGoClient.getTableLinks(participantsTableId)
+    const existingLink = existingLinks.find(l => 
+      l.target_table_id === activitiesTableId && 
+      l.link_type === 'many_to_many'
+    )
 
-    if (existingLinks && existingLinks.length > 0) {
-      return existingLinks[0]
+    if (existingLink) {
+      return existingLink
     }
 
-    // Create the link
-    const { data: link, error } = await supabase
-      .from('table_links')
-      .insert({
-        source_table_id: participantsTableId,
-        source_column_id: enrolledProgramsColumn.id,
-        target_table_id: activitiesTableId,
-        target_column_id: null, // Link to entire activity record
-        link_type: 'many_to_many',
-        settings: {
-          label: 'Participants',
-          reverseLabel: 'Enrolled Programs'
-        }
-      })
-      .select()
-      .single()
+    // Create the link via Go API
+    const link = await tableLinksGoClient.createTableLink(
+      participantsTableId,
+      activitiesTableId,
+      'many_to_many',
+      {
+        label: 'Participants',
+        reverseLabel: 'Enrolled Programs'
+      }
+    )
 
-    if (error) throw error
     return link
   } catch (error) {
     console.error('Error creating participants-activities link:', error)
@@ -162,21 +155,14 @@ export async function getParticipantsForActivity(
   linkId: string
 ) {
   try {
-    const { data: rowLinks, error } = await supabase
-      .from('table_row_links')
-      .select(`
-        *,
-        participant:table_rows!table_row_links_source_row_id_fkey(*)
-      `)
-      .eq('link_id', linkId)
-      .eq('target_row_id', activityRowId)
+    // Use Go API to get linked rows
+    const { rowLinksGoClient } = await import('./participants-go-client')
+    const linkedRows = await rowLinksGoClient.getLinkedRows(activityRowId, linkId)
 
-    if (error) throw error
-
-    return rowLinks?.map(link => ({
-      ...link.participant,
-      enrollment: link.metadata
-    })) || []
+    return linkedRows.map(linkedRow => ({
+      ...linkedRow.row,
+      enrollment: linkedRow.link_data
+    }))
   } catch (error) {
     console.error('Error getting participants for activity:', error)
     throw error

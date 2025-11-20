@@ -85,13 +85,10 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
           const table = await getOrCreateParticipantsTable(workspaceId, user.id)
           setParticipantsTableId(table.id)
           
-          // Get link ID between participants and activities tables
-          const { data: link } = await supabase
-            .from('table_links')
-            .select('id')
-            .eq('source_table_id', table.id)
-            .eq('link_type', 'many_to_many')
-            .single()
+          // Get link ID between participants and activities tables via Go API
+          const { tableLinksGoClient } = await import('@/lib/api/participants-go-client')
+          const links = await tableLinksGoClient.getTableLinks(table.id)
+          const link = links.find(l => l.link_type === 'many_to_many')
           
           if (link) {
             setLinkId(link.id)
