@@ -93,15 +93,18 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"reorder_tabs": "POST /api/v1/activities-hubs/:hub_id/tabs/reorder",
 					},
 					"tables": gin.H{
-						"list":       "GET /api/v1/tables",
-						"create":     "POST /api/v1/tables",
-						"get":        "GET /api/v1/tables/:id",
-						"update":     "PATCH /api/v1/tables/:id",
-						"delete":     "DELETE /api/v1/tables/:id",
-						"list_rows":  "GET /api/v1/tables/:id/rows",
-						"create_row": "POST /api/v1/tables/:id/rows",
-						"update_row": "PATCH /api/v1/tables/:id/rows/:row_id",
-						"delete_row": "DELETE /api/v1/tables/:id/rows/:row_id",
+						"list":          "GET /api/v1/tables",
+						"create":        "POST /api/v1/tables",
+						"get":           "GET /api/v1/tables/:id",
+						"update":        "PATCH /api/v1/tables/:id",
+						"delete":        "DELETE /api/v1/tables/:id",
+						"list_rows":     "GET /api/v1/tables/:id/rows",
+						"create_row":    "POST /api/v1/tables/:id/rows",
+						"update_row":    "PATCH /api/v1/tables/:id/rows/:row_id",
+						"delete_row":    "DELETE /api/v1/tables/:id/rows/:row_id",
+						"create_column": "POST /api/v1/tables/:id/columns",
+						"update_column": "PATCH /api/v1/tables/:id/columns/:column_id",
+						"delete_column": "DELETE /api/v1/tables/:id/columns/:column_id",
 					},
 					"forms": gin.H{
 						"list":             "GET /api/v1/forms",
@@ -142,16 +145,19 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 						"reorder_tabs": "POST /api/v1/activities-hubs/:hub_id/tabs/reorder",
 					},
 					"tables": gin.H{
-						"list":       "GET /api/v1/tables",
-						"create":     "POST /api/v1/tables",
-						"get":        "GET /api/v1/tables/:id",
-						"update":     "PATCH /api/v1/tables/:id",
-						"delete":     "DELETE /api/v1/tables/:id",
-						"list_rows":  "GET /api/v1/tables/:id/rows",
-						"create_row": "POST /api/v1/tables/:id/rows",
-						"update_row": "PATCH /api/v1/tables/:id/rows/:row_id",
-						"delete_row": "DELETE /api/v1/tables/:id/rows/:row_id",
-						"search":     "GET /api/v1/tables/:id/search",
+						"list":          "GET /api/v1/tables",
+						"create":        "POST /api/v1/tables",
+						"get":           "GET /api/v1/tables/:id",
+						"update":        "PATCH /api/v1/tables/:id",
+						"delete":        "DELETE /api/v1/tables/:id",
+						"list_rows":     "GET /api/v1/tables/:id/rows",
+						"create_row":    "POST /api/v1/tables/:id/rows",
+						"update_row":    "PATCH /api/v1/tables/:id/rows/:row_id",
+						"delete_row":    "DELETE /api/v1/tables/:id/rows/:row_id",
+						"create_column": "POST /api/v1/tables/:id/columns",
+						"update_column": "PATCH /api/v1/tables/:id/columns/:column_id",
+						"delete_column": "DELETE /api/v1/tables/:id/columns/:column_id",
+						"search":        "GET /api/v1/tables/:id/search",
 					},
 					"forms": gin.H{
 						"list":             "GET /api/v1/forms",
@@ -217,6 +223,11 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			tables.POST("/:id/rows", handlers.CreateTableRow)
 			tables.PATCH("/:id/rows/:row_id", handlers.UpdateTableRow)
 			tables.DELETE("/:id/rows/:row_id", handlers.DeleteTableRow)
+
+			// Table columns
+			tables.POST("/:id/columns", handlers.CreateTableColumn)
+			tables.PATCH("/:id/columns/:column_id", handlers.UpdateTableColumn)
+			tables.DELETE("/:id/columns/:column_id", handlers.DeleteTableColumn)
 
 			// Table search
 			tables.GET("/:id/search", handlers.SearchTableRows)

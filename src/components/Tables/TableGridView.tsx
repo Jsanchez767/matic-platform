@@ -459,55 +459,72 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
   }
 
   const handleDeleteColumn = async (columnId: string) => {
-    // TODO: Add column delete endpoint to Go backend
-    toast.error('Column deletion not yet available - Go backend endpoint needed')
-    console.warn('Column delete endpoint not implemented in Go backend yet')
-    setActiveColumnMenu(null)
-    return
+    if (!confirm('Delete this field? All data will be lost.')) return
     
-    // if (!confirm('Delete this field? All data will be lost.')) return
-    // try {
-    //   await goClient.delete(`/tables/${tableId}/columns/${columnId}`)
-    //   await loadTableData()
-    //   toast.success('Column deleted')
-    // } catch (error) {
-    //   console.error('Error deleting column:', error)
-    //   toast.error('Failed to delete column')
-    // }
-    // setActiveColumnMenu(null)
+    try {
+      const { tablesGoClient } = await import('@/lib/api/tables-go-client')
+      await tablesGoClient.deleteColumn(tableId, columnId)
+      await loadTableData()
+      toast.success('Column deleted')
+    } catch (error) {
+      console.error('Error deleting column:', error)
+      toast.error('Failed to delete column')
+    }
+    setActiveColumnMenu(null)
   }
 
   const handleSaveColumn = async (columnData: any) => {
-    // TODO: Add column create/update endpoints to Go backend
-    toast.error('Column editing not yet available - Go backend endpoints needed')
-    console.warn('Column create/update endpoints not implemented in Go backend yet')
-    setIsColumnEditorOpen(false)
-    return
-    
-    // try {
-    //   console.log('Saving column data:', columnData)
-    //   if (editingColumn) {
-    //     // Update existing column
-    //     const savedColumn = await goClient.patch(
-    //       `/tables/${tableId}/columns/${editingColumn.id}`,
-    //       columnData
-    //     )
-    //     setColumns(columns.map(col => col.id === editingColumn.id ? savedColumn : col))
-    //     toast.success('Column updated')
-    //   } else {
-    //     // Create new column
-    //     const payload = { ...columnData, table_id: tableId, position: columns.length }
-    //     const savedColumn = await goClient.post(`/tables/${tableId}/columns`, payload)
-    //     setColumns([...columns, savedColumn])
-    //     toast.success('Column created')
-    //   }
-    //   
-    //   setIsColumnEditorOpen(false)
-    //   setEditingColumn(null)
-    // } catch (error: any) {
-    //   console.error('Error saving column:', error)
-    //   toast.error(`Failed to save column: ${error.message}`)
-    // }
+    try {
+      console.log('Saving column data:', columnData)
+      const { tablesGoClient } = await import('@/lib/api/tables-go-client')
+      
+      if (editingColumn) {
+        // Update existing column
+        const savedColumn = await tablesGoClient.updateColumn(
+          tableId,
+          editingColumn.id!,
+          columnData
+        )
+        // Convert TableColumn to Column
+        const columnForState: Column = {
+          id: savedColumn.id!,
+          name: savedColumn.name,
+          label: savedColumn.label,
+          column_type: savedColumn.column_type,
+          width: savedColumn.width,
+          is_visible: savedColumn.is_visible,
+          position: savedColumn.position,
+          linked_table_id: savedColumn.linked_table_id,
+          settings: savedColumn.settings,
+        }
+        setColumns(columns.map(col => col.id === editingColumn.id ? columnForState : col))
+        toast.success('Column updated')
+      } else {
+        // Create new column
+        const payload = { ...columnData, position: columns.length }
+        const savedColumn = await tablesGoClient.createColumn(tableId, payload)
+        // Convert TableColumn to Column
+        const columnForState: Column = {
+          id: savedColumn.id!,
+          name: savedColumn.name,
+          label: savedColumn.label,
+          column_type: savedColumn.column_type,
+          width: savedColumn.width,
+          is_visible: savedColumn.is_visible,
+          position: savedColumn.position,
+          linked_table_id: savedColumn.linked_table_id,
+          settings: savedColumn.settings,
+        }
+        setColumns([...columns, columnForState])
+        toast.success('Column created')
+      }
+      
+      setIsColumnEditorOpen(false)
+      setEditingColumn(null)
+    } catch (error: any) {
+      console.error('Error saving column:', error)
+      toast.error(`Failed to save column: ${error.message}`)
+    }
   }
 
   const renderCell = (row: Row, column: Column) => {

@@ -98,6 +98,52 @@ export const tablesGoClient = {
     return table.columns || []
   },
 
+  /**
+   * Create a new column
+   */
+  async createColumn(
+    tableId: string,
+    input: Omit<TableColumn, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<TableColumn> {
+    return goClient.post<TableColumn>(`/tables/${tableId}/columns`, {
+      name: input.name,
+      type: input.column_type,
+      position: input.position,
+      width: input.width || 200,
+      is_required: false, // TODO: Add to TableColumn interface if needed
+      is_primary_key: input.is_primary || false,
+      options: input.settings || {},
+      validation: input.validation || {},
+    })
+  },
+
+  /**
+   * Update a column
+   */
+  async updateColumn(
+    tableId: string,
+    columnId: string,
+    input: Partial<Omit<TableColumn, 'id' | 'created_at' | 'updated_at'>>
+  ): Promise<TableColumn> {
+    const updateData: Record<string, any> = {}
+    if (input.name !== undefined) updateData.name = input.name
+    if (input.column_type !== undefined) updateData.type = input.column_type
+    if (input.position !== undefined) updateData.position = input.position
+    if (input.width !== undefined) updateData.width = input.width
+    if (input.is_primary !== undefined) updateData.is_primary_key = input.is_primary
+    if (input.settings !== undefined) updateData.options = input.settings
+    if (input.validation !== undefined) updateData.validation = input.validation
+    
+    return goClient.patch<TableColumn>(`/tables/${tableId}/columns/${columnId}`, updateData)
+  },
+
+  /**
+   * Delete a column
+   */
+  async deleteColumn(tableId: string, columnId: string): Promise<void> {
+    return goClient.delete<void>(`/tables/${tableId}/columns/${columnId}`)
+  },
+
   // ============ Table Rows ============
 
   /**

@@ -255,3 +255,143 @@ func DeleteTableRow(c *gin.Context) {
 
 	c.Status(http.StatusNoContent)
 }
+
+// Table Column Handlers
+
+type CreateTableColumnInput struct {
+	TableID      uuid.UUID              `json:"table_id" binding:"required"`
+	Name         string                 `json:"name" binding:"required"`
+	Type         string                 `json:"type" binding:"required"`
+	Position     int                    `json:"position"`
+	Width        int                    `json:"width"`
+	IsRequired   bool                   `json:"is_required"`
+	IsPrimaryKey bool                   `json:"is_primary_key"`
+	Options      map[string]interface{} `json:"options"`
+	Validation   map[string]interface{} `json:"validation"`
+}
+
+func CreateTableColumn(c *gin.Context) {
+	tableID := c.Param("id")
+
+	var input CreateTableColumnInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Verify table exists
+	var table models.DataTable
+	if err := database.DB.First(&table, "id = ?", tableID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Table not found"})
+		return
+	}
+
+	// Set defaults
+	if input.Width == 0 {
+		input.Width = 200
+	}
+	if input.Options == nil {
+		input.Options = make(map[string]interface{})
+	}
+	if input.Validation == nil {
+		input.Validation = make(map[string]interface{})
+	}
+
+	column := models.TableColumn{
+		TableID:      input.TableID,
+		Name:         input.Name,
+		Type:         input.Type,
+		Position:     input.Position,
+		Width:        input.Width,
+		IsRequired:   input.IsRequired,
+		IsPrimaryKey: input.IsPrimaryKey,
+		Options:      input.Options,
+		Validation:   input.Validation,
+	}
+
+	if err := database.DB.Create(&column).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, column)
+}
+
+type UpdateTableColumnInput struct {
+	Name         *string                 `json:"name"`
+	Type         *string                 `json:"type"`
+	Position     *int                    `json:"position"`
+	Width        *int                    `json:"width"`
+	IsRequired   *bool                   `json:"is_required"`
+	IsPrimaryKey *bool                   `json:"is_primary_key"`
+	Options      *map[string]interface{} `json:"options"`
+	Validation   *map[string]interface{} `json:"validation"`
+}
+
+func UpdateTableColumn(c *gin.Context) {
+	tableID := c.Param("id")
+	columnID := c.Param("column_id")
+
+	var column models.TableColumn
+	if err := database.DB.Where("id = ? AND table_id = ?", columnID, tableID).First(&column).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Column not found"})
+		return
+	}
+
+	var input UpdateTableColumnInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Update fields if provided
+	if input.Name != nil {
+		column.Name = *input.Name
+	}
+	if input.Type != nil {
+		column.Type = *input.Type
+	}
+	if input.Position != nil {
+		column.Position = *input.Position
+	}
+	if input.Width != nil {
+		column.Width = *input.Width
+	}
+	if input.IsRequired != nil {
+		column.IsRequired = *input.IsRequired
+	}
+	if input.IsPrimaryKey != nil {
+		column.IsPrimaryKey = *input.IsPrimaryKey
+	}
+	if input.Options != nil {
+		column.Options = *input.Options
+	}
+	if input.Validation != nil {
+		column.Validation = *input.Validation
+	}
+
+	if err := database.DB.Save(&column).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, column)
+}
+
+func DeleteTableColumn(c *gin.Context) {
+	tableID := c.Param("id")
+	columnID := c.Param("column_id")
+
+	var column models.TableColumn
+	if err := database.DB.Where("id = ? AND table_id = ?", columnID, tableID).First(&column).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Column not found"})
+		return
+	}
+
+	if err := database.DB.Delete(&column).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
