@@ -98,6 +98,8 @@ export interface DataTable {
   created_at: string;
   updated_at: string;
   columns: TableColumn[];
+  views?: TableView[];
+  links?: TableLink[];
 }
 
 export interface DataTableWithRows extends DataTable {
