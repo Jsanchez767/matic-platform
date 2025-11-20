@@ -12,60 +12,116 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif;
+            background: #f7f8fa;
             min-height: 100vh;
-            padding: 40px 20px;
+            color: #37352f;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 1px solid #e9ecef;
+            padding: 24px;
+            overflow-y: auto;
         }
 
-        .header {
-            background: white;
-            padding: 40px;
-            border-radius: 16px 16px 0 0;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        .sidebar-header {
+            margin-bottom: 32px;
         }
 
-        .header h1 {
-            font-size: 36px;
-            color: #1a202c;
+        .sidebar-logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #37352f;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-version {
+            font-size: 12px;
+            color: #9b9a97;
+        }
+
+        .nav-group {
+            margin-bottom: 24px;
+        }
+
+        .nav-group-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #9b9a97;
+            letter-spacing: 0.5px;
             margin-bottom: 8px;
         }
 
-        .header .version {
-            color: #718096;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-
-        .header .description {
-            color: #4a5568;
-            font-size: 16px;
-            line-height: 1.6;
-        }
-
-        .status {
-            display: inline-flex;
+        .nav-item {
+            display: flex;
             align-items: center;
             gap: 8px;
-            background: #10b981;
-            color: white;
-            padding: 6px 16px;
-            border-radius: 20px;
+            padding: 6px 8px;
+            border-radius: 4px;
             font-size: 14px;
+            color: #37352f;
+            text-decoration: none;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: #f7f6f3;
+        }
+
+        .nav-item.active {
+            background: #e3e2e0;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 48px 96px;
+            max-width: 1200px;
+        }
+
+        .hero {
+            margin-bottom: 48px;
+        }
+
+        .hero-title {
+            font-size: 40px;
+            font-weight: 700;
+            color: #37352f;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero-description {
+            font-size: 16px;
+            color: #787774;
+            line-height: 1.6;
+            max-width: 700px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #d3f8e2;
+            color: #0b6e44;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
             font-weight: 500;
             margin-top: 16px;
         }
 
-        .status::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: white;
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background: #0b6e44;
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
@@ -75,48 +131,73 @@
             50% { opacity: 0.5; }
         }
 
-        .content {
-            background: white;
-            padding: 40px;
-            border-radius: 0 0 16px 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        .callout {
+            background: #f7f6f3;
+            border-left: 3px solid #37352f;
+            padding: 16px 20px;
+            border-radius: 4px;
+            margin-bottom: 32px;
+        }
+
+        .callout-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #37352f;
+        }
+
+        .callout-content {
+            font-size: 14px;
+            color: #787774;
+            line-height: 1.5;
+        }
+
+        .callout code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 13px;
+            color: #eb5757;
         }
 
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 56px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .section-icon {
+            font-size: 28px;
         }
 
         .section-title {
-            font-size: 24px;
-            color: #1a202c;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #e2e8f0;
+            font-size: 28px;
+            font-weight: 600;
+            color: #37352f;
         }
 
         .endpoint-group {
             margin-bottom: 32px;
         }
 
-        .endpoint-group-title {
-            font-size: 18px;
-            color: #2d3748;
-            margin-bottom: 16px;
-            font-weight: 600;
-        }
-
         .endpoint {
-            background: #f7fafc;
-            border-left: 4px solid #667eea;
-            padding: 16px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            transition: all 0.2s;
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 8px;
+            transition: all 0.15s;
         }
 
         .endpoint:hover {
-            background: #edf2f7;
-            transform: translateX(4px);
+            border-color: #d3d1cb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
         .endpoint-header {
@@ -127,133 +208,179 @@
         }
 
         .method {
-            padding: 4px 12px;
-            border-radius: 4px;
+            padding: 3px 8px;
+            border-radius: 3px;
             font-weight: 600;
-            font-size: 12px;
-            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-family: 'SF Mono', Monaco, monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        .method.get { background: #10b981; color: white; }
-        .method.post { background: #3b82f6; color: white; }
-        .method.patch { background: #f59e0b; color: white; }
-        .method.delete { background: #ef4444; color: white; }
+        .method.get { background: #d3f8e2; color: #0b6e44; }
+        .method.post { background: #d3e5ff; color: #0b4a99; }
+        .method.patch { background: #ffe8cc; color: #974c00; }
+        .method.delete { background: #ffe0e0; color: #c92a2a; }
 
         .endpoint-path {
-            font-family: 'Courier New', monospace;
-            color: #2d3748;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            color: #37352f;
             font-size: 14px;
+            font-weight: 500;
         }
 
         .endpoint-description {
-            color: #718096;
+            color: #787774;
             font-size: 14px;
-            margin-left: 78px;
+            line-height: 1.5;
         }
 
-        .quick-links {
+        .quick-links-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 16px;
-            margin-top: 24px;
+            margin-bottom: 48px;
         }
 
-        .quick-link {
-            background: #f7fafc;
+        .quick-link-card {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
             padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             text-decoration: none;
-            color: #2d3748;
-            transition: all 0.2s;
+            color: #37352f;
+            transition: all 0.15s;
         }
 
-        .quick-link:hover {
-            background: #edf2f7;
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        .quick-link-card:hover {
+            border-color: #d3d1cb;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transform: translateY(-1px);
+        }
+
+        .quick-link-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
         }
 
         .quick-link-title {
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #667eea;
+            margin-bottom: 6px;
+            color: #37352f;
         }
 
         .quick-link-url {
-            font-family: 'Courier New', monospace;
+            font-family: 'SF Mono', Monaco, monospace;
             font-size: 12px;
-            color: #718096;
+            color: #9b9a97;
         }
 
-        .info-box {
-            background: #ebf5ff;
-            border-left: 4px solid #3b82f6;
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 24px;
-        }
-
-        .info-box-title {
-            font-weight: 600;
-            color: #1e40af;
-            margin-bottom: 8px;
-        }
-
-        .info-box-content {
-            color: #1e3a8a;
-            font-size: 14px;
-            line-height: 1.6;
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 32px 24px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Matic Platform API</h1>
-            <div class="version">Version 1.0.0</div>
-            <p class="description">
-                Full-stack Airtable-like platform with forms, data tables, and barcode scanning. 
-                Built with Go + Gin framework and PostgreSQL (Supabase).
-            </p>
-            <div class="status">API Online</div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">Matic Platform</div>
+            <div class="sidebar-version">API v1.0.0</div>
         </div>
 
-        <div class="content">
-            <div class="info-box">
-                <div class="info-box-title">📋 Quick Reference</div>
-                <div class="info-box-content">
-                    All endpoints require authentication via <code>Authorization: Bearer &lt;token&gt;</code> header.
-                    User ID should be passed as <code>user_id</code> query parameter.
-                </div>
+        <div class="nav-group">
+            <div class="nav-group-title">Overview</div>
+            <a href="#quick-links" class="nav-item">
+                <span>🔗</span>
+                <span>Quick Links</span>
+            </a>
+            <a href="#authentication" class="nav-item">
+                <span>🔐</span>
+                <span>Authentication</span>
+            </a>
+        </div>
+
+        <div class="nav-group">
+            <div class="nav-group-title">Endpoints</div>
+            <a href="#workspaces" class="nav-item">
+                <span>📁</span>
+                <span>Workspaces</span>
+            </a>
+            <a href="#tables" class="nav-item">
+                <span>📊</span>
+                <span>Data Tables</span>
+            </a>
+            <a href="#table-links" class="nav-item">
+                <span>🔗</span>
+                <span>Table Links</span>
+            </a>
+            <a href="#forms" class="nav-item">
+                <span>📝</span>
+                <span>Forms</span>
+            </a>
+            <a href="#activities" class="nav-item">
+                <span>🎯</span>
+                <span>Activities Hubs</span>
+            </a>
+            <a href="#search" class="nav-item">
+                <span>🔍</span>
+                <span>Search</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="hero">
+            <h1 class="hero-title">Matic Platform API</h1>
+            <p class="hero-description">
+                A powerful, flexible API for building Airtable-like applications with forms, data tables, 
+                and real-time collaboration. Built with Go, Gin framework, and PostgreSQL.
+            </p>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>API Online</span>
             </div>
+        </div>
+
+        <div id="quick-links" class="quick-links-grid">
+            <a href="/health" class="quick-link-card">
+                <div class="quick-link-icon">💚</div>
+                <div class="quick-link-title">Health Check</div>
+                <div class="quick-link-url">GET /health</div>
+            </a>
+            <a href="/api/v1" class="quick-link-card">
+                <div class="quick-link-icon">📋</div>
+                <div class="quick-link-title">API Info</div>
+                <div class="quick-link-url">GET /api/v1</div>
+            </a>
+            <a href="https://github.com/Jsanchez767/matic-platform" class="quick-link-card" target="_blank">
+                <div class="quick-link-icon">💻</div>
+                <div class="quick-link-title">GitHub Repository</div>
+                <div class="quick-link-url">View Source Code</div>
+            </a>
+        </div>
+
+        <div id="authentication" class="callout">
+            <div class="callout-title">🔐 Authentication</div>
+            <div class="callout-content">
+                All endpoints require authentication via <code>Authorization: Bearer &lt;token&gt;</code> header. 
+                User ID can be passed as <code>user_id</code> query parameter where needed.
+            </div>
+        </div>
+
 
             <div class="section">
-                <h2 class="section-title">Quick Links</h2>
-                <div class="quick-links">
-                    <a href="/health" class="quick-link">
-                        <div class="quick-link-title">Health Check</div>
-                        <div class="quick-link-url">GET /health</div>
-                    </a>
-                    <a href="/api/v1" class="quick-link">
-                        <div class="quick-link-title">API Info (JSON)</div>
-                        <div class="quick-link-url">GET /api/v1</div>
-                    </a>
-                    <a href="http://localhost:3000" class="quick-link" target="_blank">
-                        <div class="quick-link-title">Frontend App</div>
-                        <div class="quick-link-url">http://localhost:3000</div>
-                    </a>
+                <div class="section-header">
+                    <div class="section-icon">📁</div>
+                    <h2 id="workspaces" class="section-title">Workspaces</h2>
                 </div>
-            </div>
-
-            <div class="section">
-                <h2 class="section-title">API Endpoints</h2>
-
-                <!-- Workspaces -->
                 <div class="endpoint-group">
-                    <h3 class="endpoint-group-title">📁 Workspaces</h3>
-                    
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
@@ -283,7 +410,7 @@
                             <span class="method patch">PATCH</span>
                             <span class="endpoint-path">/api/v1/workspaces/:id</span>
                         </div>
-                        <div class="endpoint-description">Update workspace</div>
+                        <div class="endpoint-description">Update workspace name, description, or settings</div>
                     </div>
 
                     <div class="endpoint">
@@ -291,14 +418,17 @@
                             <span class="method delete">DELETE</span>
                             <span class="endpoint-path">/api/v1/workspaces/:id</span>
                         </div>
-                        <div class="endpoint-description">Delete workspace</div>
+                        <div class="endpoint-description">Delete workspace and all associated data</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Data Tables -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📊</div>
+                    <h2 id="tables" class="section-title">Data Tables</h2>
+                </div>
                 <div class="endpoint-group">
-                    <h3 class="endpoint-group-title">📊 Data Tables</h3>
-                    
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
@@ -312,7 +442,7 @@
                             <span class="method post">POST</span>
                             <span class="endpoint-path">/api/v1/tables</span>
                         </div>
-                        <div class="endpoint-description">Create a new data table</div>
+                        <div class="endpoint-description">Create a new data table with columns</div>
                     </div>
 
                     <div class="endpoint">
@@ -325,10 +455,26 @@
 
                     <div class="endpoint">
                         <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/tables/:id</span>
+                        </div>
+                        <div class="endpoint-description">Update table properties</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/tables/:id</span>
+                        </div>
+                        <div class="endpoint-description">Delete table and all rows</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
                             <span class="method get">GET</span>
                             <span class="endpoint-path">/api/v1/tables/:id/rows</span>
                         </div>
-                        <div class="endpoint-description">Get all rows in table</div>
+                        <div class="endpoint-description">Get all rows in table, ordered by position</div>
                     </div>
 
                     <div class="endpoint">
@@ -336,7 +482,7 @@
                             <span class="method post">POST</span>
                             <span class="endpoint-path">/api/v1/tables/:id/rows</span>
                         </div>
-                        <div class="endpoint-description">Create a new row</div>
+                        <div class="endpoint-description">Create a new row with data (user_id optional)</div>
                     </div>
 
                     <div class="endpoint">
@@ -344,7 +490,7 @@
                             <span class="method patch">PATCH</span>
                             <span class="endpoint-path">/api/v1/tables/:id/rows/:row_id</span>
                         </div>
-                        <div class="endpoint-description">Update row data</div>
+                        <div class="endpoint-description">Update row data or position</div>
                     </div>
 
                     <div class="endpoint">
@@ -352,14 +498,105 @@
                             <span class="method delete">DELETE</span>
                             <span class="endpoint-path">/api/v1/tables/:id/rows/:row_id</span>
                         </div>
-                        <div class="endpoint-description">Delete row</div>
+                        <div class="endpoint-description">Delete a specific row</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/tables/:id/search</span>
+                        </div>
+                        <div class="endpoint-description">Search within table rows</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Forms -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🔗</div>
+                    <h2 id="table-links" class="section-title">Table Links & Relationships</h2>
+                </div>
                 <div class="endpoint-group">
-                    <h3 class="endpoint-group-title">📝 Forms</h3>
-                    
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/table-links?table_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">List all table relationships for a table</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method post">POST</span>
+                            <span class="endpoint-path">/api/v1/table-links</span>
+                        </div>
+                        <div class="endpoint-description">Create a relationship between two tables (one_to_many or many_to_many)</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/table-links/:id</span>
+                        </div>
+                        <div class="endpoint-description">Get table link details</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/table-links/:id</span>
+                        </div>
+                        <div class="endpoint-description">Update table link configuration</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/table-links/:id</span>
+                        </div>
+                        <div class="endpoint-description">Delete table relationship</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/row-links/rows/:row_id/linked?link_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">Get all rows linked to a specific row</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method post">POST</span>
+                            <span class="endpoint-path">/api/v1/row-links</span>
+                        </div>
+                        <div class="endpoint-description">Link two rows together</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/row-links/:id</span>
+                        </div>
+                        <div class="endpoint-description">Update row link data</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/row-links/:id</span>
+                        </div>
+                        <div class="endpoint-description">Unlink two rows</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">📝</div>
+                    <h2 id="forms" class="section-title">Forms</h2>
+                </div>
+                <div class="endpoint-group">
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
@@ -373,7 +610,7 @@
                             <span class="method post">POST</span>
                             <span class="endpoint-path">/api/v1/forms</span>
                         </div>
-                        <div class="endpoint-description">Create a new form</div>
+                        <div class="endpoint-description">Create a new form with fields</div>
                     </div>
 
                     <div class="endpoint">
@@ -381,7 +618,23 @@
                             <span class="method get">GET</span>
                             <span class="endpoint-path">/api/v1/forms/:id</span>
                         </div>
-                        <div class="endpoint-description">Get form with fields</div>
+                        <div class="endpoint-description">Get form details with fields</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/forms/:id</span>
+                        </div>
+                        <div class="endpoint-description">Update form properties</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/forms/:id</span>
+                        </div>
+                        <div class="endpoint-description">Delete form and submissions</div>
                     </div>
 
                     <div class="endpoint">
@@ -399,70 +652,168 @@
                         </div>
                         <div class="endpoint-description">Get all form submissions</div>
                     </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/forms/:id/search</span>
+                        </div>
+                        <div class="endpoint-description">Search within form submissions</div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Request Hubs -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🎯</div>
+                    <h2 id="activities" class="section-title">Activities Hubs</h2>
+                </div>
                 <div class="endpoint-group">
-                    <h3 class="endpoint-group-title">🎯 Request Hubs</h3>
-                    
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="endpoint-path">/api/v1/request-hubs?workspace_id={id}</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs?workspace_id={id}</span>
                         </div>
-                        <div class="endpoint-description">List all request hubs in workspace</div>
+                        <div class="endpoint-description">List all activities hubs in workspace</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method post">POST</span>
-                            <span class="endpoint-path">/api/v1/request-hubs</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs</span>
                         </div>
-                        <div class="endpoint-description">Create a new request hub</div>
+                        <div class="endpoint-description">Create a new activities hub</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="endpoint-path">/api/v1/request-hubs/:hub_id</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id</span>
                         </div>
-                        <div class="endpoint-description">Get request hub with tabs</div>
+                        <div class="endpoint-description">Get activities hub with tabs</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="endpoint-path">/api/v1/request-hubs/by-slug/:slug</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/by-slug/:slug</span>
                         </div>
-                        <div class="endpoint-description">Get request hub by slug (requires workspace_id query param)</div>
+                        <div class="endpoint-description">Get activities hub by slug (requires workspace_id)</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id</span>
+                        </div>
+                        <div class="endpoint-description">Update activities hub</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id</span>
+                        </div>
+                        <div class="endpoint-description">Delete activities hub</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method get">GET</span>
-                            <span class="endpoint-path">/api/v1/request-hubs/:hub_id/tabs</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id/tabs</span>
                         </div>
-                        <div class="endpoint-description">List all tabs in request hub</div>
+                        <div class="endpoint-description">List all tabs in hub</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
                             <span class="method post">POST</span>
-                            <span class="endpoint-path">/api/v1/request-hubs/:hub_id/tabs</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id/tabs</span>
                         </div>
                         <div class="endpoint-description">Create a new tab</div>
                     </div>
 
                     <div class="endpoint">
                         <div class="endpoint-header">
+                            <span class="method patch">PATCH</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id/tabs/:tab_id</span>
+                        </div>
+                        <div class="endpoint-description">Update tab</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id/tabs/:tab_id</span>
+                        </div>
+                        <div class="endpoint-description">Delete tab</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
                             <span class="method post">POST</span>
-                            <span class="endpoint-path">/api/v1/request-hubs/:hub_id/tabs/reorder</span>
+                            <span class="endpoint-path">/api/v1/activities-hubs/:hub_id/tabs/reorder</span>
                         </div>
                         <div class="endpoint-description">Reorder tabs by position</div>
                     </div>
                 </div>
             </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-icon">🔍</div>
+                    <h2 id="search" class="section-title">Search</h2>
+                </div>
+                <div class="endpoint-group">
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/search?q={query}&workspace_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">Search across all workspace entities</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/search/suggestions?q={query}&workspace_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">Get search suggestions</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/search/recent?workspace_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">Get recent searches</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method post">POST</span>
+                            <span class="endpoint-path">/api/v1/search/history</span>
+                        </div>
+                        <div class="endpoint-description">Save search to history</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method get">GET</span>
+                            <span class="endpoint-path">/api/v1/search/popular?workspace_id={id}</span>
+                        </div>
+                        <div class="endpoint-description">Get popular searches</div>
+                    </div>
+
+                    <div class="endpoint">
+                        <div class="endpoint-header">
+                            <span class="method delete">DELETE</span>
+                            <span class="endpoint-path">/api/v1/search/history/:workspace_id</span>
+                        </div>
+                        <div class="endpoint-description">Clear search history</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</body>
+    </body>
 </html>
