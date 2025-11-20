@@ -62,6 +62,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null)
   const [participantsTableId, setParticipantsTableId] = useState<string | null>(null)
+  const [linkId, setLinkId] = useState<string | null>(null)
 
   useEffect(() => {
     const loadData = async () => {
@@ -72,7 +73,7 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
         const activitiesData = await activitiesSupabase.listActivities(workspaceId)
         setActivities(activitiesData)
         
-        // Get or create participants table
+        // Get or create participants table and activities table
         const { getOrCreateParticipantsTable } = await import('@/lib/api/participants-setup')
         const { getSessionToken } = await import('@/lib/supabase')
         const token = await getSessionToken()
@@ -82,15 +83,30 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
           const table = await getOrCreateParticipantsTable(workspaceId, user.id)
           setParticipantsTableId(table.id)
           
-          // Load participants (table rows)
+          // Get link ID between participants and activities tables
+          const { supabase } = await import('@/lib/supabase')
+          const { data: link } = await supabase
+            .from('table_links')
+            .select('id')
+            .eq('source_table_id', table.id)
+            .eq('relationship_type', 'many_to_many')
+            .single()
+          
+          if (link) {
+            setLinkId(link.id)
+          }
+          
+          // Load participants (table rows) with enrollment data from links
           const { tablesSupabase } = await import('@/lib/api/tables-supabase')
           const rows = await tablesSupabase.getTableRows(table.id)
           
-          // Convert table rows to participants
+          // Convert table rows to participants (with enrollments from table_row_links)
           const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
-          const participantsData = rows?.map((row: any) => 
-            tableRowToParticipant(row, table.id)
-          ) || []
+          const participantsData = await Promise.all(
+            (rows || []).map((row: any) => 
+              tableRowToParticipant(row, table.id, link?.id)
+            )
+          )
           
           setParticipants(participantsData)
         }
@@ -104,7 +120,73 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   }, [workspaceId])
 
   const handleAddParticipant = async (data: CreateParticipantInput, programIds: string[]) => {
-    if (!participantsTableId) return
+    if (!participantsTableId || !linkId) return
+    
+    try {
+      const { participantToTableRowData } = await import('@/lib/api/participants-helpers')
+      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      const { enrollParticipantInActivity } = await import('@/lib/api/participants-activities-link')
+      const { getOrCreateActivitiesTable } = await import('@/lib/api/activities-table-setup')
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (!user) return
+      
+      // Convert participant data to table row format (without enrolled_programs)
+      const rowData = participantToTableRowData(data)
+      
+      // Create participant table row
+      const newRow = await tablesSupabase.createRow({
+        table_id: participantsTableId,
+        data: rowData,
+        created_by: user.id
+      })
+      
+      // Enroll participant in selected programs via table_row_links
+      if (newRow?.id && programIds.length > 0) {
+        // Get activities table to find activity row IDs
+        const activitiesTable = await getOrCreateActivitiesTable(workspaceId, user.id)
+        const activityRows = await tablesSupabase.getTableRows(activitiesTable.id)
+        
+        // Create table_row_links for each enrollment
+        for (const programId of programIds) {
+          // Find matching activity row by matching legacy activity ID in data
+          const activityRow = activityRows?.find((row: any) => 
+            row.data?.legacy_activity_id === programId || row.id === programId
+          )
+          
+          if (activityRow?.id) {
+            await enrollParticipantInActivity(
+              newRow.id,
+              activityRow.id,
+              linkId,
+              {
+                enrolled_date: new Date().toISOString(),
+                status: 'active',
+                notes: ''
+              }
+            )
+          }
+        }
+      }
+      
+      // Reload participants with updated enrollments
+      const rows = await tablesSupabase.getTableRows(participantsTableId)
+      const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
+      const participantsData = await Promise.all(
+        (rows || []).map((row: any) => 
+          tableRowToParticipant(row, participantsTableId, linkId)
+        )
+      )
+      setParticipants(participantsData)
+      
+    } catch (error) {
+      console.error('Error adding participant:', error)
+    }
+  }
+
+  const handleSaveParticipant = async (id: string, updates: UpdateParticipantInput) => {
+    if (!linkId) return
     
     try {
       const { participantToTableRowData } = await import('@/lib/api/participants-helpers')
@@ -114,59 +196,24 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
       
       if (!user) return
       
-      // Convert participant data to table row format
-      const rowData = participantToTableRowData({
-        ...data,
-        enrolled_programs: programIds.map(id => ({
-          id: `enrollment_${id}`,
-          participant_id: '',
-          activity_id: id,
-          activity_name: activities.find(a => a.id === id)?.name || '',
-          enrolled_date: new Date().toISOString(),
-          status: 'active' as const
-        }))
-      })
-      
-      // Create table row
-      await tablesSupabase.createRow({
-        table_id: participantsTableId,
-        data: rowData,
-        created_by: user.id
-      })
-      
-      // Reload participants
-      const rows = await tablesSupabase.getTableRows(participantsTableId)
-      const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
-      const participantsData = rows?.map((row: any) => 
-        tableRowToParticipant(row, participantsTableId)
-      ) || []
-      setParticipants(participantsData)
-      
-    } catch (error) {
-      console.error('Error adding participant:', error)
-    }
-  }
-
-  const handleSaveParticipant = async (id: string, updates: UpdateParticipantInput) => {
-    try {
-      const { participantToTableRowData } = await import('@/lib/api/participants-helpers')
-      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
-      const { supabase } = await import('@/lib/supabase')
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) return
-      
+      // Convert participant data (without enrolled_programs)
       const rowData = participantToTableRowData(updates)
       
+      // Update participant table row
       await tablesSupabase.updateRow(id, {
         data: rowData,
         updated_by: user.id
       })
       
-      // Update local state
-      setParticipants(prev => prev.map(p => 
-        p.id === id ? { ...p, ...updates } : p
-      ))
+      // Update local state with fresh data from table_row_links
+      const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
+      const rows = await tablesSupabase.getTableRows(participantsTableId!)
+      const participantsData = await Promise.all(
+        (rows || []).map((row: any) => 
+          tableRowToParticipant(row, participantsTableId!, linkId)
+        )
+      )
+      setParticipants(participantsData)
       
     } catch (error) {
       console.error('Error updating participant:', error)
@@ -174,9 +221,15 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   }
 
   const handleDeleteParticipant = async (id: string) => {
+    if (!linkId || !participantsTableId) return
+    
     try {
       const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      
+      // Delete table row (this will also cascade delete table_row_links)
       await tablesSupabase.deleteRow(id)
+      
+      // Update local state
       setParticipants(prev => prev.filter(p => p.id !== id))
       setSelectedParticipant(null)
     } catch (error) {
@@ -185,8 +238,27 @@ function EnrolledViewWrapper({ workspaceId }: { workspaceId: string }) {
   }
 
   const handleUnenroll = async (participantId: string, enrollmentId: string) => {
-    // TODO: Implement unenrollment logic
-    console.log('Unenroll:', participantId, enrollmentId)
+    if (!linkId) return
+    
+    try {
+      const { unenrollParticipantFromActivity } = await import('@/lib/api/participants-activities-link')
+      
+      // Remove table_row_link
+      await unenrollParticipantFromActivity(participantId, enrollmentId, linkId)
+      
+      // Reload participants to reflect changes
+      const { tablesSupabase } = await import('@/lib/api/tables-supabase')
+      const { tableRowToParticipant } = await import('@/lib/api/participants-helpers')
+      const rows = await tablesSupabase.getTableRows(participantsTableId!)
+      const participantsData = await Promise.all(
+        (rows || []).map((row: any) => 
+          tableRowToParticipant(row, participantsTableId!, linkId)
+        )
+      )
+      setParticipants(participantsData)
+    } catch (error) {
+      console.error('Error unenrolling participant:', error)
+    }
   }
 
   if (loading) {
