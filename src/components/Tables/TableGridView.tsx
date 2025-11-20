@@ -344,24 +344,15 @@ export function TableGridView({ tableId, workspaceId }: TableGridViewProps) {
         optimistic: true
       })
 
-      // Update via Supabase (not API)
-      console.log('Updating cell via Supabase:', { rowId, columnName, value })
+      // Update via Go API
+      console.log('Updating cell via Go API:', { rowId, columnName, value })
+      const { goClient } = await import('@/lib/api/go-client')
       
-      // Get current user ID
-      const { getCurrentUser } = await import('@/lib/supabase')
-      const user = await getCurrentUser()
-      
-      if (!user) {
-        console.error('No user found')
-        toast.error('You must be logged in to edit cells')
-        return
-      }
-      
-      await rowsSupabase.updateRow(rowId, { 
-        data: updatedData,
+      await goClient.patch(`/tables/${tableId}/rows/${rowId}`, {
+        data: updatedData
       })
       
-      console.log('Cell updated successfully via Supabase')
+      console.log('Cell updated successfully via Go API')
       // Note: We don't update local state here since optimistic update already did it
       // The Supabase Realtime will broadcast the update to all clients
     } catch (error) {

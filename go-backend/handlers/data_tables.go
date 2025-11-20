@@ -175,7 +175,7 @@ func CreateTableRow(c *gin.Context) {
 	}
 
 	// Parse user ID from query parameter (optional)
-	var createdBy uuid.UUID
+	var createdBy *uuid.UUID
 	userIDStr := c.Query("user_id")
 	if userIDStr != "" {
 		parsedUserID, err := uuid.Parse(userIDStr)
@@ -183,7 +183,7 @@ func CreateTableRow(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user_id: " + err.Error()})
 			return
 		}
-		createdBy = parsedUserID
+		createdBy = &parsedUserID
 	}
 
 	row := models.TableRow{

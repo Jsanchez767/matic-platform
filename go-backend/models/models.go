@@ -129,7 +129,8 @@ type TableRow struct {
 	TableID   uuid.UUID              `gorm:"type:uuid;not null;index" json:"table_id"`
 	Position  int                    `gorm:"default:0" json:"position"`
 	Data      map[string]interface{} `gorm:"type:jsonb;not null" json:"data"`
-	CreatedBy uuid.UUID              `gorm:"type:uuid" json:"created_by"`
+	CreatedBy *uuid.UUID             `gorm:"type:uuid" json:"created_by,omitempty"`
+	UpdatedBy *uuid.UUID             `gorm:"type:uuid" json:"updated_by,omitempty"`
 }
 
 type TableView struct {
