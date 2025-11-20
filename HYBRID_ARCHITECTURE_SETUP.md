@@ -29,6 +29,9 @@ UI Auto-Updates
 
 ### 1. Start the Go Backend
 
+**Production**: The Go backend is already running at **https://backend.maticslab.com**
+
+**Local Development** (optional):
 ```bash
 cd go-backend
 
@@ -39,7 +42,7 @@ go mod download
 go run main.go
 ```
 
-The Go backend will start on **http://localhost:8080**
+Local backend will start on **http://localhost:8080**
 
 ### 2. Start the Frontend
 
@@ -60,7 +63,9 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Go Backend API
-NEXT_PUBLIC_GO_API_URL=http://localhost:8080/api/v1
+NEXT_PUBLIC_GO_API_URL=https://backend.maticslab.com/api/v1
+# Or for local development:
+# NEXT_PUBLIC_GO_API_URL=http://localhost:8080/api/v1
 ```
 
 ### 4. Test the Hybrid Architecture
@@ -73,19 +78,19 @@ NEXT_PUBLIC_GO_API_URL=http://localhost:8080/api/v1
    - Fill in student information
    - Select programs to enroll in
    - Click "Save"
-   - ✅ Check browser console - should see `POST http://localhost:8080/api/v1/tables/{id}/rows`
-   - ✅ Check Go backend terminal - should see API request log
+   - ✅ Check browser console - should see `POST https://backend.maticslab.com/api/v1/tables/{id}/rows`
+   - ✅ Response should show the created participant data
 
 3. **Update a Participant**:
    - Click on a participant card
    - Edit any field
    - Click "Save"
-   - ✅ Check console - should see `PATCH http://localhost:8080/api/v1/tables/{id}/rows/{row_id}`
+   - ✅ Check console - should see `PATCH https://backend.maticslab.com/api/v1/tables/{id}/rows/{row_id}`
 
 4. **Delete a Participant**:
    - Open participant detail panel
    - Click "Delete"
-   - ✅ Check console - should see `DELETE http://localhost:8080/api/v1/tables/{id}/rows/{row_id}`
+   - ✅ Check console - should see `DELETE https://backend.maticslab.com/api/v1/tables/{id}/rows/{row_id}`
 
 #### Test Realtime Updates (Supabase)
 
@@ -143,7 +148,7 @@ All endpoints are under `/api/v1`:
 
 ## Troubleshooting
 
-### Go Backend Not Starting
+### Go Backend Not Starting (Local Development)
 ```bash
 # Check if port 8080 is in use
 lsof -i :8080
@@ -156,8 +161,14 @@ cd go-backend && go run main.go
 ```
 
 ### API Errors (Network)
+**Production**:
+- Backend should be accessible at https://backend.maticslab.com
+- Check if backend is running by visiting https://backend.maticslab.com/health
+- Verify CORS is configured for your frontend domain
+
+**Local Development**:
 - Make sure Go backend is running on http://localhost:8080
-- Check `NEXT_PUBLIC_GO_API_URL` in `.env.local`
+- Set `NEXT_PUBLIC_GO_API_URL=http://localhost:8080/api/v1` in `.env.local`
 - Check browser console for CORS errors
 
 ### Realtime Not Working

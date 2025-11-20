@@ -3,7 +3,7 @@
  * Base client for communicating with the Go backend API
  */
 
-const GO_API_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'http://localhost:8080/api/v1'
+const GO_API_URL = process.env.NEXT_PUBLIC_GO_API_URL || 'https://backend.maticslab.com/api/v1'
 
 export class GoAPIError extends Error {
   constructor(
