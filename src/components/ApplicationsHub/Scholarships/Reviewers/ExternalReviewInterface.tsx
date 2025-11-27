@@ -42,10 +42,11 @@ interface Application {
   redactedName: string
   // Dynamic fields from form
   fields: Record<string, any>
-  // Grouped by section
+  // Grouped by section (organized by portal builder categories/pages)
   sections: Array<{
     id: string
     title: string
+    description?: string
     fields: Array<{ id: string; label: string; value: any; type: string }>
   }>
   // Legacy fields for backwards compatibility  
@@ -328,9 +329,27 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
         
         // Store form structure for dynamic rendering
         const formFieldsArray = form.fields || []
-        const sections = formFieldsArray.filter((f) => f.type === 'section')
+        
+        // Get sections from form.settings.sections (portal builder structure)
+        // This preserves the order and metadata from the application builder
+        const settingsSections = settings.sections || []
+        
+        // Filter out section-type fields (layout markers) from the fields array
         const fields = formFieldsArray.filter((f) => f.type !== 'section')
-        setFormSections(sections)
+        
+        // Create section-like objects from settings.sections for state
+        // These represent the pages/categories from the application builder
+        const sectionMarkers = settingsSections.map((s: any) => ({
+          id: s.id,
+          type: 'section' as const,
+          title: s.title,
+          name: s.title,
+          description: s.description,
+          label: s.title,
+          position: 0
+        }))
+        
+        setFormSections(sectionMarkers as FormField[])
         setFormFields(fields)
         
         // Parse custom statuses and tags from ApplicationStage
@@ -395,10 +414,20 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
           }
 
           // Build sections with visible fields only
-          const appSections = sections.map(section => {
+          // Use settingsSections (from form.settings.sections) to preserve portal builder order
+          const appSections = settingsSections.map((section: any) => {
+            // Get fields for this section by checking config.section_id
+            // Also check section_id directly on the field for backwards compatibility
             const sectionFields = fields
-              .filter(f => f.section_id === section.id)
+              .filter(f => {
+                // Parse config if it's a string
+                const config = typeof f.config === 'string' ? JSON.parse(f.config) : (f.config || {})
+                const fieldSectionId = config.section_id || f.section_id
+                return fieldSectionId === section.id
+              })
               .filter(f => isFieldVisible(f.id))
+              // Sort by position to maintain field order from the portal builder
+              .sort((a, b) => (a.position || 0) - (b.position || 0))
               .map(f => ({
                 id: f.id,
                 label: f.label || f.name || f.id,
@@ -408,9 +437,39 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
             return {
               id: section.id,
               title: section.title || section.name || 'Section',
+              description: section.description || '',
               fields: sectionFields
             }
-          }).filter(s => s.fields.length > 0)
+          }).filter((s: any) => s.fields.length > 0)
+          
+          // Add a fallback "Other Information" section for fields without a section_id
+          // This ensures all visible fields are displayed even if not assigned to a section
+          const assignedFieldIds = new Set(appSections.flatMap((s: any) => s.fields.map((f: any) => f.id)))
+          const orphanFields = fields
+            .filter(f => {
+              const config = typeof f.config === 'string' ? JSON.parse(f.config) : (f.config || {})
+              const fieldSectionId = config.section_id || f.section_id
+              // Field is orphan if it has no section_id or its section doesn't exist in settingsSections
+              return !fieldSectionId || !settingsSections.some((s: any) => s.id === fieldSectionId)
+            })
+            .filter(f => !assignedFieldIds.has(f.id))
+            .filter(f => isFieldVisible(f.id))
+            .sort((a, b) => (a.position || 0) - (b.position || 0))
+            .map(f => ({
+              id: f.id,
+              label: f.label || f.name || f.id,
+              value: data[f.id] || data[f.name] || '',
+              type: f.type
+            }))
+          
+          if (orphanFields.length > 0) {
+            appSections.push({
+              id: '_other',
+              title: 'Other Information',
+              description: '',
+              fields: orphanFields
+            })
+          }
 
           // Extract prior reviews if enabled
           let priorReviews: Application['priorReviews'] = undefined
@@ -445,6 +504,11 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
         })
 
         setApplications(mappedApps)
+        
+        // Initialize active section to the first section if applications have sections
+        if (mappedApps.length > 0 && mappedApps[0].sections.length > 0) {
+          setActiveSection(mappedApps[0].sections[0].id)
+        }
         
         const initialScores: Record<string, Record<string, number>> = {}
         mappedApps.forEach(app => {
@@ -720,7 +784,12 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
                     {currentApp.sections.map(section => (
                       activeSection === section.id && (
                         <div key={section.id} className="space-y-4">
-                          <h4 className="text-gray-900 font-semibold mb-3">{section.title}</h4>
+                          <div className="mb-4">
+                            <h4 className="text-gray-900 font-semibold">{section.title}</h4>
+                            {section.description && (
+                              <p className="text-sm text-gray-500 mt-1">{section.description}</p>
+                            )}
+                          </div>
                           {section.fields.map(field => (
                             <div key={field.id} className="bg-gray-50 rounded-lg p-4">
                               <p className="text-xs text-blue-600 font-medium uppercase tracking-wide mb-2">{field.label}</p>
