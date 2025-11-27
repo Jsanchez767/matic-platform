@@ -36,6 +36,21 @@ interface ExternalReviewResponse {
 type FieldVisibility = boolean | 'visible' | 'hidden' | 'score_only'
 type FieldVisibilityConfig = Record<string, FieldVisibility>
 
+// Section from form.settings.sections (portal builder structure)
+interface SettingsSection {
+  id: string
+  title: string
+  description?: string
+}
+
+// Field with parsed config for section mapping
+interface FieldWithParsedConfig extends FormField {
+  parsedConfig: {
+    section_id?: string
+    [key: string]: any
+  }
+}
+
 // Dynamic application structure based on form fields
 interface Application {
   id: string
@@ -332,14 +347,22 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
         
         // Get sections from form.settings.sections (portal builder structure)
         // This preserves the order and metadata from the application builder
-        const settingsSections = settings.sections || []
+        const settingsSections: SettingsSection[] = (settings.sections || []) as SettingsSection[]
         
-        // Filter out section-type fields (layout markers) from the fields array
-        const fields = formFieldsArray.filter((f) => f.type !== 'section')
+        // Create a Set of section IDs for O(1) lookup
+        const sectionIdSet = new Set(settingsSections.map(s => s.id))
+        
+        // Filter out section-type fields (layout markers) and parse configs once
+        const fieldsWithParsedConfig: FieldWithParsedConfig[] = formFieldsArray
+          .filter((f) => f.type !== 'section')
+          .map(f => ({
+            ...f,
+            parsedConfig: typeof f.config === 'string' ? JSON.parse(f.config) : (f.config || {})
+          }))
         
         // Create section-like objects from settings.sections for state
         // These represent the pages/categories from the application builder
-        const sectionMarkers = settingsSections.map((s: any) => ({
+        const sectionMarkers = settingsSections.map((s) => ({
           id: s.id,
           type: 'section' as const,
           title: s.title,
@@ -350,7 +373,7 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
         }))
         
         setFormSections(sectionMarkers as FormField[])
-        setFormFields(fields)
+        setFormFields(fieldsWithParsedConfig as FormField[])
         
         // Parse custom statuses and tags from ApplicationStage
         if (stage) {
@@ -415,14 +438,12 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
 
           // Build sections with visible fields only
           // Use settingsSections (from form.settings.sections) to preserve portal builder order
-          const appSections = settingsSections.map((section: any) => {
-            // Get fields for this section by checking config.section_id
-            // Also check section_id directly on the field for backwards compatibility
-            const sectionFields = fields
+          // Use pre-parsed config from fieldsWithParsedConfig for performance
+          const appSections = settingsSections.map((section) => {
+            // Get fields for this section using pre-parsed config.section_id
+            const sectionFields = fieldsWithParsedConfig
               .filter(f => {
-                // Parse config if it's a string
-                const config = typeof f.config === 'string' ? JSON.parse(f.config) : (f.config || {})
-                const fieldSectionId = config.section_id || f.section_id
+                const fieldSectionId = f.parsedConfig.section_id || f.section_id
                 return fieldSectionId === section.id
               })
               .filter(f => isFieldVisible(f.id))
@@ -436,21 +457,20 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
               }))
             return {
               id: section.id,
-              title: section.title || section.name || 'Section',
+              title: section.title || 'Section',
               description: section.description || '',
               fields: sectionFields
             }
-          }).filter((s: any) => s.fields.length > 0)
+          }).filter(s => s.fields.length > 0)
           
           // Add a fallback "Other Information" section for fields without a section_id
           // This ensures all visible fields are displayed even if not assigned to a section
-          const assignedFieldIds = new Set(appSections.flatMap((s: any) => s.fields.map((f: any) => f.id)))
-          const orphanFields = fields
+          const assignedFieldIds = new Set(appSections.flatMap(s => s.fields.map(f => f.id)))
+          const orphanFields = fieldsWithParsedConfig
             .filter(f => {
-              const config = typeof f.config === 'string' ? JSON.parse(f.config) : (f.config || {})
-              const fieldSectionId = config.section_id || f.section_id
-              // Field is orphan if it has no section_id or its section doesn't exist in settingsSections
-              return !fieldSectionId || !settingsSections.some((s: any) => s.id === fieldSectionId)
+              const fieldSectionId = f.parsedConfig.section_id || f.section_id
+              // Field is orphan if it has no section_id or its section doesn't exist in settingsSections (O(1) lookup)
+              return !fieldSectionId || !sectionIdSet.has(fieldSectionId)
             })
             .filter(f => !assignedFieldIds.has(f.id))
             .filter(f => isFieldVisible(f.id))
