@@ -71,31 +71,39 @@ type WorkspaceMember struct {
 // ActivitiesHub model
 type ActivitiesHub struct {
 	BaseModel
-	WorkspaceID  uuid.UUID          `gorm:"type:uuid;not null;index" json:"workspace_id"`
-	Name         string             `gorm:"not null" json:"name"`
-	Slug         string             `gorm:"not null;index" json:"slug"`
-	Description  string             `json:"description"`
-	Category     string             `json:"category"`
-	BeginDate    *time.Time         `json:"begin_date"`
-	EndDate      *time.Time         `json:"end_date"`
-	Status       string             `gorm:"default:'upcoming'" json:"status"` // active, upcoming, completed
-	Participants int                `gorm:"default:0" json:"participants"`
-	Settings     datatypes.JSON     `gorm:"type:jsonb;default:'{}'" json:"settings"`
-	IsActive     bool               `gorm:"default:true" json:"is_active"`
-	CreatedBy    uuid.UUID          `gorm:"type:uuid;not null" json:"created_by"`
-	Tabs         []ActivitiesHubTab `gorm:"foreignKey:HubID" json:"tabs,omitempty"`
+	WorkspaceID  uuid.UUID         `gorm:"type:uuid;not null;index" json:"workspace_id"`
+	Name         string            `gorm:"not null" json:"name"`
+	Slug         string            `gorm:"not null;index" json:"slug"`
+	Description  string            `json:"description"`
+	Category     string            `json:"category"`
+	BeginDate    *time.Time        `json:"begin_date"`
+	EndDate      *time.Time        `json:"end_date"`
+	Status       string            `gorm:"default:'upcoming'" json:"status"`
+	Participants int              `gorm:"default:0" json:"participants"`
+	Settings     datatypes.JSON   `gorm:"type:jsonb;default:'{}'" json:"settings"`
+	IsActive     bool             `gorm:"default:true" json:"is_active"`
+	CreatedBy    uuid.UUID        `gorm:"type:uuid;not null" json:"created_by"`
+	Tabs         []ActivitiesHubTab `gorm:"foreignKey:HubID;constraint:OnDelete:CASCADE" json:"tabs,omitempty"`
 }
 
+func (ActivitiesHub) TableName() string {
+	return "activities_hubs"
+}
+
+// ActivitiesHubTab model
 type ActivitiesHubTab struct {
 	BaseModel
-	HubID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"hub_id"`
-	Name      string         `gorm:"not null" json:"name"`
-	Slug      string         `gorm:"not null" json:"slug"`
-	Type      string         `gorm:"not null" json:"type"` // dashboard, attendance, participants, etc.
-	Icon      string         `json:"icon"`
-	Position  int            `gorm:"default:0" json:"position"`
-	IsVisible bool           `gorm:"default:true" json:"is_visible"`
-	Config    datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"config"`
+	HubID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"hub_id"`
+	Name       string         `gorm:"not null" json:"name"`
+	Slug       string         `gorm:"not null" json:"slug"`
+	Type       string         `gorm:"not null" json:"type"` // overview, attendance, participants, etc.
+	Config     datatypes.JSON `gorm:"type:jsonb;default:'{}'" json:"config"`
+	OrderIndex int            `gorm:"default:0" json:"order_index"`
+	IsVisible  bool           `gorm:"default:true" json:"is_visible"`
+}
+
+func (ActivitiesHubTab) TableName() string {
+	return "activities_hub_tabs"
 }
 
 // Table (Consolidated DataTable)
@@ -220,3 +228,4 @@ func (t *TableRowLink) BeforeCreate(tx *gorm.DB) error {
 	}
 	return nil
 }
+
