@@ -327,11 +327,30 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
         const settings = form.settings || {}
         
         // Store form structure for dynamic rendering
+        // Sections are stored in form.settings.sections, not as form fields
         const formFieldsArray = form.fields || []
-        const sections = formFieldsArray.filter((f) => f.type === 'section')
+        const formSettingsSections = Array.isArray(settings.sections) 
+          ? settings.sections as Array<{ id: string; title: string; description?: string }> 
+          : []
+        
+        // Create section objects from settings.sections for consistent format
+        // Only include necessary properties for display logic
+        const sections = formSettingsSections.map((s, index) => ({
+          id: s.id,
+          title: s.title || `Section ${index + 1}`,
+          description: s.description || '',
+          position: index
+        }))
+        
+        // All form fields (except section-type) - fields are linked via config.section_id
         const fields = formFieldsArray.filter((f) => f.type !== 'section')
-        setFormSections(sections)
+        setFormSections(sections as any) // Cast for compatibility with FormField[] type
         setFormFields(fields)
+        
+        // Helper to get field value from data object (handles different key formats)
+        const getFieldValue = (field: FormField, data: Record<string, any>): any => {
+          return data[field.id] || data[field.name] || data[field.label] || ''
+        }
         
         // Parse custom statuses and tags from ApplicationStage
         if (stage) {
@@ -395,22 +414,60 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
           }
 
           // Build sections with visible fields only
+          // Helper function to get section_id from field (stored in config.section_id)
+          const getFieldSectionId = (field: FormField): string | undefined => {
+            // Check config.section_id first (new format from UpdateFormStructure)
+            if (field.config?.section_id) {
+              return field.config.section_id as string
+            }
+            // Fall back to settings.section_id for older formats
+            if (field.settings?.section_id) {
+              return field.settings.section_id as string
+            }
+            // Fall back to direct section_id property
+            return field.section_id
+          }
+
           const appSections = sections.map(section => {
             const sectionFields = fields
-              .filter(f => f.section_id === section.id)
+              .filter(f => getFieldSectionId(f) === section.id)
               .filter(f => isFieldVisible(f.id))
+              .sort((a, b) => (a.position || 0) - (b.position || 0)) // Sort by position within section
               .map(f => ({
                 id: f.id,
                 label: f.label || f.name || f.id,
-                value: data[f.id] || data[f.name] || '',
+                value: getFieldValue(f, data),
                 type: f.type
               }))
             return {
               id: section.id,
-              title: section.title || section.name || 'Section',
+              title: section.title || 'Section',
               fields: sectionFields
             }
           }).filter(s => s.fields.length > 0)
+
+          // If no sections are defined or no fields matched sections, 
+          // create a fallback section with all visible fields sorted by position
+          let finalSections = appSections
+          if (finalSections.length === 0 && fields.length > 0) {
+            const allVisibleFields = fields
+              .filter(f => isFieldVisible(f.id))
+              .sort((a, b) => (a.position || 0) - (b.position || 0))
+              .map(f => ({
+                id: f.id,
+                label: f.label || f.name || f.id,
+                value: getFieldValue(f, data),
+                type: f.type
+              }))
+            
+            if (allVisibleFields.length > 0) {
+              finalSections = [{
+                id: 'all-fields',
+                title: 'Application Details',
+                fields: allVisibleFields
+              }]
+            }
+          }
 
           // Extract prior reviews if enabled
           let priorReviews: Application['priorReviews'] = undefined
@@ -431,7 +488,7 @@ export function ExternalReviewInterface({ reviewerName, token }: ExternalReviewI
             id: sub.id,
             redactedName: `Applicant ${sub.id.substring(0, 6).toUpperCase()}`,
             fields: data,
-            sections: appSections,
+            sections: finalSections,
             // Legacy fields for backwards compatibility
             gpa: data.gpa || data.GPA || 'N/A',
             school: data.school || data.university || 'N/A',
