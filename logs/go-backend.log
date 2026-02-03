@@ -1,0 +1,34 @@
+2026/02/02 23:28:20 ✅ Database connected successfully
+2026/02/02 23:28:20 🔄 Running database migrations...
+
+2026/02/02 23:28:20 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[111.760ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organizations' AND table_type = 'BASE TABLE'
+
+2026/02/02 23:28:20 [31;1m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45 [35;1mERROR: syntax error at or near "free" (SQLSTATE 42601)
+[0m[33m[40.381ms] [34;1m[rows:0][0m CREATE TABLE "organizations" ("id" uuid DEFAULT uuid_generate_v4(),"created_at" timestamptz,"updated_at" timestamptz,"name" text NOT NULL,"slug" text NOT NULL,"description" text,"logo_url" text,"settings" JSONB DEFAULT '{},"subscription_tier" text DEFAULT 'free',PRIMARY KEY ("id"))
+2026/02/02 23:28:20 ⚠️  AutoMigrate warning: failed to run migrations: ERROR: syntax error at or near "free" (SQLSTATE 42601)
+
+2026/02/02 23:28:20 [32m/Users/jesussanchez/matic-platform/go-backend/services/field_normalizer.go:31
+[0m[33m[99.582ms] [34;1m[rows:40][0m SELECT * FROM "field_type_registry"
+[AIReports] Service initialized with Cohere
+2026/02/02 23:28:20 🧠 AI services initialized (embeddings + reports)
+✅ Google Drive service initialized (using shared Google OAuth credentials)
+2026/02/02 23:28:20 📧 Email queue worker started
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+panic: html/template: pattern matches no files: `templates/*`
+
+goroutine 1 [running]:
+html/template.Must(...)
+	/opt/homebrew/Cellar/go/1.25.4/libexec/src/html/template/template.go:368
+github.com/gin-gonic/gin.(*Engine).LoadHTMLGlob(0x1400044da00, {0x1013fc25a, 0xb})
+	/Users/jesussanchez/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:260 +0x23c
+github.com/Jsanchez767/matic-platform/router.SetupRouter(0x140001549a0)
+	/Users/jesussanchez/matic-platform/go-backend/router/router.go:53 +0x25c
+main.main()
+	/Users/jesussanchez/matic-platform/go-backend/main.go:62 +0x338
+exit status 2

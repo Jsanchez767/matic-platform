@@ -1,0 +1,543 @@
+2026/02/02 23:38:39 ✅ Database connected successfully
+2026/02/02 23:38:39 🔄 Running database migrations...
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[101.891ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organizations' AND table_type = 'BASE TABLE'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[36.115ms] [34;1m[rows:0][0m CREATE TABLE "organizations" ("id" uuid DEFAULT uuid_generate_v4(),"created_at" timestamptz,"updated_at" timestamptz,"name" text NOT NULL,"slug" text NOT NULL,"description" text,"logo_url" text,"settings" JSONB DEFAULT '{}',"subscription_tier" text DEFAULT 'free',PRIMARY KEY ("id"))
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[32.608ms] [34;1m[rows:0][0m CREATE UNIQUE INDEX IF NOT EXISTS "idx_organizations_slug" ON "organizations" ("slug")
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[36.956ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND table_type = 'BASE TABLE'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[63.200ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[85.239ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'postgres' AND table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[32.018ms] [34;1m[rows:-][0m SELECT * FROM "organization_members" LIMIT 5
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[94.796ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members' AND constraint_type = 'UNIQUE'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[82.090ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[79.203ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'organization_members'
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[74.974ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND column_name = 'id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'organization_members' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[30.866ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND column_name = 'organization_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'organization_members' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/02/02 23:38:40 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[38.458ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND column_name = 'user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'organization_members' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/02/02 23:38:40 [32m
+[0m[33m[31.377ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/02/02 23:38:40 [32m
+[0m[33m[37.186ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'postgres' AND table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members'
+
+2026/02/02 23:38:40 [32m
+[0m[33m[37.188ms] [34;1m[rows:-][0m SELECT * FROM "organization_members" LIMIT 5
+
+2026/02/02 23:38:40 [32m
+[0m[33m[40.781ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members' AND constraint_type = 'UNIQUE'
+
+2026/02/02 23:38:40 [32m
+[0m[33m[40.736ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members'
+
+2026/02/02 23:38:41 [32m
+[0m[33m[31.102ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'organization_members'
+
+2026/02/02 23:38:41 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[35.648ms] [34;1m[rows:1][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND column_name = 'ba_user_id') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'organization_members' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/02/02 23:38:41 [32m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45
+[0m[33m[35.577ms] [34;1m[rows:0][0m SELECT description FROM pg_catalog.pg_description WHERE objsubid = (SELECT ordinal_position FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members' AND column_name = 'role') AND objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = 'organization_members' AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA()))
+
+2026/02/02 23:38:41 [32m
+[0m[33m[36.436ms] [34;1m[rows:1][0m SELECT CURRENT_DATABASE()
+
+2026/02/02 23:38:41 [32m
+[0m[33m[39.205ms] [34;1m[rows:-][0m SELECT c.column_name, c.is_nullable = 'YES', c.udt_name, c.character_maximum_length, c.numeric_precision, c.numeric_precision_radix, c.numeric_scale, c.datetime_precision, 8 * typlen, c.column_default, pd.description, c.identity_increment FROM information_schema.columns AS c JOIN pg_type AS pgt ON c.udt_name = pgt.typname LEFT JOIN pg_catalog.pg_description as pd ON pd.objsubid = c.ordinal_position AND pd.objoid = (SELECT oid FROM pg_catalog.pg_class WHERE relname = c.table_name AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = c.table_schema)) where table_catalog = 'postgres' AND table_schema = CURRENT_SCHEMA() AND table_name = 'organization_members'
+
+2026/02/02 23:38:41 [32m
+[0m[33m[30.585ms] [34;1m[rows:-][0m SELECT * FROM "organization_members" LIMIT 5
+
+2026/02/02 23:38:41 [32m
+[0m[33m[40.184ms] [34;1m[rows:-][0m SELECT constraint_name FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members' AND constraint_type = 'UNIQUE'
+
+2026/02/02 23:38:41 [32m
+[0m[33m[47.192ms] [34;1m[rows:-][0m SELECT c.column_name, constraint_name, constraint_type FROM information_schema.table_constraints tc JOIN information_schema.constraint_column_usage AS ccu USING (constraint_schema, constraint_catalog, table_name, constraint_name) JOIN information_schema.columns AS c ON c.table_schema = tc.constraint_schema AND tc.table_name = c.table_name AND ccu.column_name = c.column_name WHERE constraint_type IN ('PRIMARY KEY', 'UNIQUE') AND c.table_catalog = 'postgres' AND c.table_schema = CURRENT_SCHEMA() AND c.table_name = 'organization_members'
+
+2026/02/02 23:38:41 [32m
+[0m[33m[32.649ms] [34;1m[rows:-][0m SELECT a.attname as column_name, format_type(a.atttypid, a.atttypmod) AS data_type
+		FROM pg_attribute a JOIN pg_class b ON a.attrelid = b.oid AND relnamespace = (SELECT oid FROM pg_catalog.pg_namespace WHERE nspname = CURRENT_SCHEMA())
+		WHERE a.attnum > 0 -- hide internal columns
+		AND NOT a.attisdropped -- hide deleted columns
+		AND b.relname = 'organization_members'
+
+2026/02/02 23:38:41 [31;1m/Users/jesussanchez/matic-platform/go-backend/database/database.go:45 [35;1mERROR: unterminated quoted string at or near "'{}" (SQLSTATE 42601)
+[0m[33m[33.695ms] [34;1m[rows:0][0m ALTER TABLE "organization_members" ALTER COLUMN "permissions" SET DEFAULT '{}
+2026/02/02 23:38:41 ⚠️  AutoMigrate warning: failed to run migrations: ERROR: unterminated quoted string at or near "'{}" (SQLSTATE 42601)
+
+2026/02/02 23:38:41 [32m/Users/jesussanchez/matic-platform/go-backend/services/field_normalizer.go:31
+[0m[33m[104.280ms] [34;1m[rows:40][0m SELECT * FROM "field_type_registry"
+[AIReports] Service initialized with Cohere
+2026/02/02 23:38:41 🧠 AI services initialized (embeddings + reports)
+✅ Google Drive service initialized (using shared Google OAuth credentials)
+2026/02/02 23:38:41 📧 Email queue worker started
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] Loaded HTML Templates (2): 
+	- 
+	- api-docs.html
+
+[GIN-debug] GET    /uploads/*filepath        --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (6 handlers)
+[GIN-debug] HEAD   /uploads/*filepath        --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (6 handlers)
+[GIN-debug] GET    /                         --> github.com/Jsanchez767/matic-platform/router.SetupRouter.func2 (6 handlers)
+[GIN-debug] GET    /api-info                 --> github.com/Jsanchez767/matic-platform/router.SetupRouter.func3 (6 handlers)
+[GIN-debug] GET    /health                   --> github.com/Jsanchez767/matic-platform/router.SetupRouter.func4 (6 handlers)
+[GIN-debug] GET    /api/v1                   --> github.com/Jsanchez767/matic-platform/router.SetupRouter.func5 (6 handlers)
+[GIN-debug] GET    /api/v1/docs              --> github.com/Jsanchez767/matic-platform/router.SetupRouter.func6 (6 handlers)
+[GIN-debug] GET    /api/v1/forms/by-slug/:slug --> github.com/Jsanchez767/matic-platform/handlers.GetFormBySlug (6 handlers)
+[GIN-debug] GET    /api/v1/forms/by-subdomain/:subdomain/:slug --> github.com/Jsanchez767/matic-platform/handlers.GetFormBySubdomainSlug (6 handlers)
+[GIN-debug] POST   /api/v1/forms/:id/submit  --> github.com/Jsanchez767/matic-platform/handlers.SubmitForm (6 handlers)
+[GIN-debug] GET    /api/v1/forms/:id/submission --> github.com/Jsanchez767/matic-platform/handlers.GetFormSubmission (6 handlers)
+[GIN-debug] POST   /api/v1/portal/v2/signup  --> github.com/Jsanchez767/matic-platform/handlers.PortalSignupV2 (6 handlers)
+[GIN-debug] POST   /api/v1/portal/v2/login   --> github.com/Jsanchez767/matic-platform/handlers.PortalLoginV2 (6 handlers)
+[GIN-debug] POST   /api/v1/portal/v2/logout  --> github.com/Jsanchez767/matic-platform/handlers.PortalLogoutV2 (6 handlers)
+[GIN-debug] GET    /api/v1/portal/v2/me      --> github.com/Jsanchez767/matic-platform/handlers.PortalGetMeV2 (7 handlers)
+[GIN-debug] GET    /api/v1/portal/v2/submissions --> github.com/Jsanchez767/matic-platform/handlers.GetApplicantSubmissions (7 handlers)
+[GIN-debug] POST   /api/v1/portal/v2/forms/:form_id/submissions --> github.com/Jsanchez767/matic-platform/handlers.GetOrCreatePortalSubmission (7 handlers)
+[GIN-debug] GET    /api/v1/portal/v2/submissions/:id --> github.com/Jsanchez767/matic-platform/handlers.GetPortalSubmission (7 handlers)
+[GIN-debug] PUT    /api/v1/portal/v2/submissions/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdatePortalSubmission (7 handlers)
+[GIN-debug] POST   /api/v1/portal/login      --> github.com/Jsanchez767/matic-platform/handlers.PortalLoginV2 (6 handlers)
+[GIN-debug] POST   /api/v1/portal/sync-better-auth-applicant --> github.com/Jsanchez767/matic-platform/handlers.PortalSyncBetterAuthApplicant (6 handlers)
+[GIN-debug] GET    /api/v1/portal/applications/:id --> github.com/Jsanchez767/matic-platform/handlers.GetApplicantDashboard (6 handlers)
+[GIN-debug] GET    /api/v1/portal/applications/:id/activities --> github.com/Jsanchez767/matic-platform/handlers.ListPortalActivities (6 handlers)
+[GIN-debug] POST   /api/v1/portal/applications/:id/activities --> github.com/Jsanchez767/matic-platform/handlers.CreatePortalActivity (6 handlers)
+[GIN-debug] POST   /api/v1/portal/applications/:id/activities/read --> github.com/Jsanchez767/matic-platform/handlers.MarkActivitiesRead (6 handlers)
+[GIN-debug] GET    /api/v1/portal/documents  --> github.com/Jsanchez767/matic-platform/handlers.ListPortalDocuments (6 handlers)
+[GIN-debug] POST   /api/v1/portal/documents  --> github.com/Jsanchez767/matic-platform/handlers.UploadPortalDocument (6 handlers)
+[GIN-debug] DELETE /api/v1/portal/documents/:id --> github.com/Jsanchez767/matic-platform/handlers.DeletePortalDocument (6 handlers)
+[GIN-debug] POST   /api/v1/portal/recommendations --> github.com/Jsanchez767/matic-platform/handlers.CreateRecommendationRequest (6 handlers)
+[GIN-debug] GET    /api/v1/portal/recommendations --> github.com/Jsanchez767/matic-platform/handlers.GetRecommendationRequests (6 handlers)
+[GIN-debug] GET    /api/v1/email/track/:tracking_id --> github.com/Jsanchez767/matic-platform/handlers.TrackEmailOpen (6 handlers)
+[GIN-debug] GET    /api/v1/email/oauth/callback --> github.com/Jsanchez767/matic-platform/handlers.HandleGmailCallback (6 handlers)
+[GIN-debug] POST   /api/v1/auth/generate-email --> github.com/Jsanchez767/matic-platform/handlers.GenerateAuthEmail (6 handlers)
+[GIN-debug] GET    /api/v1/auth/preview-email --> github.com/Jsanchez767/matic-platform/handlers.PreviewAuthEmail (6 handlers)
+[GIN-debug] GET    /api/v1/integrations/google-drive/callback --> github.com/Jsanchez767/matic-platform/handlers.GoogleDriveCallback (6 handlers)
+[GIN-debug] POST   /api/v1/email/resend/webhook --> github.com/Jsanchez767/matic-platform/handlers.HandleResendWebhook (6 handlers)
+[GIN-debug] GET    /api/v1/recommend/:token  --> github.com/Jsanchez767/matic-platform/handlers.GetRecommendationByToken (6 handlers)
+[GIN-debug] POST   /api/v1/recommend/:token/submit --> github.com/Jsanchez767/matic-platform/handlers.SubmitRecommendation (6 handlers)
+[GIN-debug] POST   /api/v1/ending-pages/match --> github.com/Jsanchez767/matic-platform/handlers.FindMatchingEnding (6 handlers)
+[GIN-debug] GET    /api/v1/field-types       --> github.com/Jsanchez767/matic-platform/handlers.GetFieldTypes (6 handlers)
+[GIN-debug] GET    /api/v1/field-types/toolbox --> github.com/Jsanchez767/matic-platform/handlers.GetFieldTypesToolbox (6 handlers)
+[GIN-debug] GET    /api/v1/field-types/:type_id --> github.com/Jsanchez767/matic-platform/handlers.GetFieldType (6 handlers)
+[GIN-debug] GET    /api/v1/forms/:id/dashboard --> github.com/Jsanchez767/matic-platform/handlers.GetDashboardLayout (6 handlers)
+[GIN-debug] GET    /api/v1/invitations/by-token/:token --> github.com/Jsanchez767/matic-platform/handlers.GetInvitationByToken (6 handlers)
+[GIN-debug] GET    /api/v1/organizations     --> github.com/Jsanchez767/matic-platform/handlers.ListOrganizations (7 handlers)
+[GIN-debug] POST   /api/v1/organizations     --> github.com/Jsanchez767/matic-platform/handlers.CreateOrganization (7 handlers)
+[GIN-debug] GET    /api/v1/organizations/:id --> github.com/Jsanchez767/matic-platform/handlers.GetOrganization (7 handlers)
+[GIN-debug] PATCH  /api/v1/organizations/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateOrganization (7 handlers)
+[GIN-debug] DELETE /api/v1/organizations/:id --> github.com/Jsanchez767/matic-platform/handlers.DeleteOrganization (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces        --> github.com/Jsanchez767/matic-platform/handlers.ListWorkspaces (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/init   --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspacesInit (7 handlers)
+[GIN-debug] POST   /api/v1/workspaces        --> github.com/Jsanchez767/matic-platform/handlers.CreateWorkspace (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/by-slug/:slug --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceBySlug (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id    --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspace (7 handlers)
+[GIN-debug] PATCH  /api/v1/workspaces/:id    --> github.com/Jsanchez767/matic-platform/handlers.UpdateWorkspace (7 handlers)
+[GIN-debug] DELETE /api/v1/workspaces/:id    --> github.com/Jsanchez767/matic-platform/handlers.DeleteWorkspace (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id/members-with-auth --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceMembersWithAuth (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id/invitations --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceInvitations (7 handlers)
+[GIN-debug] POST   /api/v1/workspaces/:id/invitations --> github.com/Jsanchez767/matic-platform/handlers.CreateWorkspaceInvitation (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id/integrations --> github.com/Jsanchez767/matic-platform/handlers.ListWorkspaceIntegrations (7 handlers)
+[GIN-debug] POST   /api/v1/workspaces/:id/integrations --> github.com/Jsanchez767/matic-platform/handlers.CreateWorkspaceIntegration (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id/integrations/:type --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceIntegration (7 handlers)
+[GIN-debug] PATCH  /api/v1/workspaces/:id/integrations/:type --> github.com/Jsanchez767/matic-platform/handlers.UpdateWorkspaceIntegration (7 handlers)
+[GIN-debug] DELETE /api/v1/workspaces/:id/integrations/:type --> github.com/Jsanchez767/matic-platform/handlers.DeleteWorkspaceIntegration (7 handlers)
+[GIN-debug] GET    /api/v1/workspaces/:id/integrations/google_drive/auth-url --> github.com/Jsanchez767/matic-platform/handlers.GetGoogleDriveAuthURL (7 handlers)
+[GIN-debug] POST   /api/v1/workspaces/:id/integrations/google_drive/disconnect --> github.com/Jsanchez767/matic-platform/handlers.DisconnectGoogleDrive (7 handlers)
+[GIN-debug] GET    /api/v1/workspace-members --> github.com/Jsanchez767/matic-platform/handlers.ListWorkspaceMembers (7 handlers)
+[GIN-debug] PATCH  /api/v1/workspace-members/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateWorkspaceMember (7 handlers)
+[GIN-debug] DELETE /api/v1/workspace-members/:id --> github.com/Jsanchez767/matic-platform/handlers.RemoveWorkspaceMember (7 handlers)
+[GIN-debug] GET    /api/v1/invitations       --> github.com/Jsanchez767/matic-platform/handlers.ListInvitations (7 handlers)
+[GIN-debug] POST   /api/v1/invitations       --> github.com/Jsanchez767/matic-platform/handlers.CreateInvitation (7 handlers)
+[GIN-debug] DELETE /api/v1/invitations/:id   --> github.com/Jsanchez767/matic-platform/handlers.RevokeInvitation (7 handlers)
+[GIN-debug] POST   /api/v1/invitations/:id/resend --> github.com/Jsanchez767/matic-platform/handlers.ResendInvitation (7 handlers)
+[GIN-debug] POST   /api/v1/invitations/accept/:token --> github.com/Jsanchez767/matic-platform/handlers.AcceptInvitation (7 handlers)
+[GIN-debug] POST   /api/v1/invitations/decline/:token --> github.com/Jsanchez767/matic-platform/handlers.DeclineInvitation (7 handlers)
+[GIN-debug] GET    /api/v1/tables            --> github.com/Jsanchez767/matic-platform/handlers.ListDataTables (7 handlers)
+[GIN-debug] POST   /api/v1/tables            --> github.com/Jsanchez767/matic-platform/handlers.CreateDataTable (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id        --> github.com/Jsanchez767/matic-platform/handlers.GetDataTable (7 handlers)
+[GIN-debug] PATCH  /api/v1/tables/:id        --> github.com/Jsanchez767/matic-platform/handlers.UpdateDataTable (7 handlers)
+[GIN-debug] DELETE /api/v1/tables/:id        --> github.com/Jsanchez767/matic-platform/handlers.DeleteDataTable (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows   --> github.com/Jsanchez767/matic-platform/handlers.ListTableRows (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id --> github.com/Jsanchez767/matic-platform/handlers.GetTableRow (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/rows   --> github.com/Jsanchez767/matic-platform/handlers.CreateTableRow (7 handlers)
+[GIN-debug] PATCH  /api/v1/tables/:id/rows/:row_id --> github.com/Jsanchez767/matic-platform/handlers.UpdateTableRow (7 handlers)
+[GIN-debug] DELETE /api/v1/tables/:id/rows/:row_id --> github.com/Jsanchez767/matic-platform/handlers.DeleteTableRow (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id/history --> github.com/Jsanchez767/matic-platform/handlers.GetRowHistory (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id/history/:version --> github.com/Jsanchez767/matic-platform/handlers.GetRowVersion (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id/versions/:version --> github.com/Jsanchez767/matic-platform/handlers.GetRowVersion (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id/diff/:v1/:v2 --> github.com/Jsanchez767/matic-platform/handlers.CompareVersions (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/rows/:row_id/compare-versions/:v1/:v2 --> github.com/Jsanchez767/matic-platform/handlers.CompareVersions (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/rows/:row_id/restore/:version --> github.com/Jsanchez767/matic-platform/handlers.RestoreVersion (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/columns --> github.com/Jsanchez767/matic-platform/handlers.CreateTableColumn (7 handlers)
+[GIN-debug] PATCH  /api/v1/tables/:id/columns/:column_id --> github.com/Jsanchez767/matic-platform/handlers.UpdateTableColumn (7 handlers)
+[GIN-debug] DELETE /api/v1/tables/:id/columns/:column_id --> github.com/Jsanchez767/matic-platform/handlers.DeleteTableColumn (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/search --> github.com/Jsanchez767/matic-platform/handlers.SearchTableRows (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/approvals --> github.com/Jsanchez767/matic-platform/handlers.ListApprovals (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/approvals/:approval_id --> github.com/Jsanchez767/matic-platform/handlers.GetApproval (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/approvals/:approval_id/review --> github.com/Jsanchez767/matic-platform/handlers.ReviewApproval (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/schema/ai --> github.com/Jsanchez767/matic-platform/handlers.GetTableAISchema (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/ai/suggestions --> github.com/Jsanchez767/matic-platform/handlers.GetTableSuggestions (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/ai/analyze --> github.com/Jsanchez767/matic-platform/handlers.AnalyzeTableForSuggestions (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/ai/rows/:row_id/analyze --> github.com/Jsanchez767/matic-platform/handlers.AnalyzeRowForSuggestions (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/ai/suggestions/:suggestion_id/apply --> github.com/Jsanchez767/matic-platform/handlers.ApplySuggestion (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/ai/suggestions/:suggestion_id/dismiss --> github.com/Jsanchez767/matic-platform/handlers.DismissSuggestion (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/suggestions --> github.com/Jsanchez767/matic-platform/handlers.GetTableSuggestions (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/suggestions/:suggestion_id/apply --> github.com/Jsanchez767/matic-platform/handlers.ApplySuggestion (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/suggestions/:suggestion_id/dismiss --> github.com/Jsanchez767/matic-platform/handlers.DismissSuggestion (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/views  --> github.com/Jsanchez767/matic-platform/handlers.ListViews (7 handlers)
+[GIN-debug] POST   /api/v1/tables/:id/views  --> github.com/Jsanchez767/matic-platform/handlers.CreateView (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/views/portal --> github.com/Jsanchez767/matic-platform/handlers.GetPortalViews (7 handlers)
+[GIN-debug] GET    /api/v1/views/:id         --> github.com/Jsanchez767/matic-platform/handlers.GetView (7 handlers)
+[GIN-debug] PATCH  /api/v1/views/:id         --> github.com/Jsanchez767/matic-platform/handlers.UpdateView (7 handlers)
+[GIN-debug] DELETE /api/v1/views/:id         --> github.com/Jsanchez767/matic-platform/handlers.DeleteView (7 handlers)
+[GIN-debug] PATCH  /api/v1/views/:id/config  --> github.com/Jsanchez767/matic-platform/handlers.UpdateViewConfig (7 handlers)
+[GIN-debug] POST   /api/v1/views/:id/duplicate --> github.com/Jsanchez767/matic-platform/handlers.DuplicateView (7 handlers)
+[GIN-debug] POST   /api/v1/versions/:version_id/archive --> github.com/Jsanchez767/matic-platform/handlers.ArchiveVersion (7 handlers)
+[GIN-debug] DELETE /api/v1/versions/:version_id --> github.com/Jsanchez767/matic-platform/handlers.DeleteVersion (7 handlers)
+[GIN-debug] GET    /api/v1/files             --> github.com/Jsanchez767/matic-platform/handlers.ListFiles (7 handlers)
+[GIN-debug] POST   /api/v1/files             --> github.com/Jsanchez767/matic-platform/handlers.CreateFile (7 handlers)
+[GIN-debug] GET    /api/v1/files/:id         --> github.com/Jsanchez767/matic-platform/handlers.GetFile (7 handlers)
+[GIN-debug] PATCH  /api/v1/files/:id         --> github.com/Jsanchez767/matic-platform/handlers.UpdateFile (7 handlers)
+[GIN-debug] DELETE /api/v1/files/:id         --> github.com/Jsanchez767/matic-platform/handlers.DeleteFile (7 handlers)
+[GIN-debug] GET    /api/v1/files/:id/versions --> github.com/Jsanchez767/matic-platform/handlers.GetFileVersions (7 handlers)
+[GIN-debug] POST   /api/v1/files/:id/versions --> github.com/Jsanchez767/matic-platform/handlers.CreateFileVersion (7 handlers)
+[GIN-debug] GET    /api/v1/rows/:row_id/files --> github.com/Jsanchez767/matic-platform/handlers.GetRowFiles (7 handlers)
+[GIN-debug] POST   /api/v1/rows/:row_id/files --> github.com/Jsanchez767/matic-platform/handlers.CreateRowFile (7 handlers)
+[GIN-debug] GET    /api/v1/rows/:row_id/files/stats --> github.com/Jsanchez767/matic-platform/handlers.GetFileStats (7 handlers)
+[GIN-debug] POST   /api/v1/rows/:row_id/integrations/google_drive/folder --> github.com/Jsanchez767/matic-platform/handlers.CreateApplicantFolder (7 handlers)
+[GIN-debug] POST   /api/v1/rows/:row_id/integrations/google_drive/sync-file --> github.com/Jsanchez767/matic-platform/handlers.SyncFileToDrive (7 handlers)
+[GIN-debug] POST   /api/v1/rows/:row_id/integrations/google_drive/sync-all --> github.com/Jsanchez767/matic-platform/handlers.SyncAllFilesToDrive (7 handlers)
+[GIN-debug] POST   /api/v1/rows/:row_id/integrations/google_drive/summary --> github.com/Jsanchez767/matic-platform/handlers.CreateApplicationSummary (7 handlers)
+[GIN-debug] GET    /api/v1/tables/:id/files  --> github.com/Jsanchez767/matic-platform/handlers.GetTableFiles (7 handlers)
+[GIN-debug] POST   /api/v1/documents/analyze-pii --> github.com/Jsanchez767/matic-platform/handlers.AnalyzeDocumentPII (7 handlers)
+[GIN-debug] POST   /api/v1/documents/analyze-pii/batch --> github.com/Jsanchez767/matic-platform/handlers.BatchAnalyzeDocumentsPII (7 handlers)
+[GIN-debug] POST   /api/v1/documents/redact  --> github.com/Jsanchez767/matic-platform/handlers.GetRedactedDocument (7 handlers)
+[GIN-debug] POST   /api/v1/documents/redact/base64 --> github.com/Jsanchez767/matic-platform/handlers.GetRedactedDocumentBase64 (7 handlers)
+[GIN-debug] GET    /api/v1/table-links       --> github.com/Jsanchez767/matic-platform/handlers.ListTableLinks (7 handlers)
+[GIN-debug] POST   /api/v1/table-links       --> github.com/Jsanchez767/matic-platform/handlers.CreateTableLink (7 handlers)
+[GIN-debug] GET    /api/v1/table-links/:id   --> github.com/Jsanchez767/matic-platform/handlers.GetTableLink (7 handlers)
+[GIN-debug] PATCH  /api/v1/table-links/:id   --> github.com/Jsanchez767/matic-platform/handlers.UpdateTableLink (7 handlers)
+[GIN-debug] DELETE /api/v1/table-links/:id   --> github.com/Jsanchez767/matic-platform/handlers.DeleteTableLink (7 handlers)
+[GIN-debug] GET    /api/v1/row-links/rows/:row_id/linked --> github.com/Jsanchez767/matic-platform/handlers.GetLinkedRows (7 handlers)
+[GIN-debug] POST   /api/v1/row-links         --> github.com/Jsanchez767/matic-platform/handlers.CreateTableRowLink (7 handlers)
+[GIN-debug] PATCH  /api/v1/row-links/:id     --> github.com/Jsanchez767/matic-platform/handlers.UpdateTableRowLink (7 handlers)
+[GIN-debug] DELETE /api/v1/row-links/:id     --> github.com/Jsanchez767/matic-platform/handlers.DeleteTableRowLink (7 handlers)
+[GIN-debug] GET    /api/v1/forms             --> github.com/Jsanchez767/matic-platform/handlers.ListForms (7 handlers)
+[GIN-debug] GET    /api/v1/forms/list        --> github.com/Jsanchez767/matic-platform/handlers.ListFormsOptimized (7 handlers)
+[GIN-debug] POST   /api/v1/forms             --> github.com/Jsanchez767/matic-platform/handlers.CreateForm (7 handlers)
+[GIN-debug] GET    /api/v1/forms/:id         --> github.com/Jsanchez767/matic-platform/handlers.GetForm (7 handlers)
+[GIN-debug] PATCH  /api/v1/forms/:id         --> github.com/Jsanchez767/matic-platform/handlers.UpdateForm (7 handlers)
+[GIN-debug] PUT    /api/v1/forms/:id/structure --> github.com/Jsanchez767/matic-platform/handlers.UpdateFormStructure (7 handlers)
+[GIN-debug] PUT    /api/v1/forms/:id/custom-slug --> github.com/Jsanchez767/matic-platform/handlers.UpdateFormCustomSlug (7 handlers)
+[GIN-debug] PUT    /api/v1/forms/:id/dashboard --> github.com/Jsanchez767/matic-platform/handlers.UpdateDashboardLayout (7 handlers)
+[GIN-debug] DELETE /api/v1/forms/:id         --> github.com/Jsanchez767/matic-platform/handlers.DeleteForm (7 handlers)
+[GIN-debug] GET    /api/v1/forms/:id/submissions --> github.com/Jsanchez767/matic-platform/handlers.ListFormSubmissions (7 handlers)
+[GIN-debug] DELETE /api/v1/forms/:id/submissions/:submission_id --> github.com/Jsanchez767/matic-platform/handlers.DeleteFormSubmission (7 handlers)
+[GIN-debug] GET    /api/v1/forms/:id/search  --> github.com/Jsanchez767/matic-platform/handlers.SearchFormSubmissions (7 handlers)
+[GIN-debug] GET    /api/v1/forms/:id/integrations/google_drive --> github.com/Jsanchez767/matic-platform/handlers.GetFormIntegrationSettings (7 handlers)
+[GIN-debug] PATCH  /api/v1/forms/:id/integrations/google_drive --> github.com/Jsanchez767/matic-platform/handlers.UpdateFormIntegrationSettings (7 handlers)
+[GIN-debug] POST   /api/v1/forms/:id/integrations/google_drive/folder --> github.com/Jsanchez767/matic-platform/handlers.CreateFormFolder (7 handlers)
+[GIN-debug] PATCH  /api/v1/forms/:id/submissions/:submission_id --> github.com/Jsanchez767/matic-platform/handlers.UpdateSubmissionMetadata (7 handlers)
+[GIN-debug] GET    /api/v1/ending-pages      --> github.com/Jsanchez767/matic-platform/handlers.ListEndingPages (7 handlers)
+[GIN-debug] POST   /api/v1/ending-pages      --> github.com/Jsanchez767/matic-platform/handlers.CreateEndingPage (7 handlers)
+[GIN-debug] GET    /api/v1/ending-pages/:id  --> github.com/Jsanchez767/matic-platform/handlers.GetEndingPage (7 handlers)
+[GIN-debug] PUT    /api/v1/ending-pages/:id  --> github.com/Jsanchez767/matic-platform/handlers.UpdateEndingPage (7 handlers)
+[GIN-debug] DELETE /api/v1/ending-pages/:id  --> github.com/Jsanchez767/matic-platform/handlers.DeleteEndingPage (7 handlers)
+[GIN-debug] PUT    /api/v1/ending-pages/:id/default --> github.com/Jsanchez767/matic-platform/handlers.SetDefaultEnding (7 handlers)
+[GIN-debug] PUT    /api/v1/ending-pages/reorder --> github.com/Jsanchez767/matic-platform/handlers.ReorderEndings (7 handlers)
+[GIN-debug] GET    /api/v1/search/smart      --> github.com/Jsanchez767/matic-platform/handlers.SmartSearch (7 handlers)
+[GIN-debug] POST   /api/v1/search/hybrid     --> github.com/Jsanchez767/matic-platform/handlers.HybridSearch (7 handlers)
+[GIN-debug] GET    /api/v1/search/hybrid     --> github.com/Jsanchez767/matic-platform/handlers.HybridSearch (7 handlers)
+[GIN-debug] GET    /api/v1/search/similar/:entity_id --> github.com/Jsanchez767/matic-platform/handlers.FindSimilar (7 handlers)
+[GIN-debug] POST   /api/v1/search/embeddings/generate --> github.com/Jsanchez767/matic-platform/handlers.GenerateEmbeddings (7 handlers)
+[GIN-debug] GET    /api/v1/search/embeddings/stats --> github.com/Jsanchez767/matic-platform/handlers.GetEmbeddingStats (7 handlers)
+[GIN-debug] POST   /api/v1/search/embeddings/queue --> github.com/Jsanchez767/matic-platform/handlers.QueueForEmbedding (7 handlers)
+[GIN-debug] POST   /api/v1/search/rebuild-index --> github.com/Jsanchez767/matic-platform/handlers.RebuildSearchIndex (7 handlers)
+[GIN-debug] GET    /api/v1/search/ai/table/:id --> github.com/Jsanchez767/matic-platform/handlers.GetTableSchemaForAI (7 handlers)
+[GIN-debug] GET    /api/v1/search/ai/workspace/:id --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceSummaryForAI (7 handlers)
+[GIN-debug] GET    /api/v1/search            --> github.com/Jsanchez767/matic-platform/handlers.SearchWorkspace (7 handlers)
+[GIN-debug] GET    /api/v1/search/suggestions --> github.com/Jsanchez767/matic-platform/handlers.GetSearchSuggestions (7 handlers)
+[GIN-debug] GET    /api/v1/search/recent     --> github.com/Jsanchez767/matic-platform/handlers.GetRecentSearches (7 handlers)
+[GIN-debug] POST   /api/v1/search/history    --> github.com/Jsanchez767/matic-platform/handlers.SaveSearchHistory (7 handlers)
+[GIN-debug] GET    /api/v1/search/popular    --> github.com/Jsanchez767/matic-platform/handlers.GetPopularSearches (7 handlers)
+[GIN-debug] DELETE /api/v1/search/history/:workspace_id --> github.com/Jsanchez767/matic-platform/handlers.ClearSearchHistory (7 handlers)
+[GIN-debug] GET    /api/v1/crm/applicants    --> github.com/Jsanchez767/matic-platform/handlers.GetApplicantsCRM (7 handlers)
+[GIN-debug] GET    /api/v1/crm/applicants/:id --> github.com/Jsanchez767/matic-platform/handlers.GetApplicantDetail (7 handlers)
+[GIN-debug] PATCH  /api/v1/crm/applicants/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateApplicant (7 handlers)
+[GIN-debug] POST   /api/v1/crm/applicants/reset-password --> github.com/Jsanchez767/matic-platform/handlers.ResetApplicantPassword (7 handlers)
+[GIN-debug] POST   /api/v1/crm/import-users  --> github.com/Jsanchez767/matic-platform/handlers.ImportBAUsersToWorkspace (7 handlers)
+[GIN-debug] GET    /api/v1/email/oauth/url   --> github.com/Jsanchez767/matic-platform/handlers.GetGmailAuthURL (7 handlers)
+[GIN-debug] GET    /api/v1/email/connection  --> github.com/Jsanchez767/matic-platform/handlers.GetGmailConnection (7 handlers)
+[GIN-debug] DELETE /api/v1/email/connection  --> github.com/Jsanchez767/matic-platform/handlers.DisconnectGmail (7 handlers)
+[GIN-debug] GET    /api/v1/email/accounts    --> github.com/Jsanchez767/matic-platform/handlers.ListEmailAccounts (7 handlers)
+[GIN-debug] PATCH  /api/v1/email/accounts/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateEmailAccount (7 handlers)
+[GIN-debug] DELETE /api/v1/email/accounts/:id --> github.com/Jsanchez767/matic-platform/handlers.DeleteEmailAccount (7 handlers)
+[GIN-debug] GET    /api/v1/email/signatures  --> github.com/Jsanchez767/matic-platform/handlers.ListSignatures (7 handlers)
+[GIN-debug] POST   /api/v1/email/signatures  --> github.com/Jsanchez767/matic-platform/handlers.CreateSignature (7 handlers)
+[GIN-debug] PATCH  /api/v1/email/signatures/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateSignature (7 handlers)
+[GIN-debug] DELETE /api/v1/email/signatures/:id --> github.com/Jsanchez767/matic-platform/handlers.DeleteSignature (7 handlers)
+[GIN-debug] POST   /api/v1/email/send        --> github.com/Jsanchez767/matic-platform/handlers.SendEmail (7 handlers)
+[GIN-debug] GET    /api/v1/email/history     --> github.com/Jsanchez767/matic-platform/handlers.GetEmailHistory (7 handlers)
+[GIN-debug] GET    /api/v1/email/campaigns   --> github.com/Jsanchez767/matic-platform/handlers.GetEmailCampaigns (7 handlers)
+[GIN-debug] GET    /api/v1/email/templates   --> github.com/Jsanchez767/matic-platform/handlers.GetEmailTemplates (7 handlers)
+[GIN-debug] POST   /api/v1/email/templates   --> github.com/Jsanchez767/matic-platform/handlers.CreateEmailTemplate (7 handlers)
+[GIN-debug] PATCH  /api/v1/email/templates/:id --> github.com/Jsanchez767/matic-platform/handlers.UpdateEmailTemplate (7 handlers)
+[GIN-debug] DELETE /api/v1/email/templates/:id --> github.com/Jsanchez767/matic-platform/handlers.DeleteEmailTemplate (7 handlers)
+[GIN-debug] GET    /api/v1/email/submission/:id/history --> github.com/Jsanchez767/matic-platform/handlers.GetSubmissionEmailHistory (7 handlers)
+[GIN-debug] GET    /api/v1/email/submission/:id/activity --> github.com/Jsanchez767/matic-platform/handlers.GetSubmissionActivity (7 handlers)
+[GIN-debug] GET    /api/v1/email/analytics   --> github.com/Jsanchez767/matic-platform/handlers.GetEmailAnalytics (7 handlers)
+[GIN-debug] GET    /api/v1/email/service-health --> github.com/Jsanchez767/matic-platform/handlers.GetEmailServiceHealth (7 handlers)
+[GIN-debug] GET    /api/v1/email/campaigns/:id/analytics --> github.com/Jsanchez767/matic-platform/handlers.GetEmailCampaignAnalytics (7 handlers)
+[GIN-debug] GET    /api/v1/email/drafts      --> github.com/Jsanchez767/matic-platform/handlers.ListEmailDrafts (7 handlers)
+[GIN-debug] GET    /api/v1/email/drafts/:id  --> github.com/Jsanchez767/matic-platform/handlers.GetEmailDraft (7 handlers)
+[GIN-debug] POST   /api/v1/email/drafts      --> github.com/Jsanchez767/matic-platform/handlers.CreateEmailDraft (7 handlers)
+[GIN-debug] PATCH  /api/v1/email/drafts/:id  --> github.com/Jsanchez767/matic-platform/handlers.UpdateEmailDraft (7 handlers)
+[GIN-debug] DELETE /api/v1/email/drafts/:id  --> github.com/Jsanchez767/matic-platform/handlers.DeleteEmailDraft (7 handlers)
+[GIN-debug] POST   /api/v1/email/drafts/cleanup --> github.com/Jsanchez767/matic-platform/handlers.CleanupOldDrafts (7 handlers)
+[GIN-debug] GET    /api/v1/email/resend/integration --> github.com/Jsanchez767/matic-platform/handlers.GetResendIntegration (7 handlers)
+[GIN-debug] POST   /api/v1/email/resend/integration --> github.com/Jsanchez767/matic-platform/handlers.CreateResendIntegration (7 handlers)
+[GIN-debug] PATCH  /api/v1/email/resend/integration --> github.com/Jsanchez767/matic-platform/handlers.UpdateResendIntegration (7 handlers)
+[GIN-debug] DELETE /api/v1/email/resend/integration --> github.com/Jsanchez767/matic-platform/handlers.DeleteResendIntegration (7 handlers)
+[GIN-debug] POST   /api/v1/email/resend/integration/test --> github.com/Jsanchez767/matic-platform/handlers.TestResendIntegration (7 handlers)
+[GIN-debug] GET    /api/v1/email/queue       --> github.com/Jsanchez767/matic-platform/handlers.ListEmailQueueItems (7 handlers)
+[GIN-debug] GET    /api/v1/email/queue/:id   --> github.com/Jsanchez767/matic-platform/handlers.GetEmailQueueItem (7 handlers)
+[GIN-debug] POST   /api/v1/email/queue/:id/retry --> github.com/Jsanchez767/matic-platform/handlers.RetryEmailQueueItem (7 handlers)
+[GIN-debug] POST   /api/v1/email/queue/:id/cancel --> github.com/Jsanchez767/matic-platform/handlers.CancelEmailQueueItem (7 handlers)
+[GIN-debug] GET    /api/v1/email/queue/stats --> github.com/Jsanchez767/matic-platform/handlers.GetEmailQueueStats (7 handlers)
+[GIN-debug] POST   /api/v1/reports/generate  --> github.com/Jsanchez767/matic-platform/handlers.GenerateReport (7 handlers)
+[GIN-debug] GET    /api/v1/reports/stats     --> github.com/Jsanchez767/matic-platform/handlers.GetWorkspaceStats (7 handlers)
+[GIN-debug] GET    /api/v1/reports/is-report-query --> github.com/Jsanchez767/matic-platform/handlers.IsReportQuery (7 handlers)
+[GIN-debug] GET    /api/v1/admin/users       --> github.com/Jsanchez767/matic-platform/handlers.ListAuthUsers (7 handlers)
+[GIN-debug] DELETE /api/v1/admin/users       --> github.com/Jsanchez767/matic-platform/handlers.DeleteUser (7 handlers)
+[GIN-debug] POST   /api/v1/ai/translate      --> github.com/Jsanchez767/matic-platform/handlers.TranslateContent (7 handlers)
+[GIN-debug] GET    /api/v1/recommendations   --> github.com/Jsanchez767/matic-platform/handlers.GetRecommendationRequests (7 handlers)
+[GIN-debug] POST   /api/v1/recommendations   --> github.com/Jsanchez767/matic-platform/handlers.CreateRecommendationRequest (7 handlers)
+[GIN-debug] GET    /api/v1/recommendations/:id --> github.com/Jsanchez767/matic-platform/handlers.GetRecommendationRequest (7 handlers)
+[GIN-debug] POST   /api/v1/recommendations/:id/remind --> github.com/Jsanchez767/matic-platform/handlers.SendRecommendationReminder (7 handlers)
+[GIN-debug] DELETE /api/v1/recommendations/:id --> github.com/Jsanchez767/matic-platform/handlers.CancelRecommendationRequest (7 handlers)
+[GIN-debug] GET    /api/v1/recommendations/submission/:submissionId --> github.com/Jsanchez767/matic-platform/handlers.GetRecommendationsForReview (7 handlers)
+[GIN-debug] GET    /api/v2/forms             --> github.com/Jsanchez767/matic-platform/handlers.ListFormsV2 (7 handlers)
+[GIN-debug] POST   /api/v2/forms             --> github.com/Jsanchez767/matic-platform/handlers.CreateFormV2 (7 handlers)
+[GIN-debug] GET    /api/v2/forms/:id         --> github.com/Jsanchez767/matic-platform/handlers.GetFormV2 (7 handlers)
+[GIN-debug] PATCH  /api/v2/forms/:id         --> github.com/Jsanchez767/matic-platform/handlers.UpdateFormV2 (7 handlers)
+[GIN-debug] GET    /api/v2/submissions/:id   --> github.com/Jsanchez767/matic-platform/handlers.GetSubmissionV2 (7 handlers)
+[GIN-debug] PUT    /api/v2/submissions/:id/responses --> github.com/Jsanchez767/matic-platform/handlers.SaveResponsesV2 (7 handlers)
+[GIN-debug] POST   /api/v2/submissions/:id/submit --> github.com/Jsanchez767/matic-platform/handlers.SubmitSubmissionV2 (7 handlers)
+[GIN-debug] GET    /api/v2/forms/by-slug/:workspace_slug/:form_slug --> github.com/Jsanchez767/matic-platform/handlers.GetFormBySlugV2 (6 handlers)
+2026/02/02 23:38:41 🚀 Server starting on port 8080
+2026/02/02 23:38:41 � API: http://localhost:8080/api/v1
+2026/02/02 23:38:41 ❤️  Health: http://localhost:8080/health
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+
+2026/02/02 23:38:46 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:63
+[0m[33m[71.517ms] [34;1m[rows:1][0m SELECT count(*) FROM information_schema.tables WHERE table_schema = CURRENT_SCHEMA() AND table_name = 'email_queue' AND table_type = 'BASE TABLE'
+
+2026/02/02 23:38:46 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[88.127ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:38:46.52' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:38:51 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[58.018ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:38:51.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+2026/02/02 23:38:52 [REQUEST] method=GET path=/health duration=0ms status=200
+[GIN] 2026/02/02 - 23:38:52 | 200 |       95.75µs |             ::1 | GET      "/health"
+
+2026/02/02 23:38:56 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[59.079ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:38:56.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:38:59 [31;1m/Users/jesussanchez/matic-platform/go-backend/middleware/auth.go:85 [35;1mrecord not found
+[0m[33m[107.053ms] [34;1m[rows:0][0m SELECT * FROM "ba_sessions" WHERE token = 'test-token' ORDER BY "ba_sessions"."id" LIMIT 1
+2026/02/02 23:38:59 [REQUEST] method=GET path=/api/v1/crm/applicants duration=107ms status=401
+[GIN] 2026/02/02 - 23:38:59 | 401 |  107.227084ms |             ::1 | GET      "/api/v1/crm/applicants?workspace_id=9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e"
+
+2026/02/02 23:39:01 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[62.499ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:01.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:06 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[68.132ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:06.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:11 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[59.602ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:11.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:16 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[59.716ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:16.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:21 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[67.375ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:21.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+[GIN] 2026/02/02 - 23:39:25 | 204 |      66.166µs |             ::1 | OPTIONS  "/api/v1/crm/applicants?workspace_id=9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e"
+
+2026/02/02 23:39:26 [32m/Users/jesussanchez/matic-platform/go-backend/middleware/auth.go:85
+[0m[33m[64.895ms] [34;1m[rows:1][0m SELECT * FROM "ba_users" WHERE "ba_users"."id" = 'f0d18629-f5c6-49b4-ab1e-327c90af9cfe'
+
+2026/02/02 23:39:26 [32m/Users/jesussanchez/matic-platform/go-backend/middleware/auth.go:85
+[0m[33m[133.861ms] [34;1m[rows:1][0m SELECT * FROM "ba_sessions" WHERE token = 'iSGc1R0az5YIeBTHVDN9QRS2vfEsuUMu' ORDER BY "ba_sessions"."id" LIMIT 1
+
+2026/02/02 23:39:26 [32m/Users/jesussanchez/matic-platform/go-backend/handlers/auth_helpers.go:31
+[0m[33m[63.246ms] [34;1m[rows:1][0m SELECT * FROM "workspace_members" WHERE workspace_id = '9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e' AND (user_id::text = 'f0d18629-f5c6-49b4-ab1e-327c90af9cfe' OR ba_user_id = 'f0d18629-f5c6-49b4-ab1e-327c90af9cfe') AND status = 'active' ORDER BY "workspace_members"."id" LIMIT 1
+
+2026/02/02 23:39:26 [31;1m/Users/jesussanchez/matic-platform/go-backend/handlers/crm.go:130 [35;1mERROR: column f.custom_slug does not exist (SQLSTATE 42703)
+[0m[33m[43.241ms] [34;1m[rows:-][0m 
+		SELECT 
+			ba.id as user_id,
+			ba.email,
+			ba.name,
+			ba.user_type,
+			ba.created_at::text as user_created_at,
+			ba.updated_at::text as last_login_at,
+			(ba.metadata->>'password_reset_requested')::text as password_reset_requested,
+			f.id::text as form_id,
+			f.name as form_name,
+			f.custom_slug as form_slug,
+			fs.id::text as row_id,
+			fs.id::text as submission_id,
+			COALESCE(fs.status, 'not_started') as status,
+			CASE 
+				WHEN fs.status = 'submitted' THEN 100
+				WHEN fs.status = 'draft' THEN COALESCE(
+					(SELECT (COUNT(DISTINCT CASE WHEN fr.id IS NOT NULL THEN ff.id END)::float * 100 / NULLIF(COUNT(DISTINCT ff.id), 0))::int
+					 FROM form_fields ff
+					 LEFT JOIN form_responses fr ON fr.field_id = ff.id AND fr.submission_id = fs.id
+					 WHERE ff.form_id = f.id),
+					0
+				)
+				ELSE 0
+			END as completion_pct,
+			fs.submitted_at::text as submitted_at,
+			fs.updated_at::text as last_saved_at,
+			fs.created_at::text as app_created_at
+		FROM ba_users ba
+		INNER JOIN form_submissions fs ON fs.user_id = ba.id
+		INNER JOIN forms f ON f.id = fs.form_id
+		WHERE ba.user_type LIKE 'applicant%'
+		  AND f.workspace_id = '9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e'
+		ORDER BY ba.created_at DESC, fs.created_at DESC
+	
+2026/02/02 23:39:26 [REQUEST] method=GET path=/api/v1/crm/applicants duration=240ms status=500
+[GIN] 2026/02/02 - 23:39:26 | 500 |  240.738084ms |             ::1 | GET      "/api/v1/crm/applicants?workspace_id=9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e"
+
+2026/02/02 23:39:26 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[39.596ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:26.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:31 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[69.765ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:31.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:36 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[66.801ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:36.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:41 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[72.519ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:41.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:46 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[58.771ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:46.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:51 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[68.570ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:51.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:39:56 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[72.085ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:39:56.447' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:01 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[62.697ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:01.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:06 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[66.212ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:06.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:11 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[64.774ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:11.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:16 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[62.770ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:16.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:21 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[71.188ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:21.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:26 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[70.152ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:26.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+[GIN] 2026/02/02 - 23:40:30 | 204 |      18.458µs |             ::1 | OPTIONS  "/api/v1/crm/applicants?workspace_id=9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e"
+
+2026/02/02 23:40:30 [32m/Users/jesussanchez/matic-platform/go-backend/handlers/auth_helpers.go:31
+[0m[33m[65.017ms] [34;1m[rows:1][0m SELECT * FROM "workspace_members" WHERE workspace_id = '9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e' AND (user_id::text = 'f0d18629-f5c6-49b4-ab1e-327c90af9cfe' OR ba_user_id = 'f0d18629-f5c6-49b4-ab1e-327c90af9cfe') AND status = 'active' ORDER BY "workspace_members"."id" LIMIT 1
+
+2026/02/02 23:40:30 [31;1m/Users/jesussanchez/matic-platform/go-backend/handlers/crm.go:130 [35;1mERROR: column f.custom_slug does not exist (SQLSTATE 42703)
+[0m[33m[40.369ms] [34;1m[rows:-][0m 
+		SELECT 
+			ba.id as user_id,
+			ba.email,
+			ba.name,
+			ba.user_type,
+			ba.created_at::text as user_created_at,
+			ba.updated_at::text as last_login_at,
+			(ba.metadata->>'password_reset_requested')::text as password_reset_requested,
+			f.id::text as form_id,
+			f.name as form_name,
+			f.custom_slug as form_slug,
+			fs.id::text as row_id,
+			fs.id::text as submission_id,
+			COALESCE(fs.status, 'not_started') as status,
+			CASE 
+				WHEN fs.status = 'submitted' THEN 100
+				WHEN fs.status = 'draft' THEN COALESCE(
+					(SELECT (COUNT(DISTINCT CASE WHEN fr.id IS NOT NULL THEN ff.id END)::float * 100 / NULLIF(COUNT(DISTINCT ff.id), 0))::int
+					 FROM form_fields ff
+					 LEFT JOIN form_responses fr ON fr.field_id = ff.id AND fr.submission_id = fs.id
+					 WHERE ff.form_id = f.id),
+					0
+				)
+				ELSE 0
+			END as completion_pct,
+			fs.submitted_at::text as submitted_at,
+			fs.updated_at::text as last_saved_at,
+			fs.created_at::text as app_created_at
+		FROM ba_users ba
+		INNER JOIN form_submissions fs ON fs.user_id = ba.id
+		INNER JOIN forms f ON f.id = fs.form_id
+		WHERE ba.user_type LIKE 'applicant%'
+		  AND f.workspace_id = '9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e'
+		ORDER BY ba.created_at DESC, fs.created_at DESC
+	
+2026/02/02 23:40:30 [REQUEST] method=GET path=/api/v1/crm/applicants duration=105ms status=500
+[GIN] 2026/02/02 - 23:40:30 | 500 |   105.74975ms |             ::1 | GET      "/api/v1/crm/applicants?workspace_id=9a13130f-a0ec-47c9-8fe2-8254f9fcfa7e"
+
+2026/02/02 23:40:31 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[68.026ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:31.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+
+2026/02/02 23:40:36 [32m/Users/jesussanchez/matic-platform/go-backend/services/email_queue_worker.go:84
+[0m[33m[65.886ms] [34;1m[rows:0][0m SELECT * FROM "email_queue" WHERE status = 'pending' AND scheduled_for <= '2026-02-02 23:40:36.448' ORDER BY priority DESC, scheduled_for ASC LIMIT 10
+signal: killed
